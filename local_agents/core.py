@@ -38,6 +38,16 @@ def sanitize_untrusted_text(text: str) -> str:
         r"drop\s+table",
         r"delete\s+database",
         r"exfiltrate",
+        r"grant\s+me\s+admin",
+        r"grant\s+root\s+privileges?",
+        r"owner\s+permissions?",
+        r"impersonat(?:e|ion)\s+\w+",
+        r"root\s+privileges?",
+        r"admin\s+access",
+        r"api[_-]?key\s*=\s*\S+",
+        r"token\s*=\s*\S+",
+        r"password\s*=\s*\S+",
+        r"secret\s*=\s*\S+",
         r"https?://\\S+",
     ]
     for pattern in patterns:
