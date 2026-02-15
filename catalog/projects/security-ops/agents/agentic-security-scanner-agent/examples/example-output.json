@@ -1,0 +1,14 @@
+{
+  "summary": "Completed scan of catalog projects with 2 findings.",
+  "risk_score": 24,
+  "findings": [
+    {
+      "id": "SEC-ASI01-001",
+      "severity": "medium",
+      "asi": "ASI01",
+      "title": "Prompt does not explicitly mark inputs as untrusted",
+      "path": "catalog/projects/example/agents/foo-agent/prompts/system.md",
+      "recommendation": "Add explicit untrusted-input handling and validation language."
+    }
+  ]
+}

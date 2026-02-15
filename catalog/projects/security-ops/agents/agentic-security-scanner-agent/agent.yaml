@@ -1,0 +1,26 @@
+id: security-ops.agentic-security-scanner-agent
+name: agentic-security-scanner-agent
+version: 0.1.0
+summary: |
+  Performs deterministic repository checks aligned with OWASP Agentic AI Top 10
+  control themes and reports actionable findings.
+owners:
+  - security-platform
+inputs:
+  - name: target_path
+    type: string
+    required: false
+    default: .
+outputs:
+  - name: summary
+    type: string
+  - name: risk_score
+    type: integer
+  - name: findings
+    type: array[object]
+rules:
+  - Scan all project agent folders under catalog/projects.
+  - Map findings to ASI identifiers where possible.
+constraints:
+  - findings entries must include id, severity, asi, title, path, recommendation.
+  - risk_score must be in range 0..100.

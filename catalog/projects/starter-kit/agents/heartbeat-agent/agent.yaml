@@ -1,0 +1,29 @@
+id: starter-kit.heartbeat-agent
+name: heartbeat-agent
+version: 0.1.0
+summary: |
+  Reads simple heartbeat snapshots and produces a compact health status summary.
+owners:
+  - platform-agents
+inputs:
+  - name: service_name
+    type: string
+    required: true
+  - name: heartbeat_age_seconds
+    type: integer
+    required: true
+  - name: error_rate_percent
+    type: number
+    required: true
+outputs:
+  - name: status
+    type: enum[ok,warn,critical]
+  - name: report
+    type: string
+rules:
+  - if heartbeat_age_seconds > 90 then status=critical
+  - else if heartbeat_age_seconds > 30 then status=warn
+  - if error_rate_percent > 5 then escalate one level (max critical)
+constraints:
+  - Keep report under 45 words.
+  - Include age and error rate in report.

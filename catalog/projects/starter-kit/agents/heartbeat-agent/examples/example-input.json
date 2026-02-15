@@ -1,0 +1,5 @@
+{
+  "service_name": "billing-api",
+  "heartbeat_age_seconds": 55,
+  "error_rate_percent": 7.2
+}

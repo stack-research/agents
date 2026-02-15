@@ -1,0 +1,33 @@
+id: support-ops.reply-drafter-agent
+name: reply-drafter-agent
+version: 0.1.0
+summary: |
+  Drafts a short customer-facing reply from structured triage details to speed up
+  support response handling.
+owners:
+  - support-platform
+inputs:
+  - name: customer_name
+    type: string
+    required: false
+  - name: priority
+    type: enum[p1,p2,p3,p4]
+    required: true
+  - name: category
+    type: enum[billing,bug,access,feature,how-to,other]
+    required: true
+  - name: issue_summary
+    type: string
+    required: true
+outputs:
+  - name: subject
+    type: string
+  - name: reply
+    type: string
+rules:
+  - Keep tone professional, concise, and action-oriented.
+  - Mention expected next step and rough timeline.
+constraints:
+  - Subject under 12 words.
+  - Reply under 90 words.
+  - Output must contain exactly subject and reply.

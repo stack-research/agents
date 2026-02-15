@@ -1,0 +1,11 @@
+{
+  "triage": {
+    "priority": "p2",
+    "category": "access",
+    "next_action": "Escalate to auth on-call and collect user and timestamp details."
+  },
+  "draft": {
+    "subject": "Update on your sign-in issue",
+    "reply": "Hi Alex, thanks for reporting this. We understand: Customers cannot sign in after password reset. We're checking authentication logs and account status now. We will share another update within 60 minutes."
+  }
+}

@@ -1,0 +1,29 @@
+id: support-ops.triage-agent
+name: triage-agent
+version: 0.1.0
+summary: |
+  Reads inbound support requests and assigns priority, category, and next action
+  so operators can route and respond quickly.
+owners:
+  - support-platform
+inputs:
+  - name: text
+    type: string
+    required: true
+  - name: customer_tier
+    type: enum[free,pro,enterprise]
+    required: false
+    default: free
+outputs:
+  - name: priority
+    type: enum[p1,p2,p3,p4]
+  - name: category
+    type: enum[billing,bug,access,feature,how-to,other]
+  - name: next_action
+    type: string
+rules:
+  - Outage, data-loss, security, or production-down implies priority p1.
+  - Enterprise customers can be escalated up one priority level.
+  - next_action should be imperative and under 20 words.
+constraints:
+  - Output must contain exactly the three output keys.

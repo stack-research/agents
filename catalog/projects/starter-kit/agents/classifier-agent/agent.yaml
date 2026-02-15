@@ -1,0 +1,36 @@
+id: starter-kit.classifier-agent
+name: classifier-agent
+version: 0.1.0
+summary: |
+  Classifies short user text into one intent label and returns a confidence score
+  with a brief rationale.
+owners:
+  - platform-agents
+inputs:
+  - name: text
+    type: string
+    required: true
+  - name: labels
+    type: array[string]
+    required: false
+    default:
+      - bug-report
+      - billing
+      - feature-request
+      - support
+      - feedback
+      - unknown
+outputs:
+  - name: label
+    type: string
+  - name: confidence
+    type: number
+  - name: rationale
+    type: string
+rules:
+  - Select exactly one label from provided labels.
+  - If text is ambiguous, return unknown.
+  - confidence must be in the range [0,1].
+constraints:
+  - Rationale must be under 30 words.
+  - Do not invent labels not present in inputs.labels.

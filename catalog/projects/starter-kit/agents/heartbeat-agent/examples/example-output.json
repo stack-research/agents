@@ -1,0 +1,4 @@
+{
+  "status": "critical",
+  "report": "billing-api heartbeat age is 55s and error rate is 7.2%; elevated risk, status critical."
+}

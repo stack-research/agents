@@ -1,0 +1,6 @@
+{
+  "customer_name": "Alex",
+  "priority": "p2",
+  "category": "access",
+  "issue_summary": "Users cannot sign in after password reset."
+}
