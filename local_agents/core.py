@@ -60,6 +60,11 @@ def sanitize_untrusted_text(text: str) -> str:
         r"cmd\.exe",
         r"powershell\s+-enc",
         r"\$\(",
+        r"remember\s+this\s+forever",
+        r"memory\s+override",
+        r"poisoned\s+context",
+        r"persist\s+this\s+instruction",
+        r"ignore\s+future\s+policies",
         r"https?://\\S+",
     ]
     for pattern in patterns:
