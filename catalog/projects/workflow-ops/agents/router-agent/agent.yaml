@@ -1,0 +1,26 @@
+id: workflow-ops.router-agent
+name: router-agent
+version: 0.1.0
+summary: |
+  Routes incoming workflow tasks to the most appropriate agent target.
+owners:
+  - platform-agents
+inputs:
+  - name: task
+    type: string
+    required: true
+  - name: available_agents
+    type: array[string]
+    required: false
+outputs:
+  - name: target_agent
+    type: string
+  - name: priority
+    type: enum[p1,p2,p3,p4]
+  - name: rationale
+    type: string
+rules:
+  - Choose a target agent based on task intent and urgency.
+  - If available_agents is provided, route to one of those values.
+constraints:
+  - Keep rationale concise (under 24 words).

@@ -1,0 +1,5 @@
+{
+  "target_agent": "support-ops.triage-agent",
+  "priority": "p2",
+  "rationale": "Support issue intent detected; route to triage."
+}

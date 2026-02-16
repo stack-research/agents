@@ -69,6 +69,8 @@ Repository-level runtime and tests:
 - `tests/test_research_ops_llm.py` - retrieval/synthesis checks in LLM mode.
 - `tests/test_qa_ops.py` - deterministic test-case generation and regression-triage checks.
 - `tests/test_qa_ops_llm.py` - QA-ops checks in LLM mode.
+- `tests/test_workflow_ops.py` - deterministic routing/checkpoint behavior tests.
+- `tests/test_workflow_ops_llm.py` - workflow-ops checks in LLM mode.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.
@@ -98,6 +100,9 @@ Repository-level runtime and tests:
 - `qa-ops`
   - `test-case-generator-agent`: turns feature requirements into bounded QA test scenarios.
   - `regression-triage-agent`: maps failures to probable cause, severity, and next actions.
+- `workflow-ops`
+  - `router-agent`: routes incoming tasks to a best-fit agent with priority.
+  - `checkpoint-agent`: records workflow progress with structured checkpoint summaries.
 
 ## Update Rule
 

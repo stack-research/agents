@@ -1,0 +1,5 @@
+{
+  "checkpoint_id": "release-2026-02-16:qa-validation:in_progress",
+  "recorded": true,
+  "summary": "Checkpoint recorded for workflow release-2026-02-16 at stage qa-validation with status in_progress. Notes: Integration tests running on staging."
+}

@@ -455,6 +455,89 @@ def run_regression_triage_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    task = require(payload, "task")
+    available_agents = payload.get("available_agents", [])
+
+    if not isinstance(task, str) or not task.strip():
+        raise ValidationError("task must be a non-empty string")
+    if available_agents is None:
+        available_agents = []
+    if not isinstance(available_agents, list) or not all(isinstance(item, str) for item in available_agents):
+        raise ValidationError("available_agents must be an array of strings")
+
+    safe_task = sanitize_untrusted_text(task.strip())
+    lowered = safe_task.lower()
+
+    target_agent = "planner-executor.planner-agent"
+    rationale = "General planning intent detected; route to planner."
+    if any(token in lowered for token in ["ticket", "incident", "cannot", "login", "support", "customer"]):
+        target_agent = "support-ops.triage-agent"
+        rationale = "Support issue intent detected; route to triage."
+    elif any(token in lowered for token in ["test", "qa", "acceptance", "scenario"]):
+        target_agent = "qa-ops.test-case-generator-agent"
+        rationale = "QA/test intent detected; route to test-case generator."
+    elif any(token in lowered for token in ["regression", "failure", "flaky", "timeout"]):
+        target_agent = "qa-ops.regression-triage-agent"
+        rationale = "Regression/failure intent detected; route to regression triage."
+    elif any(token in lowered for token in ["research", "summarize", "findings", "source"]):
+        target_agent = "research-ops.retrieval-agent"
+        rationale = "Research intent detected; route to retrieval."
+    elif any(token in lowered for token in ["security scan", "owasp", "scan repo", "controls"]):
+        target_agent = "security-ops.agentic-security-scanner-agent"
+        rationale = "Security scanning intent detected; route to scanner."
+
+    if available_agents and target_agent not in available_agents:
+        target_agent = available_agents[0]
+        rationale = "Preferred route unavailable; selected first available agent."
+
+    priority = "p4"
+    if any(token in lowered for token in ["critical", "outage", "breach", "production down"]):
+        priority = "p1"
+    elif any(token in lowered for token in ["urgent", "blocking", "cannot"]):
+        priority = "p2"
+    elif any(token in lowered for token in ["soon", "next sprint", "follow up"]):
+        priority = "p3"
+
+    return {
+        "target_agent": target_agent,
+        "priority": priority,
+        "rationale": " ".join(rationale.split()[:24]),
+    }
+
+
+def run_checkpoint_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    workflow_id = require(payload, "workflow_id")
+    stage = require(payload, "stage")
+    status = require(payload, "status")
+    notes = payload.get("notes", "")
+
+    if not isinstance(workflow_id, str) or not workflow_id.strip():
+        raise ValidationError("workflow_id must be a non-empty string")
+    if not isinstance(stage, str) or not stage.strip():
+        raise ValidationError("stage must be a non-empty string")
+    if status not in {"pending", "in_progress", "completed", "failed"}:
+        raise ValidationError("status must be one of pending,in_progress,completed,failed")
+    if notes is None:
+        notes = ""
+    if not isinstance(notes, str):
+        raise ValidationError("notes must be a string when provided")
+
+    safe_workflow = sanitize_untrusted_text(workflow_id.strip()).replace(" ", "-")
+    safe_stage = sanitize_untrusted_text(stage.strip()).replace(" ", "-")
+    safe_notes = sanitize_untrusted_text(notes.strip())
+    checkpoint_id = f"{safe_workflow}:{safe_stage}:{status}".lower()
+    summary = (
+        f"Checkpoint recorded for workflow {safe_workflow} at stage {safe_stage} with status {status}. "
+        f"{'Notes: ' + safe_notes if safe_notes else 'No notes provided.'}"
+    )
+    return {
+        "checkpoint_id": checkpoint_id[:80],
+        "recorded": True,
+        "summary": " ".join(summary.split()[:50]),
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -469,6 +552,7 @@ def run_agent(
     if selected_mode == "llm":
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
+            run_checkpoint_agent_llm,
             run_classifier_agent_llm,
             run_executor_agent_llm,
             run_heartbeat_agent_llm,
@@ -476,6 +560,7 @@ def run_agent(
             run_regression_triage_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
+            run_router_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
             run_triage_agent_llm,
@@ -554,6 +639,20 @@ def run_agent(
             return run_regression_triage_agent(payload)
         if selected_mode == "llm":
             return run_regression_triage_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"router-agent", "workflow-ops.router-agent"}:
+        if selected_mode == "deterministic":
+            return run_router_agent(payload)
+        if selected_mode == "llm":
+            return run_router_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"checkpoint-agent", "workflow-ops.checkpoint-agent"}:
+        if selected_mode == "deterministic":
+            return run_checkpoint_agent(payload)
+        if selected_mode == "llm":
+            return run_checkpoint_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

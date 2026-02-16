@@ -545,3 +545,92 @@ Input:
         "severity": severity,
         "recommended_actions": safe_actions,
     }
+
+
+def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    task = require(payload, "task")
+    available_agents = payload.get("available_agents", [])
+
+    if not isinstance(task, str) or not task.strip():
+        raise ValidationError("task must be a non-empty string")
+    if available_agents is None:
+        available_agents = []
+    if not isinstance(available_agents, list) or not all(isinstance(item, str) for item in available_agents):
+        raise ValidationError("available_agents must be an array of strings")
+
+    prompt = f"""
+You are router-agent.
+Return only JSON with keys target_agent, priority, rationale.
+Rules:
+- target_agent must be a non-empty string.
+- priority must be one of p1, p2, p3, p4.
+- rationale must be a concise string under 24 words.
+Input:
+{{"task":{json.dumps(task)},"available_agents":{json.dumps(available_agents)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    target_agent = out.get("target_agent")
+    priority = out.get("priority")
+    rationale = out.get("rationale")
+
+    if not isinstance(target_agent, str) or not target_agent.strip():
+        raise ValidationError("LLM output target_agent must be a non-empty string")
+    if priority not in {"p1", "p2", "p3", "p4"}:
+        raise ValidationError("LLM output priority must be one of p1,p2,p3,p4")
+    if not isinstance(rationale, str) or not rationale.strip():
+        raise ValidationError("LLM output rationale must be a non-empty string")
+
+    safe_target = sanitize_untrusted_text(" ".join(target_agent.strip().split()[:6]))
+    safe_rationale = sanitize_untrusted_text(" ".join(rationale.strip().split()[:24]))
+    if available_agents and safe_target not in available_agents:
+        safe_target = available_agents[0]
+        safe_rationale = "Preferred route unavailable; selected first available agent."
+    return {"target_agent": safe_target, "priority": priority, "rationale": safe_rationale}
+
+
+def run_checkpoint_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    workflow_id = require(payload, "workflow_id")
+    stage = require(payload, "stage")
+    status = require(payload, "status")
+    notes = payload.get("notes", "")
+
+    if not isinstance(workflow_id, str) or not workflow_id.strip():
+        raise ValidationError("workflow_id must be a non-empty string")
+    if not isinstance(stage, str) or not stage.strip():
+        raise ValidationError("stage must be a non-empty string")
+    if status not in {"pending", "in_progress", "completed", "failed"}:
+        raise ValidationError("status must be one of pending,in_progress,completed,failed")
+    if notes is None:
+        notes = ""
+    if not isinstance(notes, str):
+        raise ValidationError("notes must be a string when provided")
+
+    prompt = f"""
+You are checkpoint-agent.
+Return only JSON with keys checkpoint_id, recorded, summary.
+Rules:
+- checkpoint_id must be a non-empty string.
+- recorded must be true.
+- summary must be under 50 words.
+Input:
+{{"workflow_id":{json.dumps(workflow_id)},"stage":{json.dumps(stage)},"status":{json.dumps(status)},"notes":{json.dumps(notes)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    checkpoint_id = out.get("checkpoint_id")
+    recorded = out.get("recorded")
+    summary = out.get("summary")
+
+    if not isinstance(checkpoint_id, str) or not checkpoint_id.strip():
+        raise ValidationError("LLM output checkpoint_id must be a non-empty string")
+    if recorded is not True:
+        raise ValidationError("LLM output recorded must be true")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+
+    safe_id = sanitize_untrusted_text(checkpoint_id.strip())[:80]
+    safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:50]))
+    return {"checkpoint_id": safe_id, "recorded": True, "summary": safe_summary}

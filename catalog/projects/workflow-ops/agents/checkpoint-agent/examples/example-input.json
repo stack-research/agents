@@ -1,0 +1,6 @@
+{
+  "workflow_id": "release-2026-02-16",
+  "stage": "qa-validation",
+  "status": "in_progress",
+  "notes": "Integration tests running on staging."
+}

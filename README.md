@@ -47,6 +47,9 @@ catalog/
 6. `qa-ops`
    - `test-case-generator-agent`: generates bounded QA scenarios from feature requirements.
    - `regression-triage-agent`: classifies regression cause/severity and proposes follow-up actions.
+7. `workflow-ops`
+   - `router-agent`: routes work items to the best-fit agent with a priority.
+   - `checkpoint-agent`: records workflow stage/status checkpoints for traceability.
 
 ## Run Agents Locally
 
@@ -61,6 +64,8 @@ catalog/
 - `python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.test-case-generator-agent --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`

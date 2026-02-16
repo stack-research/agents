@@ -4,6 +4,7 @@ from .core import ValidationError
 from .engine import (
     run_agent,
     run_agentic_security_scanner_agent,
+    run_checkpoint_agent,
     run_classifier_agent,
     run_executor_agent,
     run_heartbeat_agent,
@@ -11,6 +12,7 @@ from .engine import (
     run_regression_triage_agent,
     run_retrieval_agent,
     run_reply_drafter_agent,
+    run_router_agent,
     run_test_case_generator_agent,
     run_synthesis_agent,
     run_triage_agent,
@@ -29,5 +31,7 @@ __all__ = [
     "run_synthesis_agent",
     "run_test_case_generator_agent",
     "run_regression_triage_agent",
+    "run_router_agent",
+    "run_checkpoint_agent",
     "run_agentic_security_scanner_agent",
 ]

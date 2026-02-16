@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-support-pipeline-llm run-planner-executor-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -54,6 +54,12 @@ run-test-case-generator-example:
 run-regression-triage-example:
 	python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty
 
+run-router-example:
+	python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty
+
+run-checkpoint-example:
+	python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty
+
 run-security-scan-example:
 	python3 scripts/run_security_scan.py --target-path . --pretty
 
@@ -92,6 +98,12 @@ run-test-case-generator-llm:
 
 run-regression-triage-llm:
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty
+
+run-router-llm:
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty
+
+run-checkpoint-llm:
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty
 
 run-support-pipeline-llm:
 	AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty

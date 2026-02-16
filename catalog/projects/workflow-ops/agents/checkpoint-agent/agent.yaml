@@ -1,0 +1,32 @@
+id: workflow-ops.checkpoint-agent
+name: checkpoint-agent
+version: 0.1.0
+summary: |
+  Records structured workflow checkpoints for progress tracking and auditability.
+owners:
+  - platform-agents
+inputs:
+  - name: workflow_id
+    type: string
+    required: true
+  - name: stage
+    type: string
+    required: true
+  - name: status
+    type: enum[pending,in_progress,completed,failed]
+    required: true
+  - name: notes
+    type: string
+    required: false
+outputs:
+  - name: checkpoint_id
+    type: string
+  - name: recorded
+    type: boolean
+  - name: summary
+    type: string
+rules:
+  - recorded must be true for valid checkpoints.
+  - summary should concisely capture workflow stage and status.
+constraints:
+  - summary under 50 words.
