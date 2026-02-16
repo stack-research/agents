@@ -52,10 +52,19 @@ def sanitize_untrusted_text(text: str) -> str:
         r"token\s*=\s*\S+",
         r"password\s*=\s*\S+",
         r"secret\s*=\s*\S+",
+        r"python\s+-c",
+        r"subprocess",
+        r"eval\s*\(",
+        r"exec\s*\(",
+        r"/bin/sh",
+        r"cmd\.exe",
+        r"powershell\s+-enc",
+        r"\$\(",
         r"https?://\\S+",
     ]
     for pattern in patterns:
         cleaned = re.sub(pattern, "[redacted]", cleaned, flags=re.IGNORECASE)
+    cleaned = cleaned.replace("`", "")
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 

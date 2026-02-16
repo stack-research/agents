@@ -56,8 +56,8 @@ See `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` for 
 
 - `python3 -m unittest discover -s tests -v`
 - `make test`
-- `make test-security` (ASI01+ASI02+ASI03+ASI04 adversarial checks + scanner tests)
-- `make test-security-llm` (ASI01+ASI02+ASI03+ASI04 adversarial checks against local LLM)
+- `make test-security` (ASI01+ASI02+ASI03+ASI04+ASI05 adversarial checks + scanner tests)
+- `make test-security-llm` (ASI01+ASI02+ASI03+ASI04+ASI05 adversarial checks against local LLM)
 - `make test-integration-llm` (optional LLM-backed checks)
 
 The test suite currently includes:
@@ -72,6 +72,8 @@ The test suite currently includes:
 - ASI03 identity/privilege-abuse LLM adversarial regression tests.
 - ASI04 supply-chain/runtime-source adversarial regression tests.
 - ASI04 supply-chain/runtime-source LLM adversarial regression tests.
+- ASI05 unexpected-code-execution adversarial regression tests.
+- ASI05 unexpected-code-execution LLM adversarial regression tests.
 - security scanner tests.
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
