@@ -81,6 +81,15 @@ def sanitize_untrusted_text(text: str) -> str:
         r"guarantee(?:d)?\s+(?:fix|resolved)",
         r"verified\s+admin",
         r"official\s+support\s+portal",
+        r"rogue\s+agent",
+        r"self[-\s]?replicat(?:e|ion|ing)",
+        r"spawn\s+new\s+agents?",
+        r"create\s+new\s+agent",
+        r"autonomous(?:ly)?\s+without\s+approval",
+        r"override\s+human\s+approval",
+        r"disable\s+human[-\s]?in[-\s]?the[-\s]?loop",
+        r"run\s+indefinitely",
+        r"persistent\s+background\s+process",
         r"https?://\\S+",
     ]
     for pattern in patterns:
