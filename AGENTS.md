@@ -65,6 +65,8 @@ Repository-level runtime and tests:
 - `tests/test_security_scanner.py` - security scanner unit tests.
 - `tests/test_planner_executor.py` - deterministic planner/executor behavior tests.
 - `tests/test_planner_executor_llm.py` - planner/executor checks in LLM mode.
+- `tests/test_research_ops.py` - deterministic retrieval/synthesis behavior tests.
+- `tests/test_research_ops_llm.py` - retrieval/synthesis checks in LLM mode.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.
@@ -88,6 +90,9 @@ Repository-level runtime and tests:
 - `planner-executor`
   - `planner-agent`: generates bounded execution steps and a risk level from a goal.
   - `executor-agent`: reports execution status and summary from planned steps.
+- `research-ops`
+  - `retrieval-agent`: extracts bounded notes from a query and optional sources.
+  - `synthesis-agent`: turns research notes into audience-specific summary/actions.
 
 ## Update Rule
 

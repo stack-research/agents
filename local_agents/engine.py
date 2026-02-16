@@ -327,6 +327,61 @@ def run_executor_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_retrieval_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    query = require(payload, "query")
+    sources = payload.get("sources", [])
+    max_points = payload.get("max_points", 5)
+
+    if not isinstance(query, str) or not query.strip():
+        raise ValidationError("query must be a non-empty string")
+    if sources is None:
+        sources = []
+    if not isinstance(sources, list) or not all(isinstance(item, str) for item in sources):
+        raise ValidationError("sources must be an array of strings")
+    if not isinstance(max_points, int) or max_points < 1 or max_points > 8:
+        raise ValidationError("max_points must be an integer between 1 and 8")
+
+    safe_query = sanitize_untrusted_text(query.strip())
+    cleaned_sources = [
+        sanitize_untrusted_text(item.strip()) for item in sources if isinstance(item, str) and item.strip()
+    ]
+
+    notes = [f"Research objective: {safe_query}"]
+    for item in cleaned_sources[: max(0, max_points - 1)]:
+        notes.append(f"Source note: {item}")
+
+    if len(notes) < max_points:
+        notes.append("Gap: additional primary sources may be required for verification.")
+    clipped = [" ".join(note.split()[:20]) for note in notes[:max_points]]
+    confidence = 0.65 if cleaned_sources else 0.45
+    return {"notes": clipped, "confidence": round(confidence, 2)}
+
+
+def run_synthesis_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    notes = require(payload, "notes")
+    audience = payload.get("audience", "engineering")
+    output_format = payload.get("output_format", "brief")
+
+    if not isinstance(notes, list) or not notes or not all(isinstance(item, str) for item in notes):
+        raise ValidationError("notes must be a non-empty string array")
+    if not isinstance(audience, str) or not audience.strip():
+        raise ValidationError("audience must be a non-empty string")
+    if output_format not in {"brief", "report"}:
+        raise ValidationError("output_format must be one of brief,report")
+
+    safe_notes = [sanitize_untrusted_text(item.strip()) for item in notes if item.strip()]
+    headline = f"{audience.strip().title()} {output_format.title()} Summary"
+    body_prefix = "Key findings: " if output_format == "brief" else "Research report summary: "
+    summary = body_prefix + "; ".join(safe_notes[:3])
+    summary = " ".join(summary.split()[:80])
+    next_actions = [
+        "Validate highest-impact claim with one primary source",
+        "Document assumptions and unresolved risks",
+        "Share summary with stakeholders for review",
+    ]
+    return {"headline": headline, "summary": summary, "next_actions": next_actions}
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -345,7 +400,9 @@ def run_agent(
             run_executor_agent_llm,
             run_heartbeat_agent_llm,
             run_planner_agent_llm,
+            run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
+            run_synthesis_agent_llm,
             run_triage_agent_llm,
         )
 
@@ -394,6 +451,20 @@ def run_agent(
             return run_executor_agent(payload)
         if selected_mode == "llm":
             return run_executor_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"retrieval-agent", "research-ops.retrieval-agent"}:
+        if selected_mode == "deterministic":
+            return run_retrieval_agent(payload)
+        if selected_mode == "llm":
+            return run_retrieval_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"synthesis-agent", "research-ops.synthesis-agent"}:
+        if selected_mode == "deterministic":
+            return run_synthesis_agent(payload)
+        if selected_mode == "llm":
+            return run_synthesis_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

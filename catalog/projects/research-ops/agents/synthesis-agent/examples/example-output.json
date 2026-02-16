@@ -1,0 +1,9 @@
+{
+  "headline": "Security Brief Summary",
+  "summary": "Key findings: Research objective: Summarize ASI09 mitigation guidance; Source note: enforce output contracts; Source note: require explicit human approval for sensitive actions",
+  "next_actions": [
+    "Validate highest-impact claim with one primary source",
+    "Document assumptions and unresolved risks",
+    "Share summary with stakeholders for review"
+  ]
+}

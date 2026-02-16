@@ -1,0 +1,9 @@
+{
+  "notes": [
+    "Research objective: Summarize ASI09 mitigation guidance",
+    "Source note: enforce output contracts",
+    "Source note: require explicit human approval for sensitive actions"
+  ],
+  "audience": "security",
+  "output_format": "brief"
+}

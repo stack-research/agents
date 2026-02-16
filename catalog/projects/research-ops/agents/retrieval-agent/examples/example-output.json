@@ -1,0 +1,9 @@
+{
+  "notes": [
+    "Research objective: Summarize ASI09 mitigation guidance",
+    "Source note: OWASP top 10 whitepaper",
+    "Source note: internal contributor SOP",
+    "Gap: additional primary sources may be required for verification."
+  ],
+  "confidence": 0.65
+}

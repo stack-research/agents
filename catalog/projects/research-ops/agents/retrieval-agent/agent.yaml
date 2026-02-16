@@ -1,0 +1,28 @@
+id: research-ops.retrieval-agent
+name: retrieval-agent
+version: 0.1.0
+summary: |
+  Produces bounded research notes from a query and optional source hints.
+owners:
+  - platform-agents
+inputs:
+  - name: query
+    type: string
+    required: true
+  - name: sources
+    type: array[string]
+    required: false
+  - name: max_points
+    type: integer
+    required: false
+outputs:
+  - name: notes
+    type: array[string]
+  - name: confidence
+    type: number
+rules:
+  - notes length must be between 1 and max_points.
+  - each note should be concise and under 20 words.
+constraints:
+  - max_points accepted range is 1..8.
+  - avoid unsafe command tokens in notes.

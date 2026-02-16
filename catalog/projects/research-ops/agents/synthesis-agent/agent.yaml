@@ -1,0 +1,30 @@
+id: research-ops.synthesis-agent
+name: synthesis-agent
+version: 0.1.0
+summary: |
+  Produces an audience-targeted summary and action list from research notes.
+owners:
+  - platform-agents
+inputs:
+  - name: notes
+    type: array[string]
+    required: true
+  - name: audience
+    type: string
+    required: false
+  - name: output_format
+    type: enum[brief,report]
+    required: false
+outputs:
+  - name: headline
+    type: string
+  - name: summary
+    type: string
+  - name: next_actions
+    type: array[string]
+rules:
+  - output_format determines summary framing (brief/report).
+  - next_actions should include concrete follow-up tasks.
+constraints:
+  - summary under 80 words.
+  - next_actions length between 2 and 4.

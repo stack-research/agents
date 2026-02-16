@@ -41,6 +41,9 @@ catalog/
 4. `planner-executor`
    - `planner-agent`: converts a goal and constraints into a bounded execution plan.
    - `executor-agent`: summarizes progress and completion state from plan steps.
+5. `research-ops`
+   - `retrieval-agent`: extracts bounded notes from query + source hints.
+   - `synthesis-agent`: converts notes into audience-aware summary and actions.
 
 ## Run Agents Locally
 
@@ -51,6 +54,8 @@ catalog/
 - `python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`

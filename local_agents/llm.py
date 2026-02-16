@@ -361,3 +361,88 @@ Input:
         "blocked_steps": blocked_steps,
         "summary": safe_summary,
     }
+
+
+def run_retrieval_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    query = require(payload, "query")
+    sources = payload.get("sources", [])
+    max_points = payload.get("max_points", 5)
+
+    if not isinstance(query, str) or not query.strip():
+        raise ValidationError("query must be a non-empty string")
+    if sources is None:
+        sources = []
+    if not isinstance(sources, list) or not all(isinstance(item, str) for item in sources):
+        raise ValidationError("sources must be an array of strings")
+    if not isinstance(max_points, int) or max_points < 1 or max_points > 8:
+        raise ValidationError("max_points must be an integer between 1 and 8")
+
+    prompt = f"""
+You are retrieval-agent.
+Return only JSON with keys notes and confidence.
+Rules:
+- notes must be an array of 1 to max_points short strings.
+- each note under 20 words.
+- confidence must be numeric in [0,1].
+Input:
+{{"query":{json.dumps(query)},"sources":{json.dumps(sources)},"max_points":{max_points}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    notes = out.get("notes")
+    confidence = out.get("confidence")
+
+    if not isinstance(notes, list) or not (1 <= len(notes) <= max_points):
+        raise ValidationError("LLM output notes must be an array sized 1..max_points")
+    if not all(isinstance(item, str) and item.strip() for item in notes):
+        raise ValidationError("LLM output notes items must be non-empty strings")
+    if not isinstance(confidence, (int, float)) or not (0 <= float(confidence) <= 1):
+        raise ValidationError("LLM output confidence must be numeric in [0,1]")
+
+    safe_notes = [sanitize_untrusted_text(" ".join(note.strip().split()[:20])) for note in notes]
+    return {"notes": safe_notes, "confidence": round(float(confidence), 2)}
+
+
+def run_synthesis_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    notes = require(payload, "notes")
+    audience = payload.get("audience", "engineering")
+    output_format = payload.get("output_format", "brief")
+
+    if not isinstance(notes, list) or not notes or not all(isinstance(item, str) for item in notes):
+        raise ValidationError("notes must be a non-empty string array")
+    if not isinstance(audience, str) or not audience.strip():
+        raise ValidationError("audience must be a non-empty string")
+    if output_format not in {"brief", "report"}:
+        raise ValidationError("output_format must be one of brief,report")
+
+    prompt = f"""
+You are synthesis-agent.
+Return only JSON with keys headline, summary, next_actions.
+Rules:
+- headline must be a non-empty string under 12 words.
+- summary must be a non-empty string under 80 words.
+- next_actions must be 2 to 4 concise strings.
+Input:
+{{"notes":{json.dumps(notes)},"audience":{json.dumps(audience)},"output_format":{json.dumps(output_format)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    headline = out.get("headline")
+    summary = out.get("summary")
+    next_actions = out.get("next_actions")
+
+    if not isinstance(headline, str) or not headline.strip():
+        raise ValidationError("LLM output headline must be a non-empty string")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+    if not isinstance(next_actions, list) or not (2 <= len(next_actions) <= 4):
+        raise ValidationError("LLM output next_actions must be 2 to 4 items")
+    if not all(isinstance(item, str) and item.strip() for item in next_actions):
+        raise ValidationError("LLM output next_actions items must be non-empty strings")
+
+    safe_headline = sanitize_untrusted_text(" ".join(headline.strip().split()[:12]))
+    safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:80]))
+    safe_actions = [sanitize_untrusted_text(" ".join(item.strip().split()[:16])) for item in next_actions]
+    return {"headline": safe_headline, "summary": safe_summary, "next_actions": safe_actions}

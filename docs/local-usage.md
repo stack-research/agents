@@ -61,6 +61,24 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Retrieval example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent research-ops.retrieval-agent \
+  --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json \
+  --pretty
+```
+
+Synthesis example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent research-ops.synthesis-agent \
+  --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -93,6 +111,8 @@ Accepted `--agent` values:
 - `support-ops.reply-drafter-agent` or `reply-drafter-agent`
 - `planner-executor.planner-agent` or `planner-agent`
 - `planner-executor.executor-agent` or `executor-agent`
+- `research-ops.retrieval-agent` or `retrieval-agent`
+- `research-ops.synthesis-agent` or `synthesis-agent`
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
 
 ## LLM Mode (Fast Local Model)
@@ -144,6 +164,8 @@ make run-triage-example
 make run-reply-drafter-example
 make run-planner-example
 make run-executor-example
+make run-retrieval-example
+make run-synthesis-example
 make run-security-scan-example
 make run-support-pipeline-example
 make run-planner-executor-pipeline-example
@@ -153,6 +175,8 @@ make run-triage-llm
 make run-reply-drafter-llm
 make run-planner-llm
 make run-executor-llm
+make run-retrieval-llm
+make run-synthesis-llm
 make run-support-pipeline-llm
 make run-planner-executor-pipeline-llm
 ```

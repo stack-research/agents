@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-support-pipeline-llm run-planner-executor-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-support-pipeline-llm run-planner-executor-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -42,6 +42,12 @@ run-planner-example:
 run-executor-example:
 	python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty
 
+run-retrieval-example:
+	python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty
+
+run-synthesis-example:
+	python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty
+
 run-security-scan-example:
 	python3 scripts/run_security_scan.py --target-path . --pretty
 
@@ -68,6 +74,12 @@ run-planner-llm:
 
 run-executor-llm:
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty
+
+run-retrieval-llm:
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty
+
+run-synthesis-llm:
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty
 
 run-support-pipeline-llm:
 	AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty

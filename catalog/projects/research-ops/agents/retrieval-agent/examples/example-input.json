@@ -1,0 +1,8 @@
+{
+  "query": "Summarize ASI09 mitigation guidance",
+  "sources": [
+    "OWASP top 10 whitepaper",
+    "internal contributor SOP"
+  ],
+  "max_points": 4
+}
