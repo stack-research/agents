@@ -52,6 +52,15 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Handoff example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent support-ops.handoff-agent \
+  --input catalog/projects/support-ops/agents/handoff-agent/examples/example-input.json \
+  --pretty
+```
+
 Planner example:
 
 ```bash
@@ -175,6 +184,7 @@ Accepted `--agent` values:
 - `support-ops.triage-agent` or `triage-agent`
 - `support-ops.reply-drafter-agent` or `reply-drafter-agent`
 - `support-ops.summary-agent` or `summary-agent`
+- `support-ops.handoff-agent` or `handoff-agent`
 - `planner-executor.planner-agent` or `planner-agent`
 - `planner-executor.executor-agent` or `executor-agent`
 - `research-ops.retrieval-agent` or `retrieval-agent`
@@ -236,6 +246,7 @@ make run-classifier-example
 make run-triage-example
 make run-reply-drafter-example
 make run-summary-example
+make run-handoff-example
 make run-planner-example
 make run-executor-example
 make run-retrieval-example
@@ -253,6 +264,7 @@ make run-classifier-llm
 make run-triage-llm
 make run-reply-drafter-llm
 make run-summary-llm
+make run-handoff-llm
 make run-planner-llm
 make run-executor-llm
 make run-retrieval-llm

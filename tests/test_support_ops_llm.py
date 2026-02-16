@@ -54,6 +54,27 @@ class SupportOpsLLMTests(unittest.TestCase):
         self.assertTrue(0 <= len(out.get("top_categories", [])) <= 3)
         self.assertEqual(len(out.get("recommended_actions", [])), 3)
 
+    def test_handoff_agent_llm_output_shape(self) -> None:
+        out = run_agent(
+            agent="support-ops.handoff-agent",
+            payload={
+                "shift_label": "night-shift-2026-02-16",
+                "incidents": [
+                    {"id": "inc-1", "severity": "sev1", "status": "mitigating", "owner": "oncall-a"},
+                    {"id": "inc-2", "severity": "sev2", "status": "investigating", "owner": "oncall-b"},
+                    {"id": "inc-3", "severity": "sev3", "status": "resolved", "owner": "oncall-c"},
+                ],
+                "handoff_window": "next 8 hours",
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIsInstance(out.get("active_count"), int)
+        self.assertTrue(0 <= len(out.get("critical_items", [])) <= 3)
+        self.assertIsInstance(out.get("handoff_brief"), str)
+        self.assertEqual(len(out.get("recommended_checks", [])), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

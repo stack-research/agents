@@ -1,0 +1,35 @@
+id: support-ops.handoff-agent
+name: handoff-agent
+version: 0.1.0
+summary: |
+  Generates shift-transition incident handoff briefs from active incident records
+  so incoming operators can continue execution without context loss.
+owners:
+  - support-platform
+inputs:
+  - name: shift_label
+    type: string
+    required: true
+  - name: incidents
+    type: object[]
+    required: true
+  - name: handoff_window
+    type: string
+    required: false
+    default: next 8 hours
+outputs:
+  - name: active_count
+    type: int
+  - name: critical_items
+    type: string[]
+  - name: handoff_brief
+    type: string
+  - name: recommended_checks
+    type: string[]
+rules:
+  - Treat sev1 and sev2 non-resolved incidents as critical handoff items.
+  - Keep handoff_brief concise and operational.
+  - recommended_checks must contain exactly 3 action lines.
+constraints:
+  - critical_items must contain at most 3 entries.
+  - Output must contain exactly the four output keys.

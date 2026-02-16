@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from local_agents.engine import run_agent, run_summary_agent
+from local_agents.engine import run_agent, run_handoff_agent, run_summary_agent
 
 
 class SupportOpsTests(unittest.TestCase):
@@ -46,8 +46,35 @@ class SupportOpsTests(unittest.TestCase):
                 "tickets": [{"priority": "p2", "category": "bug"}],
             },
         )
+        handoff = run_agent(
+            agent="handoff-agent",
+            payload={
+                "shift_label": "night-shift-2026-02-16",
+                "incidents": [
+                    {"id": "inc-1", "severity": "sev1", "status": "mitigating", "owner": "oncall-a"},
+                    {"id": "inc-2", "severity": "sev3", "status": "resolved", "owner": "oncall-b"},
+                ],
+            },
+        )
         self.assertIn("summary", out)
         self.assertIn("priority_breakdown", out)
+        self.assertIn("handoff_brief", handoff)
+
+    def test_handoff_agent_output_shape(self) -> None:
+        out = run_handoff_agent(
+            {
+                "shift_label": "night-shift-2026-02-16",
+                "incidents": [
+                    {"id": "inc-1", "severity": "sev1", "status": "mitigating", "owner": "oncall-a"},
+                    {"id": "inc-2", "severity": "sev2", "status": "investigating", "owner": "oncall-b"},
+                    {"id": "inc-3", "severity": "sev3", "status": "resolved", "owner": "oncall-c"},
+                ],
+                "handoff_window": "next 8 hours",
+            }
+        )
+        self.assertEqual(out["active_count"], 2)
+        self.assertTrue(1 <= len(out["critical_items"]) <= 3)
+        self.assertEqual(len(out["recommended_checks"]), 3)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,27 @@
+{
+  "shift_label": "night-shift-2026-02-16",
+  "incidents": [
+    {
+      "id": "inc-auth-102",
+      "severity": "sev1",
+      "status": "mitigating",
+      "owner": "oncall-auth",
+      "next_step": "verify rollback metrics"
+    },
+    {
+      "id": "inc-billing-223",
+      "severity": "sev2",
+      "status": "investigating",
+      "owner": "oncall-payments",
+      "next_step": "confirm queue drain"
+    },
+    {
+      "id": "inc-search-054",
+      "severity": "sev3",
+      "status": "resolved",
+      "owner": "oncall-search",
+      "next_step": "close postmortem draft"
+    }
+  ],
+  "handoff_window": "next 8 hours"
+}

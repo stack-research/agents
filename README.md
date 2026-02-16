@@ -37,6 +37,7 @@ catalog/
    - `triage-agent`: converts inbound support text into priority/category/next-action.
    - `reply-drafter-agent`: drafts concise customer reply subject/body from structured triage fields.
    - `summary-agent`: summarizes weekly support ticket trends and follow-up actions.
+   - `handoff-agent`: generates shift-transition briefs from active incidents.
 3. `security-ops`
    - `agentic-security-scanner-agent`: scans repo controls and maps findings to OWASP ASI categories.
 4. `planner-executor`
@@ -59,6 +60,7 @@ catalog/
 - `python3 scripts/run_agent.py --agent support-ops.triage-agent --input catalog/projects/support-ops/agents/triage-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent support-ops.reply-drafter-agent --input catalog/projects/support-ops/agents/reply-drafter-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent support-ops.summary-agent --input catalog/projects/support-ops/agents/summary-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent support-ops.handoff-agent --input catalog/projects/support-ops/agents/handoff-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
@@ -241,7 +243,7 @@ and returns a single structured object with route decision, target output, check
 The test suite currently includes:
 
 - behavior tests for local agent runtime logic.
-- support-ops deterministic and LLM behavior tests (triage/reply/summary).
+- support-ops deterministic and LLM behavior tests (triage/reply/summary/handoff).
 - pipeline composition tests.
 - ASI01 goal-hijack adversarial regression tests.
 - ASI01 goal-hijack LLM adversarial regression tests.
@@ -298,4 +300,4 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 
 ## Next Ideas
 
-- Add a `handoff-agent` to generate shift-transition briefs from active incidents.
+- None queued right now (intentionally cleared).

@@ -319,6 +319,82 @@ def run_summary_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_handoff_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    shift_label = require(payload, "shift_label")
+    incidents = require(payload, "incidents")
+    handoff_window = payload.get("handoff_window", "next 8 hours")
+
+    if not isinstance(shift_label, str) or not shift_label.strip():
+        raise ValidationError("shift_label must be a non-empty string")
+    if not isinstance(incidents, list):
+        raise ValidationError("incidents must be an array")
+    if not isinstance(handoff_window, str) or not handoff_window.strip():
+        raise ValidationError("handoff_window must be a non-empty string")
+
+    allowed_severity = {"sev1", "sev2", "sev3", "sev4"}
+    allowed_status = {"investigating", "mitigating", "monitoring", "open", "resolved"}
+    active_count = 0
+    critical_items: list[str] = []
+    unowned_count = 0
+
+    for item in incidents:
+        if not isinstance(item, dict):
+            raise ValidationError("each incident must be an object")
+        incident_id = item.get("id")
+        severity = item.get("severity")
+        status = item.get("status")
+        owner = item.get("owner", "")
+        next_step = item.get("next_step", "")
+        if not isinstance(incident_id, str) or not incident_id.strip():
+            raise ValidationError("incident id must be a non-empty string")
+        if severity not in allowed_severity:
+            raise ValidationError("incident severity must be one of sev1,sev2,sev3,sev4")
+        if status not in allowed_status:
+            raise ValidationError("incident status must be one of investigating,mitigating,monitoring,open,resolved")
+        if owner is not None and not isinstance(owner, str):
+            raise ValidationError("incident owner must be a string when provided")
+        if next_step is not None and not isinstance(next_step, str):
+            raise ValidationError("incident next_step must be a string when provided")
+
+        if status != "resolved":
+            active_count += 1
+        if severity in {"sev1", "sev2"} and status != "resolved":
+            safe_item = sanitize_untrusted_text(f"{incident_id}:{severity}:{status}")
+            critical_items.append(" ".join(safe_item.split()[:4]))
+        if not owner or not owner.strip():
+            unowned_count += 1
+
+    safe_shift = sanitize_untrusted_text(shift_label.strip())
+    safe_window = sanitize_untrusted_text(handoff_window.strip())
+    top_critical = ", ".join(critical_items[:3]) if critical_items else "none"
+    handoff_brief = (
+        f"Handoff for {safe_shift}: {active_count} active incidents for {safe_window}. "
+        f"Critical items: {top_critical}. Keep updates in the incident channel and checkpoint owner handoff."
+    )
+    handoff_brief = " ".join(handoff_brief.split()[:90])
+
+    recommended_checks = [
+        "Confirm incident owners acknowledge handoff and next-step deadlines",
+        "Post one timeline update for each active sev1/sev2 incident",
+        "Re-check mitigation status before end of current shift window",
+    ]
+    if unowned_count > 0:
+        recommended_checks[0] = "Assign owner for unowned incidents and confirm acknowledgement"
+    if active_count == 0:
+        recommended_checks = [
+            "Verify no hidden blockers remain in pending queues",
+            "Record clean handoff note and monitoring posture",
+            "Keep alert channel watch active for the next shift window",
+        ]
+
+    return {
+        "active_count": active_count,
+        "critical_items": critical_items[:3],
+        "handoff_brief": handoff_brief,
+        "recommended_checks": recommended_checks,
+    }
+
+
 def run_agentic_security_scanner_agent(payload: dict[str, Any]) -> dict[str, Any]:
     target_path = payload.get("target_path", ".")
     if not isinstance(target_path, str) or not target_path.strip():
@@ -541,6 +617,9 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     if any(token in lowered for token in ["ticket", "incident", "cannot", "login", "support", "customer"]):
         target_agent = "support-ops.triage-agent"
         rationale = "Support issue intent detected; route to triage."
+    elif any(token in lowered for token in ["handoff", "shift transition", "on-call handover", "incident handover"]):
+        target_agent = "support-ops.handoff-agent"
+        rationale = "Handoff intent detected; route to handoff agent."
     elif any(token in lowered for token in ["test", "qa", "acceptance", "scenario"]):
         target_agent = "qa-ops.test-case-generator-agent"
         rationale = "QA/test intent detected; route to test-case generator."
@@ -628,6 +707,7 @@ def run_agent(
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
+            run_handoff_agent_llm,
             run_summary_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
@@ -667,6 +747,13 @@ def run_agent(
             return run_summary_agent(payload)
         if selected_mode == "llm":
             return run_summary_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"handoff-agent", "support-ops.handoff-agent"}:
+        if selected_mode == "deterministic":
+            return run_handoff_agent(payload)
+        if selected_mode == "llm":
+            return run_handoff_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"agentic-security-scanner-agent", "security-ops.agentic-security-scanner-agent"}:

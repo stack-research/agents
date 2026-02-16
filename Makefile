@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -56,6 +56,9 @@ run-reply-drafter-example:
 run-summary-example:
 	python3 scripts/run_agent.py --agent support-ops.summary-agent --input catalog/projects/support-ops/agents/summary-agent/examples/example-input.json --pretty
 
+run-handoff-example:
+	python3 scripts/run_agent.py --agent support-ops.handoff-agent --input catalog/projects/support-ops/agents/handoff-agent/examples/example-input.json --pretty
+
 run-planner-example:
 	python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty
 
@@ -106,6 +109,9 @@ run-reply-drafter-llm: check-policy-pack-llm
 
 run-summary-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent support-ops.summary-agent --input catalog/projects/support-ops/agents/summary-agent/examples/example-input.json --pretty
+
+run-handoff-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent support-ops.handoff-agent --input catalog/projects/support-ops/agents/handoff-agent/examples/example-input.json --pretty
 
 run-planner-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty

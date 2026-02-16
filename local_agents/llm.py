@@ -348,6 +348,61 @@ Input:
     }
 
 
+def run_handoff_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    shift_label = require(payload, "shift_label")
+    incidents = require(payload, "incidents")
+    handoff_window = payload.get("handoff_window", "next 8 hours")
+
+    if not isinstance(shift_label, str) or not shift_label.strip():
+        raise ValidationError("shift_label must be a non-empty string")
+    if not isinstance(incidents, list):
+        raise ValidationError("incidents must be an array")
+    if not isinstance(handoff_window, str) or not handoff_window.strip():
+        raise ValidationError("handoff_window must be a non-empty string")
+
+    prompt = f"""
+You are handoff-agent.
+Return only JSON with keys active_count, critical_items, handoff_brief, recommended_checks.
+Rules:
+- active_count must be a non-negative integer.
+- critical_items must be an array of up to 3 concise strings.
+- handoff_brief must be non-empty and under 90 words.
+- recommended_checks must contain exactly 3 concise imperative strings.
+Input:
+{{"shift_label":{json.dumps(shift_label)},"incidents":{json.dumps(incidents)},"handoff_window":{json.dumps(handoff_window)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    active_count = out.get("active_count")
+    critical_items = out.get("critical_items")
+    handoff_brief = out.get("handoff_brief")
+    recommended_checks = out.get("recommended_checks")
+
+    if not isinstance(active_count, int) or active_count < 0:
+        raise ValidationError("LLM output active_count must be a non-negative integer")
+    if not isinstance(critical_items, list) or len(critical_items) > 3:
+        raise ValidationError("LLM output critical_items must have at most 3 items")
+    if not all(isinstance(item, str) and item.strip() for item in critical_items):
+        raise ValidationError("LLM output critical_items items must be non-empty strings")
+    if not isinstance(handoff_brief, str) or not handoff_brief.strip():
+        raise ValidationError("LLM output handoff_brief must be a non-empty string")
+    if not isinstance(recommended_checks, list) or len(recommended_checks) != 3:
+        raise ValidationError("LLM output recommended_checks must contain exactly 3 items")
+    if not all(isinstance(item, str) and item.strip() for item in recommended_checks):
+        raise ValidationError("LLM output recommended_checks items must be non-empty strings")
+
+    safe_critical = [sanitize_untrusted_text(" ".join(item.strip().split()[:4])) for item in critical_items]
+    safe_brief = sanitize_untrusted_text(" ".join(handoff_brief.strip().split()[:90]))
+    safe_checks = [sanitize_untrusted_text(" ".join(item.strip().split()[:16])) for item in recommended_checks]
+    return {
+        "active_count": active_count,
+        "critical_items": safe_critical,
+        "handoff_brief": safe_brief,
+        "recommended_checks": safe_checks,
+    }
+
+
 def run_planner_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     goal = require(payload, "goal")
     constraints = payload.get("constraints", [])

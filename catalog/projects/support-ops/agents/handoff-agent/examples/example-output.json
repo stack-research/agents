@@ -1,0 +1,13 @@
+{
+  "active_count": 2,
+  "critical_items": [
+    "inc-auth-102:sev1:mitigating",
+    "inc-billing-223:sev2:investigating"
+  ],
+  "handoff_brief": "Handoff for night-shift-2026-02-16: 2 active incidents for next 8 hours. Critical items: inc-auth-102:sev1:mitigating, inc-billing-223:sev2:investigating. Keep updates in the incident channel and checkpoint owner handoff.",
+  "recommended_checks": [
+    "Confirm incident owners acknowledge handoff and next-step deadlines",
+    "Post one timeline update for each active sev1/sev2 incident",
+    "Re-check mitigation status before end of current shift window"
+  ]
+}

@@ -120,6 +120,24 @@ class LLMIntegrationTests(unittest.TestCase):
         self.assertIsInstance(out["priority_breakdown"], dict)
         self.assertIsInstance(out["summary"], str)
 
+    def test_handoff_output_shape(self) -> None:
+        out = run_agent(
+            agent="support-ops.handoff-agent",
+            payload={
+                "shift_label": "night-shift-2026-02-16",
+                "incidents": [
+                    {"id": "inc-1", "severity": "sev1", "status": "mitigating", "owner": "oncall-a"},
+                    {"id": "inc-2", "severity": "sev2", "status": "open", "owner": "oncall-b"},
+                ],
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIsInstance(out["active_count"], int)
+        self.assertIsInstance(out["critical_items"], list)
+        self.assertIsInstance(out["handoff_brief"], str)
+
 
 if __name__ == "__main__":
     unittest.main()
