@@ -44,6 +44,9 @@ catalog/
 5. `research-ops`
    - `retrieval-agent`: extracts bounded notes from query + source hints.
    - `synthesis-agent`: converts notes into audience-aware summary and actions.
+6. `qa-ops`
+   - `test-case-generator-agent`: generates bounded QA scenarios from feature requirements.
+   - `regression-triage-agent`: classifies regression cause/severity and proposes follow-up actions.
 
 ## Run Agents Locally
 
@@ -56,6 +59,8 @@ catalog/
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent qa-ops.test-case-generator-agent --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`

@@ -1,0 +1,9 @@
+{
+  "probable_cause": "dependency",
+  "severity": "sev2",
+  "recommended_actions": [
+    "Reproduce failure with focused logs for: Production timeout after dependency version update",
+    "Compare failure window with most recent merged changes",
+    "Review changed components: auth-service, sdk-client"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "feature": "SSO login flow",
+  "acceptance_criteria": [
+    "Users can sign in with SAML",
+    "Invalid assertions are rejected"
+  ]
+}

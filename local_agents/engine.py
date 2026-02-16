@@ -382,6 +382,79 @@ def run_synthesis_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return {"headline": headline, "summary": summary, "next_actions": next_actions}
 
 
+def run_test_case_generator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    feature = require(payload, "feature")
+    acceptance_criteria = payload.get("acceptance_criteria", [])
+
+    if not isinstance(feature, str) or not feature.strip():
+        raise ValidationError("feature must be a non-empty string")
+    if acceptance_criteria is None:
+        acceptance_criteria = []
+    if not isinstance(acceptance_criteria, list) or not all(isinstance(item, str) for item in acceptance_criteria):
+        raise ValidationError("acceptance_criteria must be an array of strings")
+
+    safe_feature = sanitize_untrusted_text(feature.strip())
+    criteria = [sanitize_untrusted_text(item.strip()) for item in acceptance_criteria if item.strip()]
+    criteria_snippet = criteria[:2] if criteria else ["basic flow"]
+
+    cases = [
+        f"Happy path: validate {safe_feature} with {criteria_snippet[0]}",
+        f"Validation edge: reject invalid input for {safe_feature}",
+        f"Boundary check: enforce limits and defaults for {safe_feature}",
+        f"Failure path: verify clear error handling for {safe_feature}",
+        f"Security check: block unauthorized access during {safe_feature}",
+    ]
+    risk_focus = "high" if any(token in safe_feature.lower() for token in ["auth", "payment", "billing", "admin"]) else "medium"
+    return {"test_cases": [" ".join(case.split()[:18]) for case in cases], "risk_focus": risk_focus}
+
+
+def run_regression_triage_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    failure_summary = require(payload, "failure_summary")
+    changed_components = payload.get("changed_components", [])
+
+    if not isinstance(failure_summary, str) or not failure_summary.strip():
+        raise ValidationError("failure_summary must be a non-empty string")
+    if changed_components is None:
+        changed_components = []
+    if not isinstance(changed_components, list) or not all(isinstance(item, str) for item in changed_components):
+        raise ValidationError("changed_components must be an array of strings")
+
+    lowered = failure_summary.lower()
+    if any(token in lowered for token in ["timeout", "latency", "unreachable", "dns", "network"]):
+        probable_cause = "infra"
+    elif any(token in lowered for token in ["version", "package", "dependency", "sdk"]):
+        probable_cause = "dependency"
+    elif any(token in lowered for token in ["config", "flag", "env", "setting"]):
+        probable_cause = "config"
+    elif any(token in lowered for token in ["fixture", "seed", "test data", "dataset"]):
+        probable_cause = "test-data"
+    elif any(token in lowered for token in ["exception", "null", "panic", "traceback", "assert"]):
+        probable_cause = "code"
+    else:
+        probable_cause = "unknown"
+
+    severity = "sev2" if any(token in lowered for token in ["production", "outage", "critical"]) else "sev3"
+    if any(token in lowered for token in ["minor", "cosmetic", "non-blocking"]):
+        severity = "sev4"
+    if "data loss" in lowered or "security breach" in lowered:
+        severity = "sev1"
+
+    safe_failure = sanitize_untrusted_text(failure_summary.strip())
+    changed = ", ".join(
+        sanitize_untrusted_text(item.strip()) for item in changed_components if isinstance(item, str) and item.strip()
+    )
+    actions = [
+        f"Reproduce failure with focused logs for: {safe_failure}",
+        "Compare failure window with most recent merged changes",
+        f"Review changed components: {changed}" if changed else "Review changed components linked to the failing area",
+    ]
+    return {
+        "probable_cause": probable_cause,
+        "severity": severity,
+        "recommended_actions": [" ".join(action.split()[:18]) for action in actions],
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -400,9 +473,11 @@ def run_agent(
             run_executor_agent_llm,
             run_heartbeat_agent_llm,
             run_planner_agent_llm,
+            run_regression_triage_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_synthesis_agent_llm,
+            run_test_case_generator_agent_llm,
             run_triage_agent_llm,
         )
 
@@ -465,6 +540,20 @@ def run_agent(
             return run_synthesis_agent(payload)
         if selected_mode == "llm":
             return run_synthesis_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"test-case-generator-agent", "qa-ops.test-case-generator-agent"}:
+        if selected_mode == "deterministic":
+            return run_test_case_generator_agent(payload)
+        if selected_mode == "llm":
+            return run_test_case_generator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"regression-triage-agent", "qa-ops.regression-triage-agent"}:
+        if selected_mode == "deterministic":
+            return run_regression_triage_agent(payload)
+        if selected_mode == "llm":
+            return run_regression_triage_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

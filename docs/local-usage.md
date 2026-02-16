@@ -79,6 +79,24 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Test-case generator example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent qa-ops.test-case-generator-agent \
+  --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json \
+  --pretty
+```
+
+Regression triage example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent qa-ops.regression-triage-agent \
+  --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -113,6 +131,8 @@ Accepted `--agent` values:
 - `planner-executor.executor-agent` or `executor-agent`
 - `research-ops.retrieval-agent` or `retrieval-agent`
 - `research-ops.synthesis-agent` or `synthesis-agent`
+- `qa-ops.test-case-generator-agent` or `test-case-generator-agent`
+- `qa-ops.regression-triage-agent` or `regression-triage-agent`
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
 
 ## LLM Mode (Fast Local Model)
@@ -166,6 +186,8 @@ make run-planner-example
 make run-executor-example
 make run-retrieval-example
 make run-synthesis-example
+make run-test-case-generator-example
+make run-regression-triage-example
 make run-security-scan-example
 make run-support-pipeline-example
 make run-planner-executor-pipeline-example
@@ -177,6 +199,8 @@ make run-planner-llm
 make run-executor-llm
 make run-retrieval-llm
 make run-synthesis-llm
+make run-test-case-generator-llm
+make run-regression-triage-llm
 make run-support-pipeline-llm
 make run-planner-executor-pipeline-llm
 ```

@@ -1,0 +1,27 @@
+id: qa-ops.regression-triage-agent
+name: regression-triage-agent
+version: 0.1.0
+summary: |
+  Triages regression failures into probable cause, severity, and next investigation actions.
+owners:
+  - platform-agents
+inputs:
+  - name: failure_summary
+    type: string
+    required: true
+  - name: changed_components
+    type: array[string]
+    required: false
+outputs:
+  - name: probable_cause
+    type: enum[code,config,dependency,infra,test-data,unknown]
+  - name: severity
+    type: enum[sev1,sev2,sev3,sev4]
+  - name: recommended_actions
+    type: array[string]
+rules:
+  - probable_cause must map to one allowed category.
+  - recommended_actions should be concrete and bounded.
+constraints:
+  - recommended_actions length should stay between 2 and 4.
+  - avoid unsafe command content.

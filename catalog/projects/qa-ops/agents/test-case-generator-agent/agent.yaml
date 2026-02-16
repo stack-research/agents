@@ -1,0 +1,25 @@
+id: qa-ops.test-case-generator-agent
+name: test-case-generator-agent
+version: 0.1.0
+summary: |
+  Generates bounded test case lists from feature and acceptance criteria input.
+owners:
+  - platform-agents
+inputs:
+  - name: feature
+    type: string
+    required: true
+  - name: acceptance_criteria
+    type: array[string]
+    required: false
+outputs:
+  - name: test_cases
+    type: array[string]
+  - name: risk_focus
+    type: enum[low,medium,high]
+rules:
+  - Return 4 to 8 concise test cases.
+  - Include happy path, edge, boundary, and failure-oriented checks.
+constraints:
+  - Avoid unsafe command content.
+  - Keep each test case concise.

@@ -446,3 +446,102 @@ Input:
     safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:80]))
     safe_actions = [sanitize_untrusted_text(" ".join(item.strip().split()[:16])) for item in next_actions]
     return {"headline": safe_headline, "summary": safe_summary, "next_actions": safe_actions}
+
+
+def run_test_case_generator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    feature = require(payload, "feature")
+    acceptance_criteria = payload.get("acceptance_criteria", [])
+
+    if not isinstance(feature, str) or not feature.strip():
+        raise ValidationError("feature must be a non-empty string")
+    if acceptance_criteria is None:
+        acceptance_criteria = []
+    if not isinstance(acceptance_criteria, list) or not all(isinstance(item, str) for item in acceptance_criteria):
+        raise ValidationError("acceptance_criteria must be an array of strings")
+
+    prompt = f"""
+You are test-case-generator-agent.
+Return only JSON with keys test_cases and risk_focus.
+Rules:
+- test_cases must be an array of 4 to 8 concise test descriptions.
+- each test case under 18 words.
+- risk_focus must be one of low, medium, high.
+Input:
+{{"feature":{json.dumps(feature)},"acceptance_criteria":{json.dumps(acceptance_criteria)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    test_cases = out.get("test_cases")
+    risk_focus = out.get("risk_focus")
+
+    if not isinstance(test_cases, list):
+        raise ValidationError("LLM output test_cases must be an array")
+    normalized_cases: list[str] = []
+    for item in test_cases:
+        if isinstance(item, str) and item.strip():
+            normalized_cases.append(item.strip())
+        elif item is not None:
+            coerced = str(item).strip()
+            if coerced:
+                normalized_cases.append(coerced)
+    normalized_focus = risk_focus if risk_focus in {"low", "medium", "high"} else "medium"
+    safe_cases = [sanitize_untrusted_text(" ".join(item.split()[:18])) for item in normalized_cases[:8]]
+
+    defaults = [
+        f"Happy path: validate {sanitize_untrusted_text(feature)}",
+        f"Validation edge: reject invalid input for {sanitize_untrusted_text(feature)}",
+        f"Boundary check: enforce limits for {sanitize_untrusted_text(feature)}",
+        f"Failure path: verify clear error handling for {sanitize_untrusted_text(feature)}",
+    ]
+    for default_case in defaults:
+        if len(safe_cases) >= 4:
+            break
+        safe_cases.append(" ".join(default_case.split()[:18]))
+
+    return {"test_cases": safe_cases[:8], "risk_focus": normalized_focus}
+
+
+def run_regression_triage_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    failure_summary = require(payload, "failure_summary")
+    changed_components = payload.get("changed_components", [])
+
+    if not isinstance(failure_summary, str) or not failure_summary.strip():
+        raise ValidationError("failure_summary must be a non-empty string")
+    if changed_components is None:
+        changed_components = []
+    if not isinstance(changed_components, list) or not all(isinstance(item, str) for item in changed_components):
+        raise ValidationError("changed_components must be an array of strings")
+
+    prompt = f"""
+You are regression-triage-agent.
+Return only JSON with keys probable_cause, severity, recommended_actions.
+Rules:
+- probable_cause must be one of code, config, dependency, infra, test-data, unknown.
+- severity must be one of sev1, sev2, sev3, sev4.
+- recommended_actions must contain 2 to 4 concise strings.
+Input:
+{{"failure_summary":{json.dumps(failure_summary)},"changed_components":{json.dumps(changed_components)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    probable_cause = out.get("probable_cause")
+    severity = out.get("severity")
+    recommended_actions = out.get("recommended_actions")
+
+    if probable_cause not in {"code", "config", "dependency", "infra", "test-data", "unknown"}:
+        raise ValidationError("LLM output probable_cause must be in allowed enum")
+    if severity not in {"sev1", "sev2", "sev3", "sev4"}:
+        raise ValidationError("LLM output severity must be one of sev1,sev2,sev3,sev4")
+    if not isinstance(recommended_actions, list) or not (2 <= len(recommended_actions) <= 4):
+        raise ValidationError("LLM output recommended_actions must contain 2 to 4 items")
+    if not all(isinstance(item, str) and item.strip() for item in recommended_actions):
+        raise ValidationError("LLM output recommended_actions items must be non-empty strings")
+
+    safe_actions = [sanitize_untrusted_text(" ".join(item.strip().split()[:18])) for item in recommended_actions]
+    return {
+        "probable_cause": probable_cause,
+        "severity": severity,
+        "recommended_actions": safe_actions,
+    }

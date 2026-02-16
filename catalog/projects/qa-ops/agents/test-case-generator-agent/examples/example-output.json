@@ -1,0 +1,10 @@
+{
+  "test_cases": [
+    "Happy path: validate SSO login flow with Users can sign in with SAML",
+    "Validation edge: reject invalid input for SSO login flow",
+    "Boundary check: enforce limits and defaults for SSO login flow",
+    "Failure path: verify clear error handling for SSO login flow",
+    "Security check: block unauthorized access during SSO login flow"
+  ],
+  "risk_focus": "medium"
+}

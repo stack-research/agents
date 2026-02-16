@@ -1,0 +1,7 @@
+{
+  "failure_summary": "Production timeout after dependency version update",
+  "changed_components": [
+    "auth-service",
+    "sdk-client"
+  ]
+}
