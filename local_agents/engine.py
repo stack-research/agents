@@ -259,6 +259,74 @@ def run_agentic_security_scanner_agent(payload: dict[str, Any]) -> dict[str, Any
     return scan_repository_controls(target_path.strip())
 
 
+def run_planner_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    goal = require(payload, "goal")
+    constraints = payload.get("constraints", [])
+
+    if not isinstance(goal, str) or not goal.strip():
+        raise ValidationError("goal must be a non-empty string")
+    if constraints is None:
+        constraints = []
+    if not isinstance(constraints, list) or not all(isinstance(item, str) for item in constraints):
+        raise ValidationError("constraints must be an array of strings")
+
+    lowered = goal.lower()
+    if any(token in lowered for token in {"security", "breach", "incident", "outage", "data loss"}):
+        risk_level = "high"
+    elif any(token in lowered for token in {"migrate", "delete", "billing", "auth", "production"}):
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    safe_goal = sanitize_untrusted_text(goal.strip())
+    first = f"Clarify objective and success criteria for: {safe_goal}"
+    second = "List dependencies, owners, and required access upfront"
+    third = "Create implementation checklist with rollback and validation"
+    fourth = "Execute checklist in small stages and capture evidence"
+    fifth = "Summarize outcome, risks, and next follow-up actions"
+    plan_steps = [first, second, third, fourth, fifth]
+
+    sanitized_constraints = [
+        sanitize_untrusted_text(item.strip()) for item in constraints if isinstance(item, str) and item.strip()
+    ]
+    if sanitized_constraints:
+        plan_steps.append(f"Respect constraints: {', '.join(sanitized_constraints[:3])}")
+
+    clipped_steps = [" ".join(step.split()[:18]) for step in plan_steps[:6]]
+    return {"plan_steps": clipped_steps, "risk_level": risk_level}
+
+
+def run_executor_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    plan_steps = require(payload, "plan_steps")
+    context = payload.get("context", "")
+
+    if not isinstance(plan_steps, list) or not plan_steps or not all(isinstance(item, str) for item in plan_steps):
+        raise ValidationError("plan_steps must be a non-empty string array")
+    if context is None:
+        context = ""
+    if not isinstance(context, str):
+        raise ValidationError("context must be a string when provided")
+
+    safe_context = sanitize_untrusted_text(context.strip())
+    total = min(len(plan_steps), 8)
+    completed_steps = max(1, min(total, 3 + (1 if safe_context else 0)))
+    blocked_steps = max(0, total - completed_steps)
+    status = "done" if blocked_steps == 0 else "partial"
+
+    summary = (
+        f"Executed {completed_steps} of {total} planned steps. "
+        f"Status: {status}. "
+        f"{'Context considered: ' + safe_context if safe_context else 'No additional context provided.'}"
+    )
+    summary = " ".join(summary.split()[:60])
+    return {
+        "status": status,
+        "completed_steps": completed_steps,
+        "blocked_steps": blocked_steps,
+        "summary": summary,
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -274,7 +342,9 @@ def run_agent(
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
             run_classifier_agent_llm,
+            run_executor_agent_llm,
             run_heartbeat_agent_llm,
+            run_planner_agent_llm,
             run_reply_drafter_agent_llm,
             run_triage_agent_llm,
         )
@@ -311,5 +381,19 @@ def run_agent(
         if selected_mode == "deterministic":
             return run_agentic_security_scanner_agent(payload)
         raise ValidationError("security scanner currently supports deterministic mode only")
+
+    if canonical in {"planner-agent", "planner-executor.planner-agent"}:
+        if selected_mode == "deterministic":
+            return run_planner_agent(payload)
+        if selected_mode == "llm":
+            return run_planner_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"executor-agent", "planner-executor.executor-agent"}:
+        if selected_mode == "deterministic":
+            return run_executor_agent(payload)
+        if selected_mode == "llm":
+            return run_executor_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

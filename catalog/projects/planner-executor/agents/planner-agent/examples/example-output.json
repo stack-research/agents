@@ -1,0 +1,10 @@
+{
+  "plan_steps": [
+    "Clarify objective and success criteria for: Prepare a safe rollout plan",
+    "List dependencies, owners, and required access upfront",
+    "Create implementation checklist with rollback and validation",
+    "Execute checklist in small stages and capture evidence",
+    "Summarize outcome, risks, and next follow-up actions"
+  ],
+  "risk_level": "medium"
+}

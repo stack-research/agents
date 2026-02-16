@@ -38,6 +38,9 @@ catalog/
    - `reply-drafter-agent`: drafts concise customer reply subject/body from structured triage fields.
 3. `security-ops`
    - `agentic-security-scanner-agent`: scans repo controls and maps findings to OWASP ASI categories.
+4. `planner-executor`
+   - `planner-agent`: converts a goal and constraints into a bounded execution plan.
+   - `executor-agent`: summarizes progress and completion state from plan steps.
 
 ## Run Agents Locally
 
@@ -46,6 +49,8 @@ catalog/
 - `python3 scripts/run_agent.py --agent support-ops.triage-agent --input catalog/projects/support-ops/agents/triage-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent support-ops.reply-drafter-agent --input catalog/projects/support-ops/agents/reply-drafter-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
+- `python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
@@ -101,3 +106,4 @@ The test suite currently includes:
 - Add schema checks for `agent.yaml` files in CI.
 - Add a `summary-agent` for support weekly trend rollups.
 - Add a policy pack file for ASI control baselines by environment.
+- Add a lightweight multi-agent pipeline script for planner -> executor composition.

@@ -1,0 +1,7 @@
+{
+  "goal": "Prepare a safe rollout plan for a billing migration",
+  "constraints": [
+    "No production downtime",
+    "Rollback under 10 minutes"
+  ]
+}

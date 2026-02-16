@@ -43,6 +43,24 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Planner example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent planner-executor.planner-agent \
+  --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json \
+  --pretty
+```
+
+Executor example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent planner-executor.executor-agent \
+  --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -65,6 +83,8 @@ Accepted `--agent` values:
 - `starter-kit.classifier-agent` or `classifier-agent`
 - `support-ops.triage-agent` or `triage-agent`
 - `support-ops.reply-drafter-agent` or `reply-drafter-agent`
+- `planner-executor.planner-agent` or `planner-agent`
+- `planner-executor.executor-agent` or `executor-agent`
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
 
 ## LLM Mode (Fast Local Model)
@@ -114,12 +134,16 @@ make run-heartbeat-example
 make run-classifier-example
 make run-triage-example
 make run-reply-drafter-example
+make run-planner-example
+make run-executor-example
 make run-security-scan-example
 make run-support-pipeline-example
 make run-heartbeat-llm
 make run-classifier-llm
 make run-triage-llm
 make run-reply-drafter-llm
+make run-planner-llm
+make run-executor-llm
 make run-support-pipeline-llm
 ```
 

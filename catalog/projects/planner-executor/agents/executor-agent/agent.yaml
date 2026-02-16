@@ -1,0 +1,29 @@
+id: planner-executor.executor-agent
+name: executor-agent
+version: 0.1.0
+summary: |
+  Summarizes execution status from a set of planned steps and optional context.
+owners:
+  - platform-agents
+inputs:
+  - name: plan_steps
+    type: array[string]
+    required: true
+  - name: context
+    type: string
+    required: false
+outputs:
+  - name: status
+    type: enum[done,partial]
+  - name: completed_steps
+    type: integer
+  - name: blocked_steps
+    type: integer
+  - name: summary
+    type: string
+rules:
+  - completed_steps and blocked_steps must be non-negative.
+  - summary should stay concise and reflect progress.
+constraints:
+  - Do not claim completion beyond provided plan steps.
+  - Keep summary under 60 words.

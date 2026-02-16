@@ -1,0 +1,25 @@
+id: planner-executor.planner-agent
+name: planner-agent
+version: 0.1.0
+summary: |
+  Converts a high-level goal and optional constraints into a short, bounded step plan.
+owners:
+  - platform-agents
+inputs:
+  - name: goal
+    type: string
+    required: true
+  - name: constraints
+    type: array[string]
+    required: false
+outputs:
+  - name: plan_steps
+    type: array[string]
+  - name: risk_level
+    type: enum[low,medium,high]
+rules:
+  - Plan must contain 3 to 6 concise execution steps.
+  - Each step should be imperative and under 18 words.
+constraints:
+  - Do not emit tool commands or shell snippets.
+  - Keep outputs deterministic in default mode.

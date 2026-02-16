@@ -5,7 +5,9 @@ from .engine import (
     run_agent,
     run_agentic_security_scanner_agent,
     run_classifier_agent,
+    run_executor_agent,
     run_heartbeat_agent,
+    run_planner_agent,
     run_reply_drafter_agent,
     run_triage_agent,
 )
@@ -17,5 +19,7 @@ __all__ = [
     "run_classifier_agent",
     "run_triage_agent",
     "run_reply_drafter_agent",
+    "run_planner_agent",
+    "run_executor_agent",
     "run_agentic_security_scanner_agent",
 ]

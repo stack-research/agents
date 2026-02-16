@@ -61,6 +61,8 @@ Repository-level runtime and tests:
 - `tests/test_asi10_rogue_agents.py` - ASI10 rogue-agent checks (deterministic).
 - `tests/test_asi10_rogue_agents_llm.py` - ASI10 rogue-agent checks in LLM mode.
 - `tests/test_security_scanner.py` - security scanner unit tests.
+- `tests/test_planner_executor.py` - deterministic planner/executor behavior tests.
+- `tests/test_planner_executor_llm.py` - planner/executor checks in LLM mode.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.
@@ -81,6 +83,9 @@ Repository-level runtime and tests:
   - `reply-drafter-agent`: drafts customer-facing email subject/reply from triage fields.
 - `security-ops`
   - `agentic-security-scanner-agent`: scans repo controls and maps findings to OWASP ASI categories.
+- `planner-executor`
+  - `planner-agent`: generates bounded execution steps and a risk level from a goal.
+  - `executor-agent`: reports execution status and summary from planned steps.
 
 ## Update Rule
 

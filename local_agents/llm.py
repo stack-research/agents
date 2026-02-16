@@ -158,9 +158,10 @@ Input:
     except ValidationError:
         repair_prompt = f"""
 You are a strict JSON repair assistant.
-Return only a valid JSON object with keys subject and reply.
-- subject: non-empty string under 12 words.
-- reply: non-empty string under 90 words.
+Return only a valid JSON object with keys label, confidence, rationale.
+- label: one of the provided labels.
+- confidence: number in [0,1].
+- rationale: non-empty short string.
 Repair this malformed model output:
 {json.dumps(raw)}
 """.strip()
@@ -272,3 +273,91 @@ Input:
     safe_subject = sanitize_untrusted_text(" ".join(subject.strip().split()[:12]))
     safe_reply = sanitize_untrusted_text(" ".join(reply.strip().split()[:90]))
     return {"subject": safe_subject, "reply": safe_reply}
+
+
+def run_planner_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    goal = require(payload, "goal")
+    constraints = payload.get("constraints", [])
+
+    if not isinstance(goal, str) or not goal.strip():
+        raise ValidationError("goal must be a non-empty string")
+    if constraints is None:
+        constraints = []
+    if not isinstance(constraints, list) or not all(isinstance(item, str) for item in constraints):
+        raise ValidationError("constraints must be an array of strings")
+
+    prompt = f"""
+You are planner-agent.
+Return only JSON with keys plan_steps and risk_level.
+Rules:
+- plan_steps must be 3 to 6 short imperative strings.
+- each plan step under 18 words.
+- risk_level must be one of low, medium, high.
+Input:
+{{"goal":{json.dumps(goal)},"constraints":{json.dumps(constraints)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    plan_steps = out.get("plan_steps")
+    risk_level = out.get("risk_level")
+
+    if not isinstance(plan_steps, list) or not (3 <= len(plan_steps) <= 6):
+        raise ValidationError("LLM output plan_steps must be an array with 3 to 6 items")
+    if not all(isinstance(item, str) and item.strip() for item in plan_steps):
+        raise ValidationError("LLM output plan_steps items must be non-empty strings")
+    if risk_level not in {"low", "medium", "high"}:
+        raise ValidationError("LLM output risk_level must be one of low,medium,high")
+
+    safe_steps = [sanitize_untrusted_text(" ".join(step.strip().split()[:18])) for step in plan_steps]
+    return {"plan_steps": safe_steps, "risk_level": risk_level}
+
+
+def run_executor_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    plan_steps = require(payload, "plan_steps")
+    context = payload.get("context", "")
+
+    if not isinstance(plan_steps, list) or not plan_steps or not all(isinstance(item, str) for item in plan_steps):
+        raise ValidationError("plan_steps must be a non-empty string array")
+    if context is None:
+        context = ""
+    if not isinstance(context, str):
+        raise ValidationError("context must be a string when provided")
+
+    prompt = f"""
+You are executor-agent.
+Return only JSON with keys status, completed_steps, blocked_steps, summary.
+Rules:
+- status must be done or partial.
+- completed_steps and blocked_steps must be non-negative integers.
+- summary under 60 words.
+- completed_steps + blocked_steps must be <= number of input plan_steps.
+Input:
+{{"plan_steps":{json.dumps(plan_steps)},"context":{json.dumps(context)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    status = out.get("status")
+    completed_steps = out.get("completed_steps")
+    blocked_steps = out.get("blocked_steps")
+    summary = out.get("summary")
+
+    if status not in {"done", "partial"}:
+        raise ValidationError("LLM output status must be done or partial")
+    if not isinstance(completed_steps, int) or completed_steps < 0:
+        raise ValidationError("LLM output completed_steps must be a non-negative integer")
+    if not isinstance(blocked_steps, int) or blocked_steps < 0:
+        raise ValidationError("LLM output blocked_steps must be a non-negative integer")
+    if completed_steps + blocked_steps > len(plan_steps):
+        raise ValidationError("LLM output step counts exceed input plan size")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+
+    safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:60]))
+    return {
+        "status": status,
+        "completed_steps": completed_steps,
+        "blocked_steps": blocked_steps,
+        "summary": safe_summary,
+    }
