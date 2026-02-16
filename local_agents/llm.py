@@ -16,6 +16,7 @@ def _post_ollama(model: str, base_url: str, prompt: str) -> str:
         "model": model,
         "prompt": prompt,
         "stream": False,
+        "format": "json",
         "options": {"temperature": 0},
     }
     req = urllib.request.Request(
@@ -24,11 +25,19 @@ def _post_ollama(model: str, base_url: str, prompt: str) -> str:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.URLError as exc:
-        raise ValidationError(f"unable to reach LLM endpoint at {url}: {exc}") from exc
+    last_error: Exception | None = None
+    for _ in range(2):
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            break
+        except TimeoutError as exc:
+            last_error = exc
+            continue
+        except urllib.error.URLError as exc:
+            raise ValidationError(f"unable to reach LLM endpoint at {url}: {exc}") from exc
+    else:
+        raise ValidationError(f"LLM request timed out at {url}: {last_error}")
 
     text = payload.get("response")
     if not isinstance(text, str) or not text.strip():
@@ -41,6 +50,37 @@ def _extract_json(raw: str) -> dict[str, Any]:
     if candidate.startswith("```"):
         lines = [line for line in candidate.splitlines() if not line.strip().startswith("```")]
         candidate = "\n".join(lines).strip()
+
+    def _extract_first_object(text: str) -> str:
+        start = text.find("{")
+        if start < 0:
+            return text
+
+        depth = 0
+        in_string = False
+        escaping = False
+        for idx in range(start, len(text)):
+            char = text[idx]
+            if escaping:
+                escaping = False
+                continue
+            if char == "\\" and in_string:
+                escaping = True
+                continue
+            if char == '"':
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : idx + 1]
+        return text
+
+    candidate = _extract_first_object(candidate)
 
     try:
         parsed = json.loads(candidate)
@@ -113,7 +153,19 @@ Input:
 """.strip()
 
     raw = _post_ollama(model, base_url, prompt)
-    out = _extract_json(raw)
+    try:
+        out = _extract_json(raw)
+    except ValidationError:
+        repair_prompt = f"""
+You are a strict JSON repair assistant.
+Return only a valid JSON object with keys subject and reply.
+- subject: non-empty string under 12 words.
+- reply: non-empty string under 90 words.
+Repair this malformed model output:
+{json.dumps(raw)}
+""".strip()
+        repaired = _post_ollama(model, base_url, repair_prompt)
+        out = _extract_json(repaired)
 
     label = out.get("label")
     confidence = out.get("confidence")

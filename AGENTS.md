@@ -24,7 +24,7 @@ For any new agent behavior or security control:
 
 1. Add deterministic unit tests (default mode) under `/Users/macos-user/.projects/stack-research/agents/tests/`.
 2. Add LLM-mode tests for the same behavior/security path, with graceful skip when `AGENT_MODE!=llm` or Ollama is unavailable.
-3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01, ASI02, ASI03, ASI04, ASI05, ASI06, ASI07, and ASI08).
+3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01, ASI02, ASI03, ASI04, ASI05, ASI06, ASI07, ASI08, and ASI09).
 4. Ensure `make test` passes and update `make` targets when adding new security suites.
 5. Update `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` with any new test commands.
 
@@ -56,6 +56,8 @@ Repository-level runtime and tests:
 - `tests/test_asi07_inter_agent_comm_llm.py` - ASI07 inter-agent-communication checks in LLM mode.
 - `tests/test_asi08_cascading_failures.py` - ASI08 cascading-failure checks (deterministic).
 - `tests/test_asi08_cascading_failures_llm.py` - ASI08 cascading-failure checks in LLM mode.
+- `tests/test_asi09_human_agent_trust_exploitation.py` - ASI09 human-agent-trust-exploitation checks (deterministic).
+- `tests/test_asi09_human_agent_trust_exploitation_llm.py` - ASI09 human-agent-trust-exploitation checks in LLM mode.
 - `tests/test_security_scanner.py` - security scanner unit tests.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.

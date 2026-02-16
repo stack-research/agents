@@ -71,6 +71,16 @@ def sanitize_untrusted_text(text: str) -> str:
         r"route_to\s*=\s*external",
         r"delegate_to\s*=\s*attacker",
         r"a2a\s+override",
+        r"share\s+(?:your\s+)?password",
+        r"share\s+(?:your\s+)?2fa\s+code",
+        r"send\s+(?:your\s+)?otp",
+        r"disable\s+mfa",
+        r"ignore\s+(?:the\s+)?security\s+team",
+        r"trust\s+me",
+        r"urgent(?:ly)?\s+act\s+now",
+        r"guarantee(?:d)?\s+(?:fix|resolved)",
+        r"verified\s+admin",
+        r"official\s+support\s+portal",
         r"https?://\\S+",
     ]
     for pattern in patterns:
