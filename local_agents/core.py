@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlparse
 from typing import Any
 
 DEFAULT_LABELS = [
@@ -13,6 +14,9 @@ DEFAULT_LABELS = [
     "feedback",
     "unknown",
 ]
+
+APPROVED_LLM_MODELS = {"llama3.2:3b"}
+APPROVED_LLM_HOSTS = {"localhost", "127.0.0.1"}
 
 
 class ValidationError(ValueError):
@@ -54,3 +58,18 @@ def sanitize_untrusted_text(text: str) -> str:
         cleaned = re.sub(pattern, "[redacted]", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
+
+
+def validate_llm_runtime_source(model: str, base_url: str) -> None:
+    normalized_model = model.strip().lower()
+    if normalized_model not in APPROVED_LLM_MODELS:
+        raise ValidationError(
+            f"unapproved llm model: {model}. approved models: {sorted(APPROVED_LLM_MODELS)}"
+        )
+
+    parsed = urlparse(base_url)
+    host = (parsed.hostname or "").lower()
+    if host not in APPROVED_LLM_HOSTS:
+        raise ValidationError(
+            f"unapproved llm host: {host or '<empty>'}. approved hosts: {sorted(APPROVED_LLM_HOSTS)}"
+        )

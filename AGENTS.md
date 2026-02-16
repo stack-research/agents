@@ -24,7 +24,7 @@ For any new agent behavior or security control:
 
 1. Add deterministic unit tests (default mode) under `/Users/macos-user/.projects/stack-research/agents/tests/`.
 2. Add LLM-mode tests for the same behavior/security path, with graceful skip when `AGENT_MODE!=llm` or Ollama is unavailable.
-3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01, ASI02, and ASI03).
+3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01, ASI02, ASI03, and ASI04).
 4. Ensure `make test` passes and update `make` targets when adding new security suites.
 5. Update `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` with any new test commands.
 
@@ -46,6 +46,8 @@ Repository-level runtime and tests:
 - `tests/test_asi02_tool_misuse_llm.py` - ASI02 tool-misuse checks in LLM mode.
 - `tests/test_asi03_identity_privilege_abuse.py` - ASI03 identity/privilege-abuse checks (deterministic).
 - `tests/test_asi03_identity_privilege_abuse_llm.py` - ASI03 identity/privilege-abuse checks in LLM mode.
+- `tests/test_asi04_supply_chain.py` - ASI04 supply-chain/runtime-source checks (deterministic).
+- `tests/test_asi04_supply_chain_llm.py` - ASI04 supply-chain/runtime-source checks in LLM mode.
 - `tests/test_security_scanner.py` - security scanner unit tests.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.

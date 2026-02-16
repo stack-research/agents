@@ -5,7 +5,13 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from .core import DEFAULT_LABELS, ValidationError, require, sanitize_untrusted_text
+from .core import (
+    DEFAULT_LABELS,
+    ValidationError,
+    require,
+    sanitize_untrusted_text,
+    validate_llm_runtime_source,
+)
 from .security_scanner import scan_repository_controls
 
 
@@ -265,6 +271,7 @@ def run_agent(
     selected_base_url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:11434")
     canonical = agent.strip().lower()
     if selected_mode == "llm":
+        validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
             run_classifier_agent_llm,
             run_heartbeat_agent_llm,

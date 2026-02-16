@@ -7,10 +7,10 @@ test-verbose:
 	python3 -m unittest discover -s tests -v
 
 test-security:
-	python3 -m unittest tests.test_asi01_goal_hijack tests.test_asi02_tool_misuse tests.test_asi03_identity_privilege_abuse tests.test_security_scanner -v
+	python3 -m unittest tests.test_asi01_goal_hijack tests.test_asi02_tool_misuse tests.test_asi03_identity_privilege_abuse tests.test_asi04_supply_chain tests.test_security_scanner -v
 
 test-security-llm:
-	AGENT_MODE=llm python3 -m unittest tests.test_asi01_goal_hijack_llm tests.test_asi02_tool_misuse_llm tests.test_asi03_identity_privilege_abuse_llm -v
+	AGENT_MODE=llm python3 -m unittest tests.test_asi01_goal_hijack_llm tests.test_asi02_tool_misuse_llm tests.test_asi03_identity_privilege_abuse_llm tests.test_asi04_supply_chain_llm -v
 
 test-integration-llm:
 	AGENT_MODE=llm python3 -m unittest tests.test_integration_llm -v
