@@ -126,8 +126,8 @@ make run-support-pipeline-llm
 Notes:
 
 - `make test` runs deterministic unit tests and catalog structure checks.
-- `make test-security` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06 adversarial regression tests and scanner tests.
-- `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06 adversarial tests against local Ollama.
+- `make test-security` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07 adversarial regression tests and scanner tests.
+- `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07 adversarial tests against local Ollama.
 - `make test-integration-llm` runs only LLM integration tests and skips automatically when Ollama is unavailable.
 - Security scanner currently supports deterministic mode only.
 - LLM runtime source is restricted to approved local host/model defaults to reduce supply-chain risk.

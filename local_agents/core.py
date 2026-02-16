@@ -65,6 +65,12 @@ def sanitize_untrusted_text(text: str) -> str:
         r"poisoned\s+context",
         r"persist\s+this\s+instruction",
         r"ignore\s+future\s+policies",
+        r"agent-message:",
+        r"signed_by\s*=\s*system",
+        r"trusted\s+channel",
+        r"route_to\s*=\s*external",
+        r"delegate_to\s*=\s*attacker",
+        r"a2a\s+override",
         r"https?://\\S+",
     ]
     for pattern in patterns:
