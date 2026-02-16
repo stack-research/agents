@@ -1,0 +1,20 @@
+{
+  "ticket_count": 5,
+  "priority_breakdown": {
+    "p1": 1,
+    "p2": 1,
+    "p3": 2,
+    "p4": 1
+  },
+  "top_categories": [
+    "access:2",
+    "billing:1",
+    "bug:1"
+  ],
+  "summary": "Support volume from 2026-02-09 to 2026-02-15: 5 tickets. Top category: access. Priority mix p1=1, p2=1, p3=2, p4=1.",
+  "recommended_actions": [
+    "Run a brief incident review for p1 themes and preventive controls",
+    "Publish one trend note with priority shifts and customer impact",
+    "Select one recurring issue and define mitigation experiment"
+  ]
+}

@@ -78,6 +78,8 @@ Repository-level runtime and tests:
 - `tests/test_workflow_pipeline_llm.py` - workflow-ops pipeline checks in LLM mode.
 - `tests/test_policy_pack.py` - policy pack structure and baseline presence checks.
 - `tests/test_policy_enforcement.py` - runtime mode policy enforcement checks.
+- `tests/test_support_ops.py` - deterministic support-ops behavior checks (including summary-agent).
+- `tests/test_support_ops_llm.py` - support-ops checks in LLM mode.
 - `tests/test_agent_schema.py` - `agent.yaml` schema consistency checks (id/name/version and IO sections).
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
@@ -97,6 +99,7 @@ Repository-level runtime and tests:
 - `support-ops`
   - `triage-agent`: maps support requests to priority, category, and next action.
   - `reply-drafter-agent`: drafts customer-facing email subject/reply from triage fields.
+  - `summary-agent`: summarizes weekly support ticket trends and recommended follow-up actions.
 - `security-ops`
   - `agentic-security-scanner-agent`: scans repo controls and maps findings to OWASP ASI categories.
 - `planner-executor`

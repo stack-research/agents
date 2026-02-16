@@ -275,6 +275,79 @@ Input:
     return {"subject": safe_subject, "reply": safe_reply}
 
 
+def run_summary_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    period_start = require(payload, "period_start")
+    period_end = require(payload, "period_end")
+    tickets = require(payload, "tickets")
+    top_n_actions = payload.get("top_n_actions", 3)
+
+    if not isinstance(period_start, str) or not period_start.strip():
+        raise ValidationError("period_start must be a non-empty string")
+    if not isinstance(period_end, str) or not period_end.strip():
+        raise ValidationError("period_end must be a non-empty string")
+    if not isinstance(tickets, list):
+        raise ValidationError("tickets must be an array")
+    if not isinstance(top_n_actions, int) or top_n_actions < 2 or top_n_actions > 4:
+        raise ValidationError("top_n_actions must be an integer between 2 and 4")
+
+    prompt = f"""
+You are summary-agent.
+Return only JSON with keys ticket_count, priority_breakdown, top_categories, summary, recommended_actions.
+Rules:
+- ticket_count must be a non-negative integer.
+- priority_breakdown must contain keys p1,p2,p3,p4 with non-negative integer counts.
+- top_categories must be an array of up to 3 strings formatted as category:count.
+- summary must be non-empty and under 80 words.
+- recommended_actions must be an array with exactly top_n_actions concise strings.
+Input:
+{{"period_start":{json.dumps(period_start)},"period_end":{json.dumps(period_end)},"tickets":{json.dumps(tickets)},"top_n_actions":{top_n_actions}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+
+    ticket_count = out.get("ticket_count")
+    priority_breakdown = out.get("priority_breakdown")
+    top_categories = out.get("top_categories")
+    summary = out.get("summary")
+    recommended_actions = out.get("recommended_actions")
+
+    if not isinstance(ticket_count, int) or ticket_count < 0:
+        raise ValidationError("LLM output ticket_count must be a non-negative integer")
+    if not isinstance(priority_breakdown, dict):
+        raise ValidationError("LLM output priority_breakdown must be an object")
+    for key in ["p1", "p2", "p3", "p4"]:
+        value = priority_breakdown.get(key)
+        if not isinstance(value, int) or value < 0:
+            raise ValidationError("LLM output priority_breakdown values must be non-negative integers")
+    if not isinstance(top_categories, list) or len(top_categories) > 3:
+        raise ValidationError("LLM output top_categories must be an array with at most 3 items")
+    if not all(isinstance(item, str) and item.strip() for item in top_categories):
+        raise ValidationError("LLM output top_categories items must be non-empty strings")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+    if not isinstance(recommended_actions, list) or len(recommended_actions) != top_n_actions:
+        raise ValidationError("LLM output recommended_actions must match top_n_actions")
+    if not all(isinstance(item, str) and item.strip() for item in recommended_actions):
+        raise ValidationError("LLM output recommended_actions items must be non-empty strings")
+
+    safe_categories = [sanitize_untrusted_text(" ".join(item.strip().split()[:4])) for item in top_categories]
+    safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:80]))
+    safe_actions = [sanitize_untrusted_text(" ".join(item.strip().split()[:16])) for item in recommended_actions]
+    return {
+        "ticket_count": ticket_count,
+        "priority_breakdown": {
+            "p1": int(priority_breakdown["p1"]),
+            "p2": int(priority_breakdown["p2"]),
+            "p3": int(priority_breakdown["p3"]),
+            "p4": int(priority_breakdown["p4"]),
+        },
+        "top_categories": safe_categories,
+        "summary": safe_summary,
+        "recommended_actions": safe_actions,
+    }
+
+
 def run_planner_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     goal = require(payload, "goal")
     constraints = payload.get("constraints", [])

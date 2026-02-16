@@ -1,0 +1,40 @@
+id: support-ops.summary-agent
+name: summary-agent
+version: 0.1.0
+summary: |
+  Produces a weekly support trend summary from structured ticket records,
+  including priority breakdown and recommended follow-up actions.
+owners:
+  - support-platform
+inputs:
+  - name: period_start
+    type: string
+    required: true
+  - name: period_end
+    type: string
+    required: true
+  - name: tickets
+    type: object[]
+    required: true
+  - name: top_n_actions
+    type: int
+    required: false
+    default: 3
+outputs:
+  - name: ticket_count
+    type: int
+  - name: priority_breakdown
+    type: object
+  - name: top_categories
+    type: string[]
+  - name: summary
+    type: string
+  - name: recommended_actions
+    type: string[]
+rules:
+  - Enforce strict priority keys p1,p2,p3,p4 in the breakdown.
+  - Return at most three top category entries as category:count strings.
+  - recommended_actions length must match top_n_actions.
+constraints:
+  - top_n_actions must be between 2 and 4.
+  - Output must contain exactly the five output keys.

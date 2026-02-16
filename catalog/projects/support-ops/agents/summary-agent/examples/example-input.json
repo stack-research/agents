@@ -1,0 +1,12 @@
+{
+  "period_start": "2026-02-09",
+  "period_end": "2026-02-15",
+  "tickets": [
+    {"id": "s-1001", "priority": "p1", "category": "access"},
+    {"id": "s-1002", "priority": "p2", "category": "access"},
+    {"id": "s-1003", "priority": "p3", "category": "billing"},
+    {"id": "s-1004", "priority": "p3", "category": "bug"},
+    {"id": "s-1005", "priority": "p4", "category": "feature"}
+  ],
+  "top_n_actions": 3
+}

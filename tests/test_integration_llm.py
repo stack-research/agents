@@ -100,6 +100,26 @@ class LLMIntegrationTests(unittest.TestCase):
         self.assertIsInstance(out["subject"], str)
         self.assertIsInstance(out["reply"], str)
 
+    def test_summary_output_shape(self) -> None:
+        out = run_agent(
+            agent="support-ops.summary-agent",
+            payload={
+                "period_start": "2026-02-09",
+                "period_end": "2026-02-15",
+                "tickets": [
+                    {"id": "t1", "priority": "p1", "category": "access"},
+                    {"id": "t2", "priority": "p3", "category": "billing"},
+                ],
+                "top_n_actions": 3,
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIsInstance(out["ticket_count"], int)
+        self.assertIsInstance(out["priority_breakdown"], dict)
+        self.assertIsInstance(out["summary"], str)
+
 
 if __name__ == "__main__":
     unittest.main()

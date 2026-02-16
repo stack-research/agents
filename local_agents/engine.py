@@ -252,6 +252,73 @@ def run_reply_drafter_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return {"subject": subject, "reply": reply}
 
 
+def run_summary_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    period_start = require(payload, "period_start")
+    period_end = require(payload, "period_end")
+    tickets = require(payload, "tickets")
+    top_n_actions = payload.get("top_n_actions", 3)
+
+    if not isinstance(period_start, str) or not period_start.strip():
+        raise ValidationError("period_start must be a non-empty string")
+    if not isinstance(period_end, str) or not period_end.strip():
+        raise ValidationError("period_end must be a non-empty string")
+    if not isinstance(tickets, list):
+        raise ValidationError("tickets must be an array")
+    if not isinstance(top_n_actions, int) or top_n_actions < 2 or top_n_actions > 4:
+        raise ValidationError("top_n_actions must be an integer between 2 and 4")
+
+    allowed_priorities = {"p1", "p2", "p3", "p4"}
+    allowed_categories = {"billing", "bug", "access", "feature", "how-to", "other"}
+    priority_counts = {"p1": 0, "p2": 0, "p3": 0, "p4": 0}
+    category_counts = {key: 0 for key in sorted(allowed_categories)}
+
+    for item in tickets:
+        if not isinstance(item, dict):
+            raise ValidationError("each ticket must be an object")
+        priority = item.get("priority")
+        category = item.get("category")
+        if priority not in allowed_priorities:
+            raise ValidationError("ticket priority must be one of p1,p2,p3,p4")
+        if category not in allowed_categories:
+            raise ValidationError("ticket category must be one of billing,bug,access,feature,how-to,other")
+        priority_counts[priority] += 1
+        category_counts[category] += 1
+
+    ticket_count = len(tickets)
+    if ticket_count == 0:
+        top_categories: list[str] = []
+    else:
+        ordered = sorted(category_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        top_categories = [f"{name}:{count}" for name, count in ordered if count > 0][:3]
+
+    safe_period_start = sanitize_untrusted_text(period_start.strip())
+    safe_period_end = sanitize_untrusted_text(period_end.strip())
+    leading_category = top_categories[0].split(":")[0] if top_categories else "none"
+    summary = (
+        f"Support volume from {safe_period_start} to {safe_period_end}: {ticket_count} tickets. "
+        f"Top category: {leading_category}. Priority mix p1={priority_counts['p1']}, "
+        f"p2={priority_counts['p2']}, p3={priority_counts['p3']}, p4={priority_counts['p4']}."
+    )
+    summary = " ".join(summary.split()[:80])
+
+    recommended_actions = [
+        "Review top category queue and confirm owner coverage for next week",
+        "Publish one trend note with priority shifts and customer impact",
+        "Select one recurring issue and define mitigation experiment",
+        "Audit aged tickets and close stale items with explicit resolution notes",
+    ]
+    if priority_counts["p1"] > 0:
+        recommended_actions[0] = "Run a brief incident review for p1 themes and preventive controls"
+
+    return {
+        "ticket_count": ticket_count,
+        "priority_breakdown": priority_counts,
+        "top_categories": top_categories,
+        "summary": summary,
+        "recommended_actions": recommended_actions[:top_n_actions],
+    }
+
+
 def run_agentic_security_scanner_agent(payload: dict[str, Any]) -> dict[str, Any]:
     target_path = payload.get("target_path", ".")
     if not isinstance(target_path, str) or not target_path.strip():
@@ -561,6 +628,7 @@ def run_agent(
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
+            run_summary_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
             run_triage_agent_llm,
@@ -592,6 +660,13 @@ def run_agent(
             return run_reply_drafter_agent(payload)
         if selected_mode == "llm":
             return run_reply_drafter_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"summary-agent", "support-ops.summary-agent"}:
+        if selected_mode == "deterministic":
+            return run_summary_agent(payload)
+        if selected_mode == "llm":
+            return run_summary_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"agentic-security-scanner-agent", "security-ops.agentic-security-scanner-agent"}:
