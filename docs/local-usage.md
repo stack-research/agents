@@ -131,6 +131,14 @@ python3 scripts/run_planner_executor_pipeline.py \
   --pretty
 ```
 
+Workflow pipeline example:
+
+```bash
+python3 scripts/run_workflow_pipeline.py \
+  --input catalog/projects/workflow-ops/examples/pipeline-input.json \
+  --pretty
+```
+
 Security scan example:
 
 ```bash
@@ -143,6 +151,12 @@ Policy pack example:
 
 ```bash
 cat policy/asi-control-baselines.json
+```
+
+Policy enforcement check example:
+
+```bash
+python3 scripts/check_policy_pack.py --env dev --mode deterministic
 ```
 
 Accepted `--agent` values:
@@ -204,6 +218,7 @@ make test
 make test-security
 make test-security-llm
 make test-integration-llm
+make check-policy-pack
 make run-heartbeat-example
 make run-classifier-example
 make run-triage-example
@@ -219,6 +234,7 @@ make run-checkpoint-example
 make run-security-scan-example
 make run-support-pipeline-example
 make run-planner-executor-pipeline-example
+make run-workflow-pipeline-example
 make run-heartbeat-llm
 make run-classifier-llm
 make run-triage-llm
@@ -233,6 +249,7 @@ make run-router-llm
 make run-checkpoint-llm
 make run-support-pipeline-llm
 make run-planner-executor-pipeline-llm
+make run-workflow-pipeline-llm
 ```
 
 Notes:
@@ -241,6 +258,7 @@ Notes:
 - `make test-security` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial regression tests and scanner tests.
 - `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial tests against local Ollama.
 - `make test-integration-llm` runs only LLM integration tests and skips automatically when Ollama is unavailable.
+- `make check-policy-pack` validates runtime mode against selected policy environment (defaults: `POLICY_ENV=dev`, `AGENT_MODE=deterministic`).
 - Security scanner currently supports deterministic mode only.
 - ASI policy baselines by environment are defined in `policy/asi-control-baselines.json`.
 - LLM runtime source is restricted to approved local host/model defaults to reduce supply-chain risk.

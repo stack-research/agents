@@ -14,6 +14,10 @@ Use this file as a governance baseline for:
 - change-control strictness and approval posture
 - production guardrails that differ from lower environments
 
+Runtime enforcement helper:
+
+- `python3 scripts/check_policy_pack.py --env <dev|staging|prod> --mode <deterministic|llm>`
+
 ## Structure
 
 Top-level fields:

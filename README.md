@@ -67,6 +67,7 @@ catalog/
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
+- `python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
@@ -259,6 +260,7 @@ This policy pack defines required controls for `ASI01` through `ASI10` across:
 Reference documentation:
 
 - `docs/policy-pack.md`
+- `python3 scripts/check_policy_pack.py --env dev --mode deterministic`
 
 ## Add a New Agent
 

@@ -11,6 +11,22 @@ Workflow operations project for routing tasks and recording execution checkpoint
    - Purpose: record workflow progress snapshots for traceability.
    - Output: `checkpoint_id`, `recorded`, and `summary`.
 
+## Pipeline
+
+- `scripts/run_workflow_pipeline.py` composes:
+  1. `router-agent`
+  2. routed target agent
+  3. `checkpoint-agent`
+
+Input example:
+
+- `catalog/projects/workflow-ops/examples/pipeline-input.json`
+
+Run pipeline:
+
+- `python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`
+- `AGENT_MODE=llm python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`
+
 ## Local Commands
 
 - Run router example:

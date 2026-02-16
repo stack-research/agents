@@ -38,11 +38,14 @@ Repository-level runtime and tests:
 - `scripts/run_agent.py` - local runner for implemented agents.
 - `scripts/run_support_pipeline.py` - support triage->reply pipeline runner.
 - `scripts/run_planner_executor_pipeline.py` - planner->executor pipeline runner.
+- `scripts/run_workflow_pipeline.py` - workflow router->target->checkpoint pipeline runner.
 - `scripts/run_security_scan.py` - security scanner runner.
+- `scripts/check_policy_pack.py` - runtime policy-pack enforcement check.
 - `policy/asi-control-baselines.json` - environment ASI control baseline policy pack.
 - `tests/test_engine.py` - unit tests for deterministic runtime behavior.
 - `tests/test_support_pipeline.py` - pipeline composition unit test.
 - `tests/test_planner_executor_pipeline.py` - planner->executor pipeline composition test.
+- `tests/test_workflow_pipeline.py` - workflow-ops pipeline composition test.
 - `tests/test_asi01_goal_hijack.py` - ASI01 adversarial regression tests (deterministic).
 - `tests/test_asi01_goal_hijack_llm.py` - ASI01 adversarial checks in LLM mode.
 - `tests/test_asi02_tool_misuse.py` - ASI02 tool-misuse checks (deterministic).
@@ -72,7 +75,9 @@ Repository-level runtime and tests:
 - `tests/test_qa_ops_llm.py` - QA-ops checks in LLM mode.
 - `tests/test_workflow_ops.py` - deterministic routing/checkpoint behavior tests.
 - `tests/test_workflow_ops_llm.py` - workflow-ops checks in LLM mode.
+- `tests/test_workflow_pipeline_llm.py` - workflow-ops pipeline checks in LLM mode.
 - `tests/test_policy_pack.py` - policy pack structure and baseline presence checks.
+- `tests/test_policy_enforcement.py` - runtime mode policy enforcement checks.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.

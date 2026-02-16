@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -23,6 +23,9 @@ llm-pull:
 
 llm-down:
 	docker compose down
+
+check-policy-pack:
+	python3 scripts/check_policy_pack.py --env $${POLICY_ENV:-dev} --mode $${AGENT_MODE:-deterministic}
 
 run-heartbeat-example:
 	python3 scripts/run_agent.py --agent starter-kit.heartbeat-agent --input catalog/projects/starter-kit/agents/heartbeat-agent/examples/example-input.json --pretty
@@ -69,6 +72,9 @@ run-support-pipeline-example:
 run-planner-executor-pipeline-example:
 	python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty
 
+run-workflow-pipeline-example:
+	python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty
+
 run-heartbeat-llm:
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent starter-kit.heartbeat-agent --input catalog/projects/starter-kit/agents/heartbeat-agent/examples/example-input.json --pretty
 
@@ -110,3 +116,6 @@ run-support-pipeline-llm:
 
 run-planner-executor-pipeline-llm:
 	AGENT_MODE=llm python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty
+
+run-workflow-pipeline-llm:
+	AGENT_MODE=llm python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty
