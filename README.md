@@ -244,6 +244,22 @@ The test suite currently includes:
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
 
+## Policy Pack
+
+Environment ASI control baselines live in:
+
+- `policy/asi-control-baselines.json`
+
+This policy pack defines required controls for `ASI01` through `ASI10` across:
+
+- `dev`
+- `staging`
+- `prod`
+
+Reference documentation:
+
+- `docs/policy-pack.md`
+
 ## Add a New Agent
 
 1. Create `catalog/projects/<project>/agents/<agent-name>/`.
@@ -256,4 +272,3 @@ The test suite currently includes:
 
 - Add schema checks for `agent.yaml` files in CI.
 - Add a `summary-agent` for support weekly trend rollups.
-- Add a policy pack file for ASI control baselines by environment.

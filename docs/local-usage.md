@@ -139,6 +139,12 @@ python3 scripts/run_security_scan.py \
   --pretty
 ```
 
+Policy pack example:
+
+```bash
+cat policy/asi-control-baselines.json
+```
+
 Accepted `--agent` values:
 
 - `starter-kit.heartbeat-agent` or `heartbeat-agent`
@@ -236,6 +242,7 @@ Notes:
 - `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial tests against local Ollama.
 - `make test-integration-llm` runs only LLM integration tests and skips automatically when Ollama is unavailable.
 - Security scanner currently supports deterministic mode only.
+- ASI policy baselines by environment are defined in `policy/asi-control-baselines.json`.
 - LLM runtime source is restricted to approved local host/model defaults to reduce supply-chain risk.
 - Support pipeline returns `pipeline_status` (`ok` or `degraded`) and includes safe fallback output on validation failures to avoid cascade crashes.
 - Planner-executor pipeline returns `pipeline_status` (`ok` or `degraded`) and includes safe fallback output on validation failures.

@@ -48,6 +48,7 @@ For any new behavior/security change:
    - local Ollama endpoint is unavailable.
 4. Add/extend OWASP ASI adversarial regression tests when relevant.
    - current baseline suites: ASI01 through ASI10.
+5. If environment governance changes, update `policy/asi-control-baselines.json` and keep `tests/test_policy_pack.py` passing.
 
 ## 4) Security-Specific Requirements
 

@@ -39,6 +39,7 @@ Repository-level runtime and tests:
 - `scripts/run_support_pipeline.py` - support triage->reply pipeline runner.
 - `scripts/run_planner_executor_pipeline.py` - planner->executor pipeline runner.
 - `scripts/run_security_scan.py` - security scanner runner.
+- `policy/asi-control-baselines.json` - environment ASI control baseline policy pack.
 - `tests/test_engine.py` - unit tests for deterministic runtime behavior.
 - `tests/test_support_pipeline.py` - pipeline composition unit test.
 - `tests/test_planner_executor_pipeline.py` - planner->executor pipeline composition test.
@@ -71,6 +72,7 @@ Repository-level runtime and tests:
 - `tests/test_qa_ops_llm.py` - QA-ops checks in LLM mode.
 - `tests/test_workflow_ops.py` - deterministic routing/checkpoint behavior tests.
 - `tests/test_workflow_ops_llm.py` - workflow-ops checks in LLM mode.
+- `tests/test_policy_pack.py` - policy pack structure and baseline presence checks.
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.

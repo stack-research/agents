@@ -1,0 +1,268 @@
+{
+  "policy_pack": "asi-control-baselines",
+  "version": "2026.02.16",
+  "description": "Environment-specific baseline controls mapped to OWASP ASI01-ASI10.",
+  "environments": {
+    "dev": {
+      "change_control": "relaxed",
+      "human_approval_required": false,
+      "llm_mode_allowed": true,
+      "asi_controls": {
+        "ASI01": {
+          "baseline": "required",
+          "controls": [
+            "structured output contracts",
+            "prompt injection regression tests",
+            "input sanitization on untrusted text"
+          ]
+        },
+        "ASI02": {
+          "baseline": "required",
+          "controls": [
+            "tool command token filtering",
+            "deny unsafe shell-like patterns",
+            "tool misuse regression coverage"
+          ]
+        },
+        "ASI03": {
+          "baseline": "required",
+          "controls": [
+            "identity and privilege token redaction",
+            "tier/role validation",
+            "privilege abuse regression coverage"
+          ]
+        },
+        "ASI04": {
+          "baseline": "required",
+          "controls": [
+            "approved local model allowlist",
+            "approved local host allowlist",
+            "pinned local LLM runtime image"
+          ]
+        },
+        "ASI05": {
+          "baseline": "required",
+          "controls": [
+            "rce token filtering",
+            "strict output contracts",
+            "unexpected code execution regression coverage"
+          ]
+        },
+        "ASI06": {
+          "baseline": "required",
+          "controls": [
+            "memory poisoning token filtering",
+            "stateless call behavior checks",
+            "cross-call contamination regression tests"
+          ]
+        },
+        "ASI07": {
+          "baseline": "required",
+          "controls": [
+            "a2a forged channel token filtering",
+            "inter-agent message contract checks",
+            "inter-agent communication regression tests"
+          ]
+        },
+        "ASI08": {
+          "baseline": "required",
+          "controls": [
+            "degraded-mode fallback outputs",
+            "bounded output length under stress prompts",
+            "pipeline failure-stage observability"
+          ]
+        },
+        "ASI09": {
+          "baseline": "required",
+          "controls": [
+            "human trust manipulation phrase filtering",
+            "credential request redaction",
+            "bounded timeout handling in LLM tests"
+          ]
+        },
+        "ASI10": {
+          "baseline": "required",
+          "controls": [
+            "rogue autonomy phrase filtering",
+            "approval bypass phrase filtering",
+            "rogue-agent regression coverage"
+          ]
+        }
+      }
+    },
+    "staging": {
+      "change_control": "moderate",
+      "human_approval_required": true,
+      "llm_mode_allowed": true,
+      "asi_controls": {
+        "ASI01": {
+          "baseline": "required",
+          "controls": [
+            "structured output contracts",
+            "prompt injection regression tests",
+            "input sanitization on untrusted text"
+          ]
+        },
+        "ASI02": {
+          "baseline": "required",
+          "controls": [
+            "tool command token filtering",
+            "deny unsafe shell-like patterns",
+            "tool misuse regression coverage"
+          ]
+        },
+        "ASI03": {
+          "baseline": "required",
+          "controls": [
+            "identity and privilege token redaction",
+            "tier/role validation",
+            "privilege abuse regression coverage"
+          ]
+        },
+        "ASI04": {
+          "baseline": "required",
+          "controls": [
+            "approved local model allowlist",
+            "approved local host allowlist",
+            "pinned local LLM runtime image"
+          ]
+        },
+        "ASI05": {
+          "baseline": "required",
+          "controls": [
+            "rce token filtering",
+            "strict output contracts",
+            "unexpected code execution regression coverage"
+          ]
+        },
+        "ASI06": {
+          "baseline": "required",
+          "controls": [
+            "memory poisoning token filtering",
+            "stateless call behavior checks",
+            "cross-call contamination regression tests"
+          ]
+        },
+        "ASI07": {
+          "baseline": "required",
+          "controls": [
+            "a2a forged channel token filtering",
+            "inter-agent message contract checks",
+            "inter-agent communication regression tests"
+          ]
+        },
+        "ASI08": {
+          "baseline": "required",
+          "controls": [
+            "degraded-mode fallback outputs",
+            "bounded output length under stress prompts",
+            "pipeline failure-stage observability"
+          ]
+        },
+        "ASI09": {
+          "baseline": "required",
+          "controls": [
+            "human trust manipulation phrase filtering",
+            "credential request redaction",
+            "bounded timeout handling in LLM tests"
+          ]
+        },
+        "ASI10": {
+          "baseline": "required",
+          "controls": [
+            "rogue autonomy phrase filtering",
+            "approval bypass phrase filtering",
+            "rogue-agent regression coverage"
+          ]
+        }
+      }
+    },
+    "prod": {
+      "change_control": "strict",
+      "human_approval_required": true,
+      "llm_mode_allowed": false,
+      "asi_controls": {
+        "ASI01": {
+          "baseline": "required",
+          "controls": [
+            "structured output contracts",
+            "prompt injection regression tests",
+            "input sanitization on untrusted text"
+          ]
+        },
+        "ASI02": {
+          "baseline": "required",
+          "controls": [
+            "tool command token filtering",
+            "deny unsafe shell-like patterns",
+            "tool misuse regression coverage"
+          ]
+        },
+        "ASI03": {
+          "baseline": "required",
+          "controls": [
+            "identity and privilege token redaction",
+            "tier/role validation",
+            "privilege abuse regression coverage"
+          ]
+        },
+        "ASI04": {
+          "baseline": "required",
+          "controls": [
+            "approved model and host allowlists",
+            "immutable image digest pinning",
+            "supply-chain/runtime-source enforcement"
+          ]
+        },
+        "ASI05": {
+          "baseline": "required",
+          "controls": [
+            "rce token filtering",
+            "strict output contracts",
+            "unexpected code execution regression coverage"
+          ]
+        },
+        "ASI06": {
+          "baseline": "required",
+          "controls": [
+            "memory poisoning token filtering",
+            "stateless call behavior checks",
+            "cross-call contamination regression tests"
+          ]
+        },
+        "ASI07": {
+          "baseline": "required",
+          "controls": [
+            "a2a forged channel token filtering",
+            "inter-agent message contract checks",
+            "inter-agent communication regression tests"
+          ]
+        },
+        "ASI08": {
+          "baseline": "required",
+          "controls": [
+            "degraded-mode fallback outputs",
+            "bounded output length under stress prompts",
+            "pipeline failure-stage observability"
+          ]
+        },
+        "ASI09": {
+          "baseline": "required",
+          "controls": [
+            "human trust manipulation phrase filtering",
+            "credential request redaction",
+            "strict operator approval for sensitive actions"
+          ]
+        },
+        "ASI10": {
+          "baseline": "required",
+          "controls": [
+            "rogue autonomy phrase filtering",
+            "approval bypass phrase filtering",
+            "rogue-agent regression coverage"
+          ]
+        }
+      }
+    }
+  }
+}
