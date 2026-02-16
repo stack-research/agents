@@ -73,6 +73,141 @@ catalog/
 
 See `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` for full usage.
 
+## End-to-End Story: Incident Day Walkthrough
+
+A new engineer joins the on-call rotation. Mid-morning, support reports that some customers cannot log in after a release. Instead of jumping between tools and ad-hoc notes, the engineer uses the catalog as a structured agentic workflow.
+
+The engineer starts by routing the task, then triaging the issue, generating QA scenarios, triaging an observed regression failure, producing a stakeholder-ready summary, and recording a checkpoint. The point is not replacing engineering judgment. The point is making the system legible, repeatable, and fast under pressure.
+
+### 1) Route the incoming task
+
+```bash
+python3 scripts/run_agent.py \
+  --agent workflow-ops.router-agent \
+  --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "priority": "p2",
+  "rationale": "Support issue intent detected; route to triage.",
+  "target_agent": "support-ops.triage-agent"
+}
+```
+
+### 2) Triage the support issue
+
+```bash
+python3 scripts/run_agent.py \
+  --agent support-ops.triage-agent \
+  --input catalog/projects/support-ops/agents/triage-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "category": "access",
+  "next_action": "Escalate to auth on-call and collect user and timestamp details.",
+  "priority": "p2"
+}
+```
+
+### 3) Generate QA coverage for the suspected area
+
+```bash
+python3 scripts/run_agent.py \
+  --agent qa-ops.test-case-generator-agent \
+  --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "risk_focus": "medium",
+  "test_cases": [
+    "Happy path: validate SSO login flow with Users can sign in with SAML",
+    "Validation edge: reject invalid input for SSO login flow",
+    "Boundary check: enforce limits and defaults for SSO login flow",
+    "Failure path: verify clear error handling for SSO login flow",
+    "Security check: block unauthorized access during SSO login flow"
+  ]
+}
+```
+
+### 4) Triage a regression failure signal
+
+```bash
+python3 scripts/run_agent.py \
+  --agent qa-ops.regression-triage-agent \
+  --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "probable_cause": "dependency",
+  "recommended_actions": [
+    "Reproduce failure with focused logs for: Production timeout after dependency version update",
+    "Compare failure window with most recent merged changes",
+    "Review changed components: auth-service, sdk-client"
+  ],
+  "severity": "sev2"
+}
+```
+
+### 5) Synthesize findings for stakeholders
+
+```bash
+python3 scripts/run_agent.py \
+  --agent research-ops.synthesis-agent \
+  --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "headline": "Security Brief Summary",
+  "next_actions": [
+    "Validate highest-impact claim with one primary source",
+    "Document assumptions and unresolved risks",
+    "Share summary with stakeholders for review"
+  ],
+  "summary": "Key findings: Research objective: Summarize ASI09 mitigation guidance; Source note: enforce output contracts; Source note: require explicit human approval for sensitive actions"
+}
+```
+
+### 6) Record a checkpoint in the workflow
+
+```bash
+python3 scripts/run_agent.py \
+  --agent workflow-ops.checkpoint-agent \
+  --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json \
+  --pretty
+```
+
+Example output:
+
+```json
+{
+  "checkpoint_id": "release-2026-02-16:qa-validation:in_progress",
+  "recorded": true,
+  "summary": "Checkpoint recorded for workflow release-2026-02-16 at stage qa-validation with status in_progress. Notes: Integration tests running on staging."
+}
+```
+
+This is the core advantage of a good agentic system for engineering teams: clear contracts, composable steps, and traceable state across the full lifecycle of work.
+
 ## Test Suite
 
 - `python3 -m unittest discover -s tests -v`
