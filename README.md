@@ -261,6 +261,9 @@ Reference documentation:
 
 - `docs/policy-pack.md`
 - `python3 scripts/check_policy_pack.py --env dev --mode deterministic`
+- `make check-policy-pack` and `make check-policy-pack-llm`
+
+LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and fail fast when policy disallows LLM mode.
 
 ## Add a New Agent
 

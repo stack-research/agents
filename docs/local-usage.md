@@ -219,6 +219,7 @@ make test-security
 make test-security-llm
 make test-integration-llm
 make check-policy-pack
+make check-policy-pack-llm
 make run-heartbeat-example
 make run-classifier-example
 make run-triage-example
@@ -259,6 +260,8 @@ Notes:
 - `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial tests against local Ollama.
 - `make test-integration-llm` runs only LLM integration tests and skips automatically when Ollama is unavailable.
 - `make check-policy-pack` validates runtime mode against selected policy environment (defaults: `POLICY_ENV=dev`, `AGENT_MODE=deterministic`).
+- `make check-policy-pack-llm` validates LLM mode against selected policy environment (default `POLICY_ENV=dev`).
+- All `*-llm` make targets run the LLM policy precheck first and will fail fast on disallowed environments (for example `POLICY_ENV=prod`).
 - Security scanner currently supports deterministic mode only.
 - ASI policy baselines by environment are defined in `policy/asi-control-baselines.json`.
 - LLM runtime source is restricted to approved local host/model defaults to reduce supply-chain risk.
