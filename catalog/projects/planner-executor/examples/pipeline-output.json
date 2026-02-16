@@ -1,0 +1,20 @@
+{
+  "plan": {
+    "plan_steps": [
+      "Clarify objective and success criteria for: Plan and execute a safe rollout for API rate-limit changes",
+      "List dependencies, owners, and required access upfront",
+      "Create implementation checklist with rollback and validation",
+      "Execute checklist in small stages and capture evidence",
+      "Summarize outcome, risks, and next follow-up actions",
+      "Respect constraints: No production downtime, Require rollback path"
+    ],
+    "risk_level": "low"
+  },
+  "execution": {
+    "status": "partial",
+    "completed_steps": 4,
+    "blocked_steps": 2,
+    "summary": "Executed 4 of 6 planned steps. Status: partial. Context considered: Staging validation is complete. Production window opens at 21:00 UTC."
+  },
+  "pipeline_status": "ok"
+}

@@ -69,6 +69,14 @@ python3 scripts/run_support_pipeline.py \
   --pretty
 ```
 
+Planner-executor pipeline example:
+
+```bash
+python3 scripts/run_planner_executor_pipeline.py \
+  --input catalog/projects/planner-executor/examples/pipeline-input.json \
+  --pretty
+```
+
 Security scan example:
 
 ```bash
@@ -138,6 +146,7 @@ make run-planner-example
 make run-executor-example
 make run-security-scan-example
 make run-support-pipeline-example
+make run-planner-executor-pipeline-example
 make run-heartbeat-llm
 make run-classifier-llm
 make run-triage-llm
@@ -145,6 +154,7 @@ make run-reply-drafter-llm
 make run-planner-llm
 make run-executor-llm
 make run-support-pipeline-llm
+make run-planner-executor-pipeline-llm
 ```
 
 Notes:
@@ -156,6 +166,7 @@ Notes:
 - Security scanner currently supports deterministic mode only.
 - LLM runtime source is restricted to approved local host/model defaults to reduce supply-chain risk.
 - Support pipeline returns `pipeline_status` (`ok` or `degraded`) and includes safe fallback output on validation failures to avoid cascade crashes.
+- Planner-executor pipeline returns `pipeline_status` (`ok` or `degraded`) and includes safe fallback output on validation failures.
 - `ASI09_STRICT_LLM=1 make test-security-llm` enables the slower direct-reply ASI09 LLM stress case; default runs skip it to avoid long-tail timeouts.
 - `ASI10_STRICT_LLM=1 make test-security-llm` enables the slower direct-reply ASI10 LLM stress case; default runs skip it to keep full suites fast.
 - ASI coverage is expanding incrementally from ASI01 to ASI10.

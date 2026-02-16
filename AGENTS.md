@@ -37,9 +37,11 @@ Repository-level runtime and tests:
 
 - `scripts/run_agent.py` - local runner for implemented agents.
 - `scripts/run_support_pipeline.py` - support triage->reply pipeline runner.
+- `scripts/run_planner_executor_pipeline.py` - planner->executor pipeline runner.
 - `scripts/run_security_scan.py` - security scanner runner.
 - `tests/test_engine.py` - unit tests for deterministic runtime behavior.
 - `tests/test_support_pipeline.py` - pipeline composition unit test.
+- `tests/test_planner_executor_pipeline.py` - planner->executor pipeline composition test.
 - `tests/test_asi01_goal_hijack.py` - ASI01 adversarial regression tests (deterministic).
 - `tests/test_asi01_goal_hijack_llm.py` - ASI01 adversarial checks in LLM mode.
 - `tests/test_asi02_tool_misuse.py` - ASI02 tool-misuse checks (deterministic).

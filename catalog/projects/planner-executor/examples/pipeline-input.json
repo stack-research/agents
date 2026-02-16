@@ -1,0 +1,8 @@
+{
+  "goal": "Plan and execute a safe rollout for API rate-limit changes",
+  "constraints": [
+    "No production downtime",
+    "Require rollback path"
+  ],
+  "context": "Staging validation is complete. Production window opens at 21:00 UTC."
+}

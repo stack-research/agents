@@ -11,6 +11,21 @@ Project for a simple two-agent planning workflow.
    - Purpose: summarize execution progress against planned steps.
    - Output: `status`, `completed_steps`, `blocked_steps`, and `summary`.
 
+## Pipeline
+
+- `scripts/run_planner_executor_pipeline.py` composes:
+  1. `planner-agent`
+  2. `executor-agent`
+
+Input example:
+
+- `catalog/projects/planner-executor/examples/pipeline-input.json`
+
+Run pipeline:
+
+- `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
+- `AGENT_MODE=llm python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
+
 ## Local Commands
 
 - Run planner example:

@@ -51,6 +51,7 @@ catalog/
 - `python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
@@ -106,4 +107,3 @@ The test suite currently includes:
 - Add schema checks for `agent.yaml` files in CI.
 - Add a `summary-agent` for support weekly trend rollups.
 - Add a policy pack file for ASI control baselines by environment.
-- Add a lightweight multi-agent pipeline script for planner -> executor composition.
