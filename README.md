@@ -209,10 +209,29 @@ Example output:
 
 This is the core advantage of a good agentic system for engineering teams: clear contracts, composable steps, and traceable state across the full lifecycle of work.
 
+## Workflow-Ops Pipeline Example
+
+For a fast orchestration-only path, run the composed workflow pipeline directly:
+
+```bash
+python3 scripts/run_workflow_pipeline.py \
+  --input catalog/projects/workflow-ops/examples/pipeline-input.json \
+  --pretty
+```
+
+This pipeline composes:
+
+1. `workflow-ops.router-agent`
+2. the routed target agent
+3. `workflow-ops.checkpoint-agent`
+
+and returns a single structured object with route decision, target output, checkpoint record, and `pipeline_status`.
+
 ## Test Suite
 
 - `python3 -m unittest discover -s tests -v`
 - `make test`
+- `make verify-env` (policy check + deterministic tests, with deterministic security suite in non-dev environments)
 - `make test-security` (ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial checks + scanner tests)
 - `make test-security-llm` (ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial checks against local LLM)
 - `make test-integration-llm` (optional LLM-backed checks)
@@ -242,6 +261,7 @@ The test suite currently includes:
 - ASI10 rogue-agent adversarial regression tests.
 - ASI10 rogue-agent LLM adversarial regression tests.
 - security scanner tests.
+- `agent.yaml` schema consistency checks for id/name/version and IO sections.
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
 
@@ -275,5 +295,4 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 
 ## Next Ideas
 
-- Add schema checks for `agent.yaml` files in CI.
 - Add a `summary-agent` for support weekly trend rollups.

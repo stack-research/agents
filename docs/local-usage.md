@@ -215,6 +215,7 @@ Or with Make targets:
 
 ```bash
 make test
+make verify-env
 make test-security
 make test-security-llm
 make test-integration-llm
@@ -256,6 +257,7 @@ make run-workflow-pipeline-llm
 Notes:
 
 - `make test` runs deterministic unit tests and catalog structure checks.
+- `make verify-env` runs policy precheck + deterministic tests and auto-runs deterministic security tests outside `dev`.
 - `make test-security` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial regression tests and scanner tests.
 - `make test-security-llm` runs ASI01+ASI02+ASI03+ASI04+ASI05+ASI06+ASI07+ASI08+ASI09+ASI10 adversarial tests against local Ollama.
 - `make test-integration-llm` runs only LLM integration tests and skips automatically when Ollama is unavailable.

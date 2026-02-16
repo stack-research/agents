@@ -78,6 +78,7 @@ Repository-level runtime and tests:
 - `tests/test_workflow_pipeline_llm.py` - workflow-ops pipeline checks in LLM mode.
 - `tests/test_policy_pack.py` - policy pack structure and baseline presence checks.
 - `tests/test_policy_enforcement.py` - runtime mode policy enforcement checks.
+- `tests/test_agent_schema.py` - `agent.yaml` schema consistency checks (id/name/version and IO sections).
 - `tests/test_catalog_structure.py` - required file checks across catalog.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.

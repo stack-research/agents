@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -29,6 +29,17 @@ check-policy-pack:
 
 check-policy-pack-llm:
 	python3 scripts/check_policy_pack.py --env $${POLICY_ENV:-dev} --mode llm
+
+verify-env:
+	@echo "verify-env: POLICY_ENV=$${POLICY_ENV:-dev}, AGENT_MODE=$${AGENT_MODE:-deterministic}"
+	$(MAKE) check-policy-pack POLICY_ENV=$${POLICY_ENV:-dev} AGENT_MODE=$${AGENT_MODE:-deterministic}
+	$(MAKE) test
+	@if [ "$${POLICY_ENV:-dev}" != "dev" ]; then \
+		echo "Running deterministic security suite for $${POLICY_ENV:-dev}"; \
+		$(MAKE) test-security; \
+	else \
+		echo "Skipping deterministic security suite in dev (run make test-security manually if needed)"; \
+	fi
 
 run-heartbeat-example:
 	python3 scripts/run_agent.py --agent starter-kit.heartbeat-agent --input catalog/projects/starter-kit/agents/heartbeat-agent/examples/example-input.json --pretty
