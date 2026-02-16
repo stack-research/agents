@@ -47,7 +47,7 @@ For any new behavior/security change:
    - `AGENT_MODE != llm`, or
    - local Ollama endpoint is unavailable.
 4. Add/extend OWASP ASI adversarial regression tests when relevant.
-   - current baseline suites: ASI01 and ASI02.
+   - current baseline suites: ASI01 through ASI08.
 
 ## 4) Security-Specific Requirements
 

@@ -16,32 +16,58 @@ if str(ROOT) not in sys.path:
 from local_agents import ValidationError, run_agent
 
 
+def _degraded_output(stage: str, reason: str) -> dict[str, object]:
+    return {
+        "triage": {
+            "priority": "p2",
+            "category": "other",
+            "next_action": "Escalate to human reviewer due to pipeline validation failure.",
+        },
+        "draft": {
+            "subject": "Update on your support request",
+            "reply": "Hi, we received your request and escalated it for manual review due to a processing issue. We will provide an update within 60 minutes.",
+        },
+        "pipeline_status": "degraded",
+        "failure_stage": stage,
+        "failure_reason": reason,
+    }
+
+
 def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: str) -> dict[str, object]:
     text = payload.get("text")
     customer_tier = payload.get("customer_tier", "free")
     customer_name = payload.get("customer_name")
 
-    triage = run_agent(
-        agent="support-ops.triage-agent",
-        payload={"text": text, "customer_tier": customer_tier},
-        mode=mode,
-        model=model,
-        base_url=base_url,
-    )
-    draft = run_agent(
-        agent="support-ops.reply-drafter-agent",
-        payload={
-            "customer_name": customer_name,
-            "priority": triage["priority"],
-            "category": triage["category"],
-            "issue_summary": text,
-        },
-        mode=mode,
-        model=model,
-        base_url=base_url,
-    )
+    try:
+        triage = run_agent(
+            agent="support-ops.triage-agent",
+            payload={"text": text, "customer_tier": customer_tier},
+            mode=mode,
+            model=model,
+            base_url=base_url,
+        )
+    except ValidationError as exc:
+        return _degraded_output("triage", str(exc))
 
-    return {"triage": triage, "draft": draft}
+    try:
+        draft = run_agent(
+            agent="support-ops.reply-drafter-agent",
+            payload={
+                "customer_name": customer_name,
+                "priority": triage["priority"],
+                "category": triage["category"],
+                "issue_summary": text,
+            },
+            mode=mode,
+            model=model,
+            base_url=base_url,
+        )
+    except ValidationError as exc:
+        out = _degraded_output("reply-drafter", str(exc))
+        out["triage"] = triage
+        return out
+
+    return {"triage": triage, "draft": draft, "pipeline_status": "ok"}
 
 
 def main() -> int:
