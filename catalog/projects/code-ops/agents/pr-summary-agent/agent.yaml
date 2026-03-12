@@ -1,0 +1,31 @@
+id: code-ops.pr-summary-agent
+name: pr-summary-agent
+version: 0.1.0
+summary: |
+  Summarizes pull request changes for reviewers with risk assessment and review focus.
+owners:
+  - platform-agents
+inputs:
+  - name: title
+    type: string
+    required: true
+  - name: changed_files
+    type: array[string]
+    required: true
+  - name: diff_summary
+    type: string
+    required: false
+outputs:
+  - name: summary
+    type: string
+  - name: risk_areas
+    type: array[string]
+  - name: review_focus
+    type: enum[low,medium,high]
+rules:
+  - Produce a concise summary under 80 words.
+  - Identify 1 to 4 risk areas from file paths and diff content.
+  - Review focus reflects scope and sensitivity of changes.
+constraints:
+  - Avoid unsafe command content.
+  - Keep summary and risk areas concise.

@@ -57,6 +57,15 @@ catalog/
    - `scope-validator-agent`: validates proposed actions against governance requirements.
    - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
    - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
+9. `data-ops`
+   - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
+   - `data-validator-agent`: validates data records against rules and reports violations.
+10. `code-ops`
+    - `code-reviewer-agent`: reviews code diffs for security, correctness, and style issues.
+    - `pr-summary-agent`: summarizes PR changes for reviewers with risk assessment.
+11. `observability-ops`
+    - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
+    - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
 
 ## Run Agents Locally
 
@@ -81,10 +90,17 @@ catalog/
 - `python3 scripts/run_agent.py --agent control-ops.scope-validator-agent --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent data-ops.schema-drift-detector-agent --input catalog/projects/data-ops/agents/schema-drift-detector-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent data-ops.data-validator-agent --input catalog/projects/data-ops/agents/data-validator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent code-ops.code-reviewer-agent --input catalog/projects/code-ops/agents/code-reviewer-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent code-ops.pr-summary-agent --input catalog/projects/code-ops/agents/pr-summary-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent observability-ops.log-analyzer-agent --input catalog/projects/observability-ops/agents/log-analyzer-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent observability-ops.slo-reporter-agent --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty`
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
+- `make state-up` to start Redis for pipeline state persistence
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
 
 See `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` for full usage.
@@ -281,6 +297,27 @@ python3 scripts/run_resilience_pipeline.py \
   --pretty
 ```
 
+## Pipeline State Persistence (Redis)
+
+Pipelines can optionally persist intermediate stage outputs and final results to Redis. This enables multi-turn workflows, debugging, and auditing.
+
+```bash
+make state-up                    # start Redis
+make state-down                  # stop Redis
+```
+
+Add `--state` to any pipeline runner to enable persistence:
+
+```bash
+python3 scripts/run_support_pipeline.py \
+  --input catalog/projects/support-ops/examples/pipeline-input.json \
+  --state --pretty
+```
+
+Optionally provide `--run-id` to set a custom run identifier; otherwise one is auto-generated.
+
+State is stored with a 1-hour TTL and auto-expires. If Redis is unavailable, pipelines work exactly as before (stateless, single-shot).
+
 ## Test Suite
 
 - `python3 -m unittest discover -s tests -v`
@@ -292,6 +329,9 @@ python3 scripts/run_resilience_pipeline.py \
 
 The test suite currently includes:
 
+- data-ops deterministic behavior tests (schema-drift-detector/data-validator).
+- code-ops deterministic behavior tests (code-reviewer/pr-summary).
+- observability-ops deterministic behavior tests (log-analyzer/slo-reporter).
 - control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
 - governance pipeline composition tests.
 - resilience pipeline composition tests.
@@ -319,6 +359,7 @@ The test suite currently includes:
 - ASI10 rogue-agent adversarial regression tests.
 - ASI10 rogue-agent LLM adversarial regression tests.
 - security scanner tests.
+- state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
 - `agent.yaml` schema consistency checks for id/name/version and IO sections.
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
@@ -353,4 +394,8 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 
 ## Next Ideas
 
-- None queued right now (intentionally cleared).
+1. Add JSON schema for `agent.yaml` (formalize validation beyond current test checks).
+2. Add benchmark/eval fixtures for each agent (structured evaluation beyond smoke tests).
+3. Cross-domain orchestration pipeline (incident → workflow routes → support triages → qa generates tests → research synthesizes → control-ops governs).
+4. Generalize security scanner to work against any agent catalog.
+5. CI pipeline (GitHub Actions for `make test` and `make test-security`).

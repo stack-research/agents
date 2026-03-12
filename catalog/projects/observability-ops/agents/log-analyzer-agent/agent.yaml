@@ -1,0 +1,28 @@
+id: observability-ops.log-analyzer-agent
+name: log-analyzer-agent
+version: 0.1.0
+summary: |
+  Analyzes log entries for patterns and anomalies with severity classification.
+owners:
+  - platform-agents
+inputs:
+  - name: log_entries
+    type: array[string]
+    required: true
+  - name: time_range
+    type: string
+    required: false
+outputs:
+  - name: patterns
+    type: array[string]
+  - name: anomalies
+    type: array[string]
+  - name: severity
+    type: enum[normal,elevated,critical]
+rules:
+  - Identify recurring patterns and anomalies in log entries.
+  - Return 1 to 5 patterns and 0 to 5 anomalies.
+  - Severity reflects the worst anomaly detected.
+constraints:
+  - Avoid unsafe command content.
+  - Keep each pattern and anomaly concise.

@@ -644,6 +644,21 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["kill path", "shutdown", "kill switch", "emergency stop"]):
         target_agent = "control-ops.kill-path-auditor-agent"
         rationale = "Kill path intent detected; route to auditor."
+    elif any(token in lowered for token in ["schema drift", "schema change", "migration", "data validation", "validate data"]):
+        target_agent = "data-ops.schema-drift-detector-agent"
+        rationale = "Data/schema intent detected; route to data-ops."
+    elif any(token in lowered for token in ["code review", "review diff", "review code", "pr review"]):
+        target_agent = "code-ops.code-reviewer-agent"
+        rationale = "Code review intent detected; route to code reviewer."
+    elif any(token in lowered for token in ["pr summary", "pull request summary", "summarize pr"]):
+        target_agent = "code-ops.pr-summary-agent"
+        rationale = "PR summary intent detected; route to PR summarizer."
+    elif any(token in lowered for token in ["log analysis", "analyze logs", "log entries", "anomaly detection"]):
+        target_agent = "observability-ops.log-analyzer-agent"
+        rationale = "Log analysis intent detected; route to log analyzer."
+    elif any(token in lowered for token in ["slo", "sla", "compliance", "uptime report", "availability report"]):
+        target_agent = "observability-ops.slo-reporter-agent"
+        rationale = "SLO/compliance intent detected; route to SLO reporter."
 
     if available_agents and target_agent not in available_agents:
         target_agent = available_agents[0]
@@ -975,6 +990,380 @@ def run_kill_path_auditor_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_schema_drift_detector_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    schema_before = require(payload, "schema_before")
+    schema_after = require(payload, "schema_after")
+
+    if not isinstance(schema_before, dict) or not schema_before:
+        raise ValidationError("schema_before must be a non-empty object")
+    if not isinstance(schema_after, dict) or not schema_after:
+        raise ValidationError("schema_after must be a non-empty object")
+
+    changes: list[dict[str, str]] = []
+    before_keys = set(schema_before.keys())
+    after_keys = set(schema_after.keys())
+
+    for key in sorted(before_keys - after_keys):
+        changes.append({"field": key, "change_type": "removed", "detail": "field removed from schema"})
+    for key in sorted(after_keys - before_keys):
+        changes.append({"field": key, "change_type": "added", "detail": "new field added to schema"})
+    for key in sorted(before_keys & after_keys):
+        if str(schema_before[key]) != str(schema_after[key]):
+            changes.append({
+                "field": key,
+                "change_type": "type_changed",
+                "detail": f"type changed from {sanitize_untrusted_text(str(schema_before[key]))} to {sanitize_untrusted_text(str(schema_after[key]))}",
+            })
+
+    breaking = sum(1 for c in changes if c["change_type"] in {"removed", "type_changed"})
+    if not changes:
+        drift_severity = "none"
+    elif breaking >= 2:
+        drift_severity = "high"
+    elif breaking == 1:
+        drift_severity = "medium"
+    else:
+        drift_severity = "low"
+
+    actions: list[str] = []
+    removed = [c["field"] for c in changes if c["change_type"] == "removed"]
+    added = [c["field"] for c in changes if c["change_type"] == "added"]
+    type_changed = [c["field"] for c in changes if c["change_type"] == "type_changed"]
+
+    if removed:
+        actions.append(f"Verify removal of {', '.join(removed[:3])} is intentional and migrate dependent consumers")
+    if added:
+        actions.append(f"Update downstream pipelines to handle new field(s): {', '.join(added[:3])}")
+    if type_changed:
+        actions.append(f"Update consumers for type change in: {', '.join(type_changed[:3])}")
+    if not actions:
+        actions.append("No schema drift detected; no action required")
+
+    return {
+        "changes": changes[:10],
+        "drift_severity": drift_severity,
+        "recommended_actions": [" ".join(a.split()[:18]) for a in actions[:4]],
+    }
+
+
+def run_data_validator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    records = require(payload, "records")
+    rules = require(payload, "rules")
+
+    if not isinstance(records, list) or not records:
+        raise ValidationError("records must be a non-empty array")
+    if not all(isinstance(r, dict) for r in records):
+        raise ValidationError("each record must be an object")
+    if not isinstance(rules, list) or not rules:
+        raise ValidationError("rules must be a non-empty array of strings")
+    if not all(isinstance(r, str) for r in rules):
+        raise ValidationError("each rule must be a string")
+
+    safe_rules = [sanitize_untrusted_text(r.strip()) for r in rules if r.strip()]
+    violations: list[str] = []
+    invalid_indices: set[int] = set()
+
+    for idx, record in enumerate(records, start=1):
+        for rule in safe_rules:
+            lowered = rule.lower()
+            for field_name, value in record.items():
+                if field_name.lower() in lowered:
+                    if "not be empty" in lowered or "non-empty" in lowered:
+                        if value is None or (isinstance(value, str) and not value.strip()):
+                            violations.append(f"Record {idx}: {rule} (value is empty)")
+                            invalid_indices.add(idx)
+                    if "non-negative" in lowered or "must be positive" in lowered:
+                        if isinstance(value, (int, float)) and value < 0:
+                            violations.append(f"Record {idx}: {rule} (value: {value})")
+                            invalid_indices.add(idx)
+                    if "required" in lowered:
+                        if value is None:
+                            violations.append(f"Record {idx}: {rule} (field is null)")
+                            invalid_indices.add(idx)
+
+    violations = violations[:10]
+    invalid_count = len(invalid_indices)
+    valid_count = len(records) - invalid_count
+
+    if invalid_count == 0:
+        verdict = "pass"
+    elif invalid_count < len(records) / 2:
+        verdict = "warn"
+    else:
+        verdict = "fail"
+
+    return {
+        "valid_count": valid_count,
+        "invalid_count": invalid_count,
+        "violations": [" ".join(v.split()[:18]) for v in violations],
+        "verdict": verdict,
+    }
+
+
+def run_code_reviewer_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    diff = require(payload, "diff")
+    context = payload.get("context", "")
+
+    if not isinstance(diff, str) or not diff.strip():
+        raise ValidationError("diff must be a non-empty string")
+    if context is None:
+        context = ""
+    if not isinstance(context, str):
+        raise ValidationError("context must be a string when provided")
+
+    safe_diff = sanitize_untrusted_text(diff.strip())
+    lowered = diff.lower()
+
+    findings: list[str] = []
+
+    security_patterns = {
+        "hardcoded credential detected in diff": ["password =", "secret =", "api_key =", "token =", "hardcoded"],
+        "Potential SQL injection via string interpolation": ["select *", "select ", "f'select", 'f"select', "where id ="],
+        "Unsafe eval usage on user input": ["eval(", "exec("],
+        "Potential command injection": ["os.system(", "subprocess.call(", "shell=true"],
+    }
+    correctness_patterns = {
+        "Missing null or None check before access": ["nonetype", ".get("] if "if " not in lowered and "is none" not in lowered else [],
+        "Broad exception catch may hide errors": ["except exception", "except:", "bare except"],
+    }
+
+    for finding, patterns in security_patterns.items():
+        if any(p in lowered for p in patterns):
+            findings.append(finding)
+    for finding, patterns in correctness_patterns.items():
+        if any(p in lowered for p in patterns):
+            findings.append(finding)
+
+    findings = findings[:6]
+
+    if any("injection" in f.lower() or "eval" in f.lower() or "credential" in f.lower() or "command injection" in f.lower() for f in findings):
+        severity = "critical"
+    elif any("exception" in f.lower() or "null" in f.lower() for f in findings):
+        severity = "major"
+    elif findings:
+        severity = "minor"
+    else:
+        severity = "clean"
+
+    actions: list[str] = []
+    if any("credential" in f.lower() for f in findings):
+        actions.append("Move credentials to environment variables or secret manager")
+    if any("injection" in f.lower() for f in findings):
+        actions.append("Use parameterized queries instead of string interpolation")
+    if any("eval" in f.lower() for f in findings):
+        actions.append("Replace eval with safe parsing or allowlisted operations")
+    if any("exception" in f.lower() for f in findings):
+        actions.append("Narrow exception handling to specific error types")
+    if any("command injection" in f.lower() for f in findings):
+        actions.append("Use subprocess with argument lists instead of shell strings")
+    if not actions:
+        actions.append("No issues detected; approve for merge")
+
+    return {
+        "findings": findings,
+        "severity": severity,
+        "suggested_actions": [" ".join(a.split()[:18]) for a in actions[:4]],
+    }
+
+
+def run_pr_summary_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    title = require(payload, "title")
+    changed_files = require(payload, "changed_files")
+    diff_summary = payload.get("diff_summary", "")
+
+    if not isinstance(title, str) or not title.strip():
+        raise ValidationError("title must be a non-empty string")
+    if not isinstance(changed_files, list) or not changed_files:
+        raise ValidationError("changed_files must be a non-empty array of strings")
+    if not all(isinstance(f, str) for f in changed_files):
+        raise ValidationError("each changed_file must be a string")
+    if diff_summary is None:
+        diff_summary = ""
+    if not isinstance(diff_summary, str):
+        raise ValidationError("diff_summary must be a string when provided")
+
+    safe_title = sanitize_untrusted_text(title.strip())
+    safe_files = [sanitize_untrusted_text(f.strip()) for f in changed_files if f.strip()]
+    safe_diff = sanitize_untrusted_text(diff_summary.strip()) if diff_summary else ""
+
+    file_scope = f"{len(safe_files)} file(s)" if len(safe_files) > 3 else ", ".join(safe_files)
+    summary = f"{safe_title}. Changes span {file_scope}."
+    if safe_diff:
+        summary += f" {safe_diff}"
+    summary = " ".join(summary.split()[:40])
+
+    sensitive_dirs = {"auth", "security", "credential", "secret", "payment", "billing", "admin"}
+    infra_dirs = {"config", "infra", "deploy", "ci", "migration", "terraform", "k8s", "docker"}
+    risk_areas: list[str] = []
+
+    for f in safe_files:
+        lowered = f.lower()
+        for s in sensitive_dirs:
+            if s in lowered:
+                risk_areas.append(f"Sensitive area touched: {f}")
+                break
+        for s in infra_dirs:
+            if s in lowered:
+                risk_areas.append(f"Infrastructure change: {f}")
+                break
+
+    if not risk_areas:
+        risk_areas.append("No high-risk file paths detected")
+
+    risk_areas = list(dict.fromkeys(risk_areas))[:4]
+
+    has_sensitive = any("sensitive" in r.lower() for r in risk_areas)
+    if has_sensitive or len(safe_files) > 10:
+        review_focus = "high"
+    elif len(safe_files) > 4 or any("infrastructure" in r.lower() for r in risk_areas):
+        review_focus = "medium"
+    else:
+        review_focus = "low"
+
+    return {
+        "summary": summary,
+        "risk_areas": [" ".join(r.split()[:18]) for r in risk_areas],
+        "review_focus": review_focus,
+    }
+
+
+def run_log_analyzer_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    log_entries = require(payload, "log_entries")
+    time_range = payload.get("time_range", "")
+
+    if not isinstance(log_entries, list) or not log_entries:
+        raise ValidationError("log_entries must be a non-empty array of strings")
+    if not all(isinstance(e, str) for e in log_entries):
+        raise ValidationError("each log entry must be a string")
+    if time_range is not None and not isinstance(time_range, str):
+        raise ValidationError("time_range must be a string when provided")
+
+    safe_entries = [sanitize_untrusted_text(e.strip()) for e in log_entries if e.strip()]
+    total = len(safe_entries)
+
+    error_count = sum(1 for e in safe_entries if "error" in e.lower())
+    warn_count = sum(1 for e in safe_entries if "warn" in e.lower())
+    info_count = sum(1 for e in safe_entries if "info" in e.lower())
+
+    patterns: list[str] = []
+    if error_count:
+        patterns.append(f"{error_count} ERROR entries detected across {total} log lines")
+    if warn_count:
+        patterns.append(f"{warn_count} WARN entries detected across {total} log lines")
+    if info_count:
+        patterns.append(f"{info_count} INFO entries detected across {total} log lines")
+
+    repeated: dict[str, int] = {}
+    for entry in safe_entries:
+        lowered = entry.lower()
+        for keyword in ["timeout", "connection refused", "connection timeout", "out of memory", "disk full"]:
+            if keyword in lowered:
+                repeated[keyword] = repeated.get(keyword, 0) + 1
+    for keyword, count in sorted(repeated.items(), key=lambda x: -x[1]):
+        if count >= 2:
+            patterns.append(f"Repeated {keyword}: {count} occurrences")
+
+    if not patterns:
+        patterns.append(f"{total} log entries with no notable patterns")
+    patterns = patterns[:5]
+
+    anomalies: list[str] = []
+    if error_count >= 2:
+        anomalies.append(f"Error spike: {error_count} errors in window")
+    for keyword, count in repeated.items():
+        if count >= 2:
+            anomalies.append(f"{keyword.title()} spike: {count} occurrences in short window")
+
+    auth_failures = sum(1 for e in safe_entries if "authentication failed" in e.lower() or "auth failure" in e.lower() or "unauthorized" in e.lower())
+    if auth_failures:
+        anomalies.append(f"Authentication failure from {'multiple sources' if auth_failures > 1 else 'unknown user'}")
+
+    anomalies = list(dict.fromkeys(anomalies))[:5]
+
+    if any("out of memory" in e.lower() or "disk full" in e.lower() or "data loss" in e.lower() for e in safe_entries):
+        severity = "critical"
+    elif error_count >= 3 or auth_failures >= 2:
+        severity = "critical"
+    elif anomalies:
+        severity = "elevated"
+    else:
+        severity = "normal"
+
+    return {
+        "patterns": patterns,
+        "anomalies": anomalies,
+        "severity": severity,
+    }
+
+
+def run_slo_reporter_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    service_name = require(payload, "service_name")
+    metrics = require(payload, "metrics")
+    slo_targets = require(payload, "slo_targets")
+
+    if not isinstance(service_name, str) or not service_name.strip():
+        raise ValidationError("service_name must be a non-empty string")
+    if not isinstance(metrics, dict) or not metrics:
+        raise ValidationError("metrics must be a non-empty object")
+    if not isinstance(slo_targets, dict) or not slo_targets:
+        raise ValidationError("slo_targets must be a non-empty object")
+
+    safe_name = sanitize_untrusted_text(service_name.strip())
+
+    findings: list[str] = []
+    breached_keys: list[str] = []
+    at_risk_keys: list[str] = []
+
+    for key in sorted(slo_targets.keys()):
+        target = slo_targets[key]
+        actual = metrics.get(key)
+        if actual is None or not isinstance(actual, (int, float)) or not isinstance(target, (int, float)):
+            findings.append(f"{key}: metric or target not numeric, skipped")
+            continue
+
+        is_higher_better = key.lower() in {"availability", "uptime", "throughput", "success_rate"}
+
+        if is_higher_better:
+            if actual >= target:
+                findings.append(f"{key}: {actual} meets target {target} (met)")
+            elif actual >= target * 0.95:
+                findings.append(f"{key}: {actual} within 5% of target {target} (at risk)")
+                at_risk_keys.append(key)
+            else:
+                findings.append(f"{key}: {actual} below target {target} (breached)")
+                breached_keys.append(key)
+        else:
+            if actual <= target:
+                findings.append(f"{key}: {actual} within target {target} (met)")
+            elif actual <= target * 1.05:
+                findings.append(f"{key}: {actual} within 5% of target {target} (at risk)")
+                at_risk_keys.append(key)
+            else:
+                findings.append(f"{key}: {actual} above target {target} (breached)")
+                breached_keys.append(key)
+
+    if breached_keys:
+        compliance_status = "breached"
+    elif at_risk_keys:
+        compliance_status = "at_risk"
+    else:
+        compliance_status = "met"
+
+    actions: list[str] = []
+    if breached_keys:
+        actions.append(f"Investigate {', '.join(breached_keys[:2])} breach and review recent deployments for {safe_name}")
+    if at_risk_keys:
+        actions.append(f"Monitor {', '.join(at_risk_keys[:2])} closely to prevent SLO breach")
+    if not actions:
+        actions.append(f"All SLO targets met for {safe_name}; continue monitoring")
+
+    return {
+        "compliance_status": compliance_status,
+        "findings": [" ".join(f.split()[:18]) for f in findings[:4]],
+        "recommended_actions": [" ".join(a.split()[:18]) for a in actions[:3]],
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -992,17 +1381,23 @@ def run_agent(
             run_blast_radius_assessor_agent_llm,
             run_checkpoint_agent_llm,
             run_classifier_agent_llm,
+            run_code_reviewer_agent_llm,
+            run_data_validator_agent_llm,
             run_executor_agent_llm,
             run_heartbeat_agent_llm,
             run_kill_path_auditor_agent_llm,
             run_lineage_recorder_agent_llm,
+            run_log_analyzer_agent_llm,
             run_planner_agent_llm,
+            run_pr_summary_agent_llm,
             run_regression_triage_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
             run_handoff_agent_llm,
+            run_schema_drift_detector_agent_llm,
             run_scope_validator_agent_llm,
+            run_slo_reporter_agent_llm,
             run_summary_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
@@ -1138,6 +1533,48 @@ def run_agent(
             return run_kill_path_auditor_agent(payload)
         if selected_mode == "llm":
             return run_kill_path_auditor_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"schema-drift-detector-agent", "data-ops.schema-drift-detector-agent"}:
+        if selected_mode == "deterministic":
+            return run_schema_drift_detector_agent(payload)
+        if selected_mode == "llm":
+            return run_schema_drift_detector_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"data-validator-agent", "data-ops.data-validator-agent"}:
+        if selected_mode == "deterministic":
+            return run_data_validator_agent(payload)
+        if selected_mode == "llm":
+            return run_data_validator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"code-reviewer-agent", "code-ops.code-reviewer-agent"}:
+        if selected_mode == "deterministic":
+            return run_code_reviewer_agent(payload)
+        if selected_mode == "llm":
+            return run_code_reviewer_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"pr-summary-agent", "code-ops.pr-summary-agent"}:
+        if selected_mode == "deterministic":
+            return run_pr_summary_agent(payload)
+        if selected_mode == "llm":
+            return run_pr_summary_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"log-analyzer-agent", "observability-ops.log-analyzer-agent"}:
+        if selected_mode == "deterministic":
+            return run_log_analyzer_agent(payload)
+        if selected_mode == "llm":
+            return run_log_analyzer_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"slo-reporter-agent", "observability-ops.slo-reporter-agent"}:
+        if selected_mode == "deterministic":
+            return run_slo_reporter_agent(payload)
+        if selected_mode == "llm":
+            return run_slo_reporter_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

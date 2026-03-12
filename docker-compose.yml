@@ -8,5 +8,15 @@ services:
       - ollama-data:/root/.ollama
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: agents-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
 volumes:
   ollama-data:
+  redis-data:

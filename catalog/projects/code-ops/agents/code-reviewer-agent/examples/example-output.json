@@ -1,0 +1,13 @@
+{
+  "findings": [
+    "Hardcoded credential detected in diff",
+    "Potential SQL injection via string interpolation",
+    "Unsafe eval usage on user input"
+  ],
+  "severity": "critical",
+  "suggested_actions": [
+    "Move credentials to environment variables or secret manager",
+    "Use parameterized queries instead of string interpolation",
+    "Replace eval with safe parsing or allowlisted operations"
+  ]
+}

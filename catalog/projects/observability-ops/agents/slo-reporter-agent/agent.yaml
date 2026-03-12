@@ -1,0 +1,31 @@
+id: observability-ops.slo-reporter-agent
+name: slo-reporter-agent
+version: 0.1.0
+summary: |
+  Generates SLO compliance reports from service metrics and targets.
+owners:
+  - platform-agents
+inputs:
+  - name: service_name
+    type: string
+    required: true
+  - name: metrics
+    type: object
+    required: true
+  - name: slo_targets
+    type: object
+    required: true
+outputs:
+  - name: compliance_status
+    type: enum[met,at_risk,breached]
+  - name: findings
+    type: array[string]
+  - name: recommended_actions
+    type: array[string]
+rules:
+  - Compare each metric against its SLO target.
+  - Met if all targets satisfied; at_risk if within 5% margin; breached if any target missed.
+  - Return 1 to 4 findings and 1 to 3 recommended actions.
+constraints:
+  - Avoid unsafe command content.
+  - Keep findings and actions concise.

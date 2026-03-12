@@ -1,0 +1,13 @@
+{
+  "service_name": "api-gateway",
+  "metrics": {
+    "availability": 99.8,
+    "latency_p99_ms": 450,
+    "error_rate_percent": 1.2
+  },
+  "slo_targets": {
+    "availability": 99.9,
+    "latency_p99_ms": 500,
+    "error_rate_percent": 1.0
+  }
+}

@@ -88,8 +88,13 @@ Repository-level runtime and tests:
 - `tests/test_control_ops_llm.py` - control-ops checks in LLM mode.
 - `tests/test_governance_pipeline.py` - governance pipeline composition test.
 - `tests/test_resilience_pipeline.py` - resilience pipeline composition test.
+- `tests/test_state.py` - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
+- `tests/test_data_ops.py` - deterministic data-ops behavior checks (schema-drift-detector/data-validator).
+- `tests/test_code_ops.py` - deterministic code-ops behavior checks (code-reviewer/pr-summary).
+- `tests/test_observability_ops.py` - deterministic observability-ops behavior checks (log-analyzer/slo-reporter).
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
-- `docker-compose.yml` - local Ollama service for speed-first LLM testing.
+- `local_agents/state.py` - Redis state store with graceful NoOp fallback for pipeline state persistence.
+- `docker-compose.yml` - local Ollama and Redis services for LLM testing and state persistence.
 
 ## Naming Conventions
 
@@ -126,6 +131,15 @@ Repository-level runtime and tests:
   - `scope-validator-agent`: validates proposed actions against governance requirements.
   - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
   - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
+- `data-ops`
+  - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
+  - `data-validator-agent`: validates data records against rules and reports violations.
+- `code-ops`
+  - `code-reviewer-agent`: reviews code diffs for security, correctness, and style issues.
+  - `pr-summary-agent`: summarizes PR changes for reviewers with risk assessment.
+- `observability-ops`
+  - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
+  - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
 
 ## Update Rule
 

@@ -1,0 +1,11 @@
+{
+  "records": [
+    {"user_id": 1, "email": "alice@example.com", "age": 30},
+    {"user_id": 2, "email": "", "age": 25},
+    {"user_id": 3, "email": "bob@example.com", "age": -5}
+  ],
+  "rules": [
+    "email must not be empty",
+    "age must be non-negative"
+  ]
+}

@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from local_agents import ValidationError, run_agent
+from local_agents.state import connect as connect_state, save_stage, save_result
 
 
 def _default_target_payload(target_agent: str, task: object) -> dict[str, object]:
@@ -55,7 +56,14 @@ def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, obj
     }
 
 
-def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: str) -> dict[str, object]:
+def run_pipeline(
+    payload: dict[str, object],
+    mode: str,
+    model: str,
+    base_url: str,
+    run_id: str = "",
+    store: object | None = None,
+) -> dict[str, object]:
     task = payload.get("task")
     available_agents = payload.get("available_agents", [])
     agent_payloads = payload.get("agent_payloads", {})
@@ -76,6 +84,9 @@ def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: st
         )
     except ValidationError as exc:
         return _degraded_output("router", str(exc), workflow_id)
+
+    if store and run_id:
+        save_stage(store, run_id, "router", route)
 
     target_agent = route["target_agent"]
     custom_payload = agent_payloads.get(target_agent)
@@ -98,6 +109,9 @@ def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: st
     except ValidationError as exc:
         return _degraded_output("target", str(exc), workflow_id)
 
+    if store and run_id:
+        save_stage(store, run_id, "target", target_output)
+
     checkpoint_notes = f"Routed to {target_agent} with priority {route['priority']}"
     try:
         checkpoint = run_agent(
@@ -118,13 +132,19 @@ def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: st
         out["target_output"] = target_output
         return out
 
-    return {
+    if store and run_id:
+        save_stage(store, run_id, "checkpoint", checkpoint)
+
+    result = {
         "workflow_id": workflow_id,
         "route": route,
         "target_output": target_output,
         "checkpoint": checkpoint,
         "pipeline_status": "ok",
     }
+    if store and run_id:
+        save_result(store, run_id, result)
+    return result
 
 
 def main() -> int:
@@ -143,12 +163,21 @@ def main() -> int:
         help="LLM base URL",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty print output")
+    parser.add_argument("--state", action="store_true", help="Persist pipeline state to Redis")
+    parser.add_argument("--run-id", default="", help="Pipeline run ID for state persistence")
     args = parser.parse_args()
+
+    store = None
+    run_id = args.run_id
+    if args.state:
+        store = connect_state()
+        if not run_id:
+            run_id = datetime.now(timezone.utc).strftime("workflow-%Y%m%d-%H%M%S")
 
     path = Path(args.input)
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        result = run_pipeline(payload, args.mode, args.model, args.base_url)
+        result = run_pipeline(payload, args.mode, args.model, args.base_url, run_id=run_id, store=store)
     except FileNotFoundError:
         print(f"input file not found: {path}", file=sys.stderr)
         return 2

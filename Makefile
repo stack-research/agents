@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-lineage-recorder-example run-scope-validator-example run-blast-radius-assessor-example run-kill-path-auditor-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-governance-pipeline-example run-resilience-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-lineage-recorder-llm run-scope-validator-llm run-blast-radius-assessor-llm run-kill-path-auditor-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm run-governance-pipeline-llm run-resilience-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm state-up state-down llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-lineage-recorder-example run-scope-validator-example run-blast-radius-assessor-example run-kill-path-auditor-example run-schema-drift-detector-example run-data-validator-example run-code-reviewer-example run-pr-summary-example run-log-analyzer-example run-slo-reporter-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-governance-pipeline-example run-resilience-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-lineage-recorder-llm run-scope-validator-llm run-blast-radius-assessor-llm run-kill-path-auditor-llm run-schema-drift-detector-llm run-data-validator-llm run-code-reviewer-llm run-pr-summary-llm run-log-analyzer-llm run-slo-reporter-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm run-governance-pipeline-llm run-resilience-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -14,6 +14,12 @@ test-security-llm: check-policy-pack-llm
 
 test-integration-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 -m unittest tests.test_integration_llm -v
+
+state-up:
+	docker compose up -d redis
+
+state-down:
+	docker compose stop redis
 
 llm-up:
 	docker compose up -d ollama
@@ -95,6 +101,24 @@ run-blast-radius-assessor-example:
 run-kill-path-auditor-example:
 	python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty
 
+run-schema-drift-detector-example:
+	python3 scripts/run_agent.py --agent data-ops.schema-drift-detector-agent --input catalog/projects/data-ops/agents/schema-drift-detector-agent/examples/example-input.json --pretty
+
+run-data-validator-example:
+	python3 scripts/run_agent.py --agent data-ops.data-validator-agent --input catalog/projects/data-ops/agents/data-validator-agent/examples/example-input.json --pretty
+
+run-code-reviewer-example:
+	python3 scripts/run_agent.py --agent code-ops.code-reviewer-agent --input catalog/projects/code-ops/agents/code-reviewer-agent/examples/example-input.json --pretty
+
+run-pr-summary-example:
+	python3 scripts/run_agent.py --agent code-ops.pr-summary-agent --input catalog/projects/code-ops/agents/pr-summary-agent/examples/example-input.json --pretty
+
+run-log-analyzer-example:
+	python3 scripts/run_agent.py --agent observability-ops.log-analyzer-agent --input catalog/projects/observability-ops/agents/log-analyzer-agent/examples/example-input.json --pretty
+
+run-slo-reporter-example:
+	python3 scripts/run_agent.py --agent observability-ops.slo-reporter-agent --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json --pretty
+
 run-security-scan-example:
 	python3 scripts/run_security_scan.py --target-path . --pretty
 
@@ -166,6 +190,24 @@ run-blast-radius-assessor-llm: check-policy-pack-llm
 
 run-kill-path-auditor-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty
+
+run-schema-drift-detector-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent data-ops.schema-drift-detector-agent --input catalog/projects/data-ops/agents/schema-drift-detector-agent/examples/example-input.json --pretty
+
+run-data-validator-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent data-ops.data-validator-agent --input catalog/projects/data-ops/agents/data-validator-agent/examples/example-input.json --pretty
+
+run-code-reviewer-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent code-ops.code-reviewer-agent --input catalog/projects/code-ops/agents/code-reviewer-agent/examples/example-input.json --pretty
+
+run-pr-summary-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent code-ops.pr-summary-agent --input catalog/projects/code-ops/agents/pr-summary-agent/examples/example-input.json --pretty
+
+run-log-analyzer-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent observability-ops.log-analyzer-agent --input catalog/projects/observability-ops/agents/log-analyzer-agent/examples/example-input.json --pretty
+
+run-slo-reporter-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent observability-ops.slo-reporter-agent --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json --pretty
 
 run-support-pipeline-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty

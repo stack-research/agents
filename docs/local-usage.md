@@ -169,6 +169,60 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Schema drift detector example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent data-ops.schema-drift-detector-agent \
+  --input catalog/projects/data-ops/agents/schema-drift-detector-agent/examples/example-input.json \
+  --pretty
+```
+
+Data validator example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent data-ops.data-validator-agent \
+  --input catalog/projects/data-ops/agents/data-validator-agent/examples/example-input.json \
+  --pretty
+```
+
+Code reviewer example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent code-ops.code-reviewer-agent \
+  --input catalog/projects/code-ops/agents/code-reviewer-agent/examples/example-input.json \
+  --pretty
+```
+
+PR summary example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent code-ops.pr-summary-agent \
+  --input catalog/projects/code-ops/agents/pr-summary-agent/examples/example-input.json \
+  --pretty
+```
+
+Log analyzer example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent observability-ops.log-analyzer-agent \
+  --input catalog/projects/observability-ops/agents/log-analyzer-agent/examples/example-input.json \
+  --pretty
+```
+
+SLO reporter example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent observability-ops.slo-reporter-agent \
+  --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -250,6 +304,45 @@ Accepted `--agent` values:
 - `control-ops.scope-validator-agent` or `scope-validator-agent`
 - `control-ops.blast-radius-assessor-agent` or `blast-radius-assessor-agent`
 - `control-ops.kill-path-auditor-agent` or `kill-path-auditor-agent`
+- `data-ops.schema-drift-detector-agent` or `schema-drift-detector-agent`
+- `data-ops.data-validator-agent` or `data-validator-agent`
+- `code-ops.code-reviewer-agent` or `code-reviewer-agent`
+- `code-ops.pr-summary-agent` or `pr-summary-agent`
+- `observability-ops.log-analyzer-agent` or `log-analyzer-agent`
+- `observability-ops.slo-reporter-agent` or `slo-reporter-agent`
+
+## Pipeline State Persistence (Redis)
+
+Start Redis for optional state persistence:
+
+```bash
+make state-up
+```
+
+Run any pipeline with `--state` to persist intermediate stage outputs:
+
+```bash
+python3 scripts/run_support_pipeline.py \
+  --input catalog/projects/support-ops/examples/pipeline-input.json \
+  --state --pretty
+
+python3 scripts/run_workflow_pipeline.py \
+  --input catalog/projects/workflow-ops/examples/pipeline-input.json \
+  --state --run-id my-custom-run --pretty
+```
+
+Optional flags:
+
+- `--state` enables Redis state persistence (no-op if Redis is unavailable)
+- `--run-id` sets a custom run identifier (auto-generated if omitted)
+
+State keys use the pattern `pipeline:{run_id}:stage:{name}` and `pipeline:{run_id}:result` with a 1-hour TTL.
+
+Stop Redis:
+
+```bash
+make state-down
+```
 
 ## LLM Mode (Fast Local Model)
 
@@ -290,6 +383,8 @@ python3 -m unittest discover -s tests -v
 Or with Make targets:
 
 ```bash
+make state-up
+make state-down
 make test
 make verify-env
 make test-security
@@ -311,6 +406,12 @@ make run-test-case-generator-example
 make run-regression-triage-example
 make run-router-example
 make run-checkpoint-example
+make run-schema-drift-detector-example
+make run-data-validator-example
+make run-code-reviewer-example
+make run-pr-summary-example
+make run-log-analyzer-example
+make run-slo-reporter-example
 make run-security-scan-example
 make run-support-pipeline-example
 make run-planner-executor-pipeline-example
@@ -337,6 +438,12 @@ make run-lineage-recorder-llm
 make run-scope-validator-llm
 make run-blast-radius-assessor-llm
 make run-kill-path-auditor-llm
+make run-schema-drift-detector-llm
+make run-data-validator-llm
+make run-code-reviewer-llm
+make run-pr-summary-llm
+make run-log-analyzer-llm
+make run-slo-reporter-llm
 make run-governance-pipeline-example
 make run-resilience-pipeline-example
 make run-governance-pipeline-llm

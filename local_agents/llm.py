@@ -979,3 +979,258 @@ Input:
     safe_id = sanitize_untrusted_text(checkpoint_id.strip())[:80]
     safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:50]))
     return {"checkpoint_id": safe_id, "recorded": True, "summary": safe_summary}
+
+
+def run_schema_drift_detector_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    schema_before = require(payload, "schema_before")
+    schema_after = require(payload, "schema_after")
+
+    if not isinstance(schema_before, dict) or not schema_before:
+        raise ValidationError("schema_before must be a non-empty object")
+    if not isinstance(schema_after, dict) or not schema_after:
+        raise ValidationError("schema_after must be a non-empty object")
+
+    prompt = f"""
+You are schema-drift-detector-agent.
+Return only JSON with keys changes, drift_severity, recommended_actions.
+Rules:
+- changes must be an array of objects with field, change_type (added|removed|type_changed), detail.
+- drift_severity must be one of none, low, medium, high.
+- recommended_actions must be 1-4 concise strings.
+Input:
+{{"schema_before":{json.dumps(schema_before)},"schema_after":{json.dumps(schema_after)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    changes = out.get("changes")
+    drift_severity = out.get("drift_severity")
+    recommended_actions = out.get("recommended_actions")
+
+    if not isinstance(changes, list):
+        raise ValidationError("LLM output changes must be an array")
+    if drift_severity not in {"none", "low", "medium", "high"}:
+        raise ValidationError("LLM output drift_severity must be one of none, low, medium, high")
+    if not isinstance(recommended_actions, list) or not (1 <= len(recommended_actions) <= 4):
+        raise ValidationError("LLM output recommended_actions must contain 1-4 items")
+    if not all(isinstance(a, str) and a.strip() for a in recommended_actions):
+        raise ValidationError("LLM output recommended_actions items must be non-empty strings")
+
+    safe_changes = []
+    for c in changes[:10]:
+        if isinstance(c, dict) and isinstance(c.get("field"), str):
+            safe_changes.append({
+                "field": sanitize_untrusted_text(c["field"]),
+                "change_type": c.get("change_type", "unknown"),
+                "detail": sanitize_untrusted_text(str(c.get("detail", ""))),
+            })
+    safe_actions = [sanitize_untrusted_text(" ".join(a.strip().split()[:18])) for a in recommended_actions]
+    return {"changes": safe_changes, "drift_severity": drift_severity, "recommended_actions": safe_actions}
+
+
+def run_data_validator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    records = require(payload, "records")
+    rules = require(payload, "rules")
+
+    if not isinstance(records, list) or not records:
+        raise ValidationError("records must be a non-empty array")
+    if not isinstance(rules, list) or not rules:
+        raise ValidationError("rules must be a non-empty array of strings")
+
+    prompt = f"""
+You are data-validator-agent.
+Return only JSON with keys valid_count, invalid_count, violations, verdict.
+Rules:
+- valid_count and invalid_count must be non-negative integers summing to the total record count.
+- violations must be an array of up to 10 concise strings.
+- verdict must be one of pass, warn, fail.
+- pass if no violations, warn if <50% invalid, fail if >=50% invalid.
+Input:
+{{"records":{json.dumps(records)},"rules":{json.dumps(rules)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    valid_count = out.get("valid_count")
+    invalid_count = out.get("invalid_count")
+    violations = out.get("violations")
+    verdict = out.get("verdict")
+
+    if not isinstance(valid_count, int) or valid_count < 0:
+        raise ValidationError("LLM output valid_count must be a non-negative integer")
+    if not isinstance(invalid_count, int) or invalid_count < 0:
+        raise ValidationError("LLM output invalid_count must be a non-negative integer")
+    if not isinstance(violations, list):
+        raise ValidationError("LLM output violations must be an array")
+    if verdict not in {"pass", "warn", "fail"}:
+        raise ValidationError("LLM output verdict must be one of pass, warn, fail")
+
+    safe_violations = [sanitize_untrusted_text(" ".join(v.strip().split()[:18])) for v in violations[:10] if isinstance(v, str)]
+    return {"valid_count": valid_count, "invalid_count": invalid_count, "violations": safe_violations, "verdict": verdict}
+
+
+def run_code_reviewer_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    diff = require(payload, "diff")
+    context = payload.get("context", "")
+
+    if not isinstance(diff, str) or not diff.strip():
+        raise ValidationError("diff must be a non-empty string")
+    if context is None:
+        context = ""
+
+    safe_diff = sanitize_untrusted_text(diff.strip())
+    safe_context = sanitize_untrusted_text(context.strip()) if context else ""
+
+    prompt = f"""
+You are code-reviewer-agent.
+Return only JSON with keys findings, severity, suggested_actions.
+Rules:
+- findings must be an array of 0-6 concise strings describing issues.
+- severity must be one of clean, minor, major, critical.
+- suggested_actions must be an array of 1-4 concise strings.
+Input:
+{{"diff":{json.dumps(safe_diff)},"context":{json.dumps(safe_context)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    findings = out.get("findings")
+    severity = out.get("severity")
+    suggested_actions = out.get("suggested_actions")
+
+    if not isinstance(findings, list):
+        raise ValidationError("LLM output findings must be an array")
+    if severity not in {"clean", "minor", "major", "critical"}:
+        raise ValidationError("LLM output severity must be one of clean, minor, major, critical")
+    if not isinstance(suggested_actions, list) or not (1 <= len(suggested_actions) <= 4):
+        raise ValidationError("LLM output suggested_actions must contain 1-4 items")
+
+    safe_findings = [sanitize_untrusted_text(" ".join(f.strip().split()[:18])) for f in findings[:6] if isinstance(f, str)]
+    safe_actions = [sanitize_untrusted_text(" ".join(a.strip().split()[:18])) for a in suggested_actions]
+    return {"findings": safe_findings, "severity": severity, "suggested_actions": safe_actions}
+
+
+def run_pr_summary_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    title = require(payload, "title")
+    changed_files = require(payload, "changed_files")
+    diff_summary = payload.get("diff_summary", "")
+
+    if not isinstance(title, str) or not title.strip():
+        raise ValidationError("title must be a non-empty string")
+    if not isinstance(changed_files, list) or not changed_files:
+        raise ValidationError("changed_files must be a non-empty array of strings")
+    if diff_summary is None:
+        diff_summary = ""
+
+    safe_title = sanitize_untrusted_text(title.strip())
+    safe_files = [sanitize_untrusted_text(f.strip()) for f in changed_files if isinstance(f, str) and f.strip()]
+
+    prompt = f"""
+You are pr-summary-agent.
+Return only JSON with keys summary, risk_areas, review_focus.
+Rules:
+- summary must be under 80 words.
+- risk_areas must be an array of 1-4 concise strings.
+- review_focus must be one of low, medium, high.
+Input:
+{{"title":{json.dumps(safe_title)},"changed_files":{json.dumps(safe_files)},"diff_summary":{json.dumps(diff_summary)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    summary = out.get("summary")
+    risk_areas = out.get("risk_areas")
+    review_focus = out.get("review_focus")
+
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+    if not isinstance(risk_areas, list) or not (1 <= len(risk_areas) <= 4):
+        raise ValidationError("LLM output risk_areas must contain 1-4 items")
+    if review_focus not in {"low", "medium", "high"}:
+        raise ValidationError("LLM output review_focus must be one of low, medium, high")
+
+    safe_summary = sanitize_untrusted_text(" ".join(summary.strip().split()[:40]))
+    safe_risks = [sanitize_untrusted_text(" ".join(r.strip().split()[:18])) for r in risk_areas if isinstance(r, str)]
+    return {"summary": safe_summary, "risk_areas": safe_risks, "review_focus": review_focus}
+
+
+def run_log_analyzer_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    log_entries = require(payload, "log_entries")
+    time_range = payload.get("time_range", "")
+
+    if not isinstance(log_entries, list) or not log_entries:
+        raise ValidationError("log_entries must be a non-empty array of strings")
+    if not all(isinstance(e, str) for e in log_entries):
+        raise ValidationError("each log entry must be a string")
+
+    safe_entries = [sanitize_untrusted_text(e.strip()) for e in log_entries if e.strip()]
+
+    prompt = f"""
+You are log-analyzer-agent.
+Return only JSON with keys patterns, anomalies, severity.
+Rules:
+- patterns must be an array of 1-5 concise strings describing recurring patterns.
+- anomalies must be an array of 0-5 concise strings describing anomalies.
+- severity must be one of normal, elevated, critical.
+Input:
+{{"log_entries":{json.dumps(safe_entries)},"time_range":{json.dumps(time_range or "")}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    patterns = out.get("patterns")
+    anomalies = out.get("anomalies")
+    severity = out.get("severity")
+
+    if not isinstance(patterns, list) or not (1 <= len(patterns) <= 5):
+        raise ValidationError("LLM output patterns must contain 1-5 items")
+    if not isinstance(anomalies, list) or len(anomalies) > 5:
+        raise ValidationError("LLM output anomalies must contain 0-5 items")
+    if severity not in {"normal", "elevated", "critical"}:
+        raise ValidationError("LLM output severity must be one of normal, elevated, critical")
+
+    safe_patterns = [sanitize_untrusted_text(" ".join(p.strip().split()[:18])) for p in patterns if isinstance(p, str)]
+    safe_anomalies = [sanitize_untrusted_text(" ".join(a.strip().split()[:18])) for a in anomalies if isinstance(a, str)]
+    return {"patterns": safe_patterns, "anomalies": safe_anomalies, "severity": severity}
+
+
+def run_slo_reporter_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    service_name = require(payload, "service_name")
+    metrics = require(payload, "metrics")
+    slo_targets = require(payload, "slo_targets")
+
+    if not isinstance(service_name, str) or not service_name.strip():
+        raise ValidationError("service_name must be a non-empty string")
+    if not isinstance(metrics, dict) or not metrics:
+        raise ValidationError("metrics must be a non-empty object")
+    if not isinstance(slo_targets, dict) or not slo_targets:
+        raise ValidationError("slo_targets must be a non-empty object")
+
+    prompt = f"""
+You are slo-reporter-agent.
+Return only JSON with keys compliance_status, findings, recommended_actions.
+Rules:
+- compliance_status must be one of met, at_risk, breached.
+- findings must be an array of 1-4 concise strings.
+- recommended_actions must be an array of 1-3 concise strings.
+- Compare each metric against its SLO target numerically.
+Input:
+{{"service_name":{json.dumps(service_name)},"metrics":{json.dumps(metrics)},"slo_targets":{json.dumps(slo_targets)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    compliance_status = out.get("compliance_status")
+    findings = out.get("findings")
+    recommended_actions = out.get("recommended_actions")
+
+    if compliance_status not in {"met", "at_risk", "breached"}:
+        raise ValidationError("LLM output compliance_status must be one of met, at_risk, breached")
+    if not isinstance(findings, list) or not (1 <= len(findings) <= 4):
+        raise ValidationError("LLM output findings must contain 1-4 items")
+    if not isinstance(recommended_actions, list) or not (1 <= len(recommended_actions) <= 3):
+        raise ValidationError("LLM output recommended_actions must contain 1-3 items")
+
+    safe_findings = [sanitize_untrusted_text(" ".join(f.strip().split()[:18])) for f in findings if isinstance(f, str)]
+    safe_actions = [sanitize_untrusted_text(" ".join(a.strip().split()[:18])) for a in recommended_actions]
+    return {"compliance_status": compliance_status, "findings": safe_findings, "recommended_actions": safe_actions}

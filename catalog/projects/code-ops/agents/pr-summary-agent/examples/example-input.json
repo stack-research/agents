@@ -1,0 +1,10 @@
+{
+  "title": "Add rate limiting to auth endpoints",
+  "changed_files": [
+    "src/auth/middleware.py",
+    "src/auth/rate_limiter.py",
+    "tests/auth/test_rate_limiter.py",
+    "config/auth.yaml"
+  ],
+  "diff_summary": "Adds token bucket rate limiter to login and signup endpoints with configurable thresholds."
+}

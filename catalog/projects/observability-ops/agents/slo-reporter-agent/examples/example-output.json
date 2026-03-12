@@ -1,0 +1,12 @@
+{
+  "compliance_status": "breached",
+  "findings": [
+    "availability: 99.8% below target 99.9% (breached)",
+    "latency_p99_ms: 450ms within target 500ms (met)",
+    "error_rate_percent: 1.2% above target 1.0% (breached)"
+  ],
+  "recommended_actions": [
+    "Investigate availability drop and review recent deployments",
+    "Reduce error rate by reviewing top error sources"
+  ]
+}

@@ -1,0 +1,28 @@
+id: code-ops.code-reviewer-agent
+name: code-reviewer-agent
+version: 0.1.0
+summary: |
+  Reviews code diffs and produces structured findings with severity and suggested actions.
+owners:
+  - platform-agents
+inputs:
+  - name: diff
+    type: string
+    required: true
+  - name: context
+    type: string
+    required: false
+outputs:
+  - name: findings
+    type: array[string]
+  - name: severity
+    type: enum[clean,minor,major,critical]
+  - name: suggested_actions
+    type: array[string]
+rules:
+  - Scan for security, correctness, and style issues.
+  - Return 0 to 6 findings.
+  - Severity reflects the worst finding.
+constraints:
+  - Avoid unsafe command content.
+  - Keep each finding concise.

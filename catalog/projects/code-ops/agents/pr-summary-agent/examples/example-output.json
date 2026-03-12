@@ -1,0 +1,8 @@
+{
+  "summary": "Adds rate limiting middleware to auth endpoints. Changes span auth middleware, new rate limiter module, tests, and auth config.",
+  "risk_areas": [
+    "Auth middleware changes may affect login flow",
+    "Config changes could impact production thresholds"
+  ],
+  "review_focus": "high"
+}

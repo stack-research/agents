@@ -1,0 +1,30 @@
+id: data-ops.data-validator-agent
+name: data-validator-agent
+version: 0.1.0
+summary: |
+  Validates data records against a set of rules and reports violations.
+owners:
+  - platform-agents
+inputs:
+  - name: records
+    type: array[object]
+    required: true
+  - name: rules
+    type: array[string]
+    required: true
+outputs:
+  - name: valid_count
+    type: integer
+  - name: invalid_count
+    type: integer
+  - name: violations
+    type: array[string]
+  - name: verdict
+    type: enum[pass,warn,fail]
+rules:
+  - Check each record against all rules.
+  - Report up to 10 violations.
+  - Verdict based on violation ratio.
+constraints:
+  - Avoid unsafe command content.
+  - Keep each violation concise.

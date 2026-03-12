@@ -1,0 +1,12 @@
+{
+  "patterns": [
+    "3 ERROR entries detected across 5 log lines",
+    "Repeated connection timeout to db-primary",
+    "1 WARN entry indicating retry exhaustion"
+  ],
+  "anomalies": [
+    "Connection timeout spike: 2 occurrences in short window",
+    "Authentication failure from unknown user"
+  ],
+  "severity": "elevated"
+}

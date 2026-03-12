@@ -1,0 +1,13 @@
+{
+  "changes": [
+    {"field": "email", "change_type": "removed", "detail": "field removed from schema"},
+    {"field": "email_address", "change_type": "added", "detail": "new field added to schema"},
+    {"field": "updated_at", "change_type": "added", "detail": "new field added to schema"}
+  ],
+  "drift_severity": "high",
+  "recommended_actions": [
+    "Verify email removal is intentional and migrate dependent consumers",
+    "Update downstream pipelines to use email_address",
+    "Add updated_at handling to all read paths"
+  ]
+}

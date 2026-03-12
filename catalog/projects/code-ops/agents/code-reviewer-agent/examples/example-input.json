@@ -1,0 +1,4 @@
+{
+  "diff": "+    password = 'hardcoded123'\n+    query = f'SELECT * FROM users WHERE id = {user_id}'\n+    result = eval(user_input)\n     return result",
+  "context": "Authentication module update"
+}

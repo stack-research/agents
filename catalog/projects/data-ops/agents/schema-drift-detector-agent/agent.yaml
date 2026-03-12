@@ -1,0 +1,28 @@
+id: data-ops.schema-drift-detector-agent
+name: schema-drift-detector-agent
+version: 0.1.0
+summary: |
+  Detects schema changes between two versions and classifies drift severity.
+owners:
+  - platform-agents
+inputs:
+  - name: schema_before
+    type: object
+    required: true
+  - name: schema_after
+    type: object
+    required: true
+outputs:
+  - name: changes
+    type: array[object]
+  - name: drift_severity
+    type: enum[none,low,medium,high]
+  - name: recommended_actions
+    type: array[string]
+rules:
+  - Compare field additions, removals, and type changes.
+  - Classify severity based on breaking vs additive changes.
+  - Return 1 to 4 recommended actions.
+constraints:
+  - Avoid unsafe command content.
+  - Keep each action concise.

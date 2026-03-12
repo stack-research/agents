@@ -1,0 +1,10 @@
+{
+  "log_entries": [
+    "2026-03-12T10:00:01Z INFO  auth-service: login successful user=alice",
+    "2026-03-12T10:00:02Z ERROR auth-service: connection timeout to db-primary",
+    "2026-03-12T10:00:03Z ERROR auth-service: connection timeout to db-primary",
+    "2026-03-12T10:00:04Z WARN  auth-service: retry attempt 3 of 3 for db-primary",
+    "2026-03-12T10:00:05Z ERROR auth-service: authentication failed user=unknown ip=192.168.1.99"
+  ],
+  "time_range": "2026-03-12T10:00:00Z/2026-03-12T10:01:00Z"
+}

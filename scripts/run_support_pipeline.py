@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from local_agents import ValidationError, run_agent
+from local_agents.state import connect as connect_state, save_stage, save_result
 
 
 def _degraded_output(stage: str, reason: str) -> dict[str, object]:
@@ -33,7 +34,14 @@ def _degraded_output(stage: str, reason: str) -> dict[str, object]:
     }
 
 
-def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: str) -> dict[str, object]:
+def run_pipeline(
+    payload: dict[str, object],
+    mode: str,
+    model: str,
+    base_url: str,
+    run_id: str = "",
+    store: object | None = None,
+) -> dict[str, object]:
     text = payload.get("text")
     customer_tier = payload.get("customer_tier", "free")
     customer_name = payload.get("customer_name")
@@ -48,6 +56,9 @@ def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: st
         )
     except ValidationError as exc:
         return _degraded_output("triage", str(exc))
+
+    if store and run_id:
+        save_stage(store, run_id, "triage", triage)
 
     try:
         draft = run_agent(
@@ -67,7 +78,13 @@ def run_pipeline(payload: dict[str, object], mode: str, model: str, base_url: st
         out["triage"] = triage
         return out
 
-    return {"triage": triage, "draft": draft, "pipeline_status": "ok"}
+    if store and run_id:
+        save_stage(store, run_id, "reply-drafter", draft)
+
+    result = {"triage": triage, "draft": draft, "pipeline_status": "ok"}
+    if store and run_id:
+        save_result(store, run_id, result)
+    return result
 
 
 def main() -> int:
@@ -86,12 +103,22 @@ def main() -> int:
         help="LLM base URL",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty print output")
+    parser.add_argument("--state", action="store_true", help="Persist pipeline state to Redis")
+    parser.add_argument("--run-id", default="", help="Pipeline run ID for state persistence")
     args = parser.parse_args()
+
+    store = None
+    run_id = args.run_id
+    if args.state:
+        store = connect_state()
+        if not run_id:
+            from datetime import datetime, timezone
+            run_id = datetime.now(timezone.utc).strftime("support-%Y%m%d-%H%M%S")
 
     path = Path(args.input)
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        result = run_pipeline(payload, args.mode, args.model, args.base_url)
+        result = run_pipeline(payload, args.mode, args.model, args.base_url, run_id=run_id, store=store)
     except FileNotFoundError:
         print(f"input file not found: {path}", file=sys.stderr)
         return 2

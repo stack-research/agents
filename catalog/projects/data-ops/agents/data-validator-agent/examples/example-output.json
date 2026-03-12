@@ -1,0 +1,9 @@
+{
+  "valid_count": 1,
+  "invalid_count": 2,
+  "violations": [
+    "Record 2: email must not be empty (value is empty)",
+    "Record 3: age must be non-negative (value: -5)"
+  ],
+  "verdict": "fail"
+}
