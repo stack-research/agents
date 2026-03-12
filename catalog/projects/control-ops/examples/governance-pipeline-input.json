@@ -1,0 +1,12 @@
+{
+  "workflow_id": "gov-cleanup-2026-03-12",
+  "action_description": "delete all inactive user accounts older than 90 days",
+  "permissions_requested": ["database-write", "user-admin", "audit-log-write"],
+  "reversibility_plan": "soft-delete with 30-day recovery window",
+  "scope_boundary": "inactive accounts in us-east region only",
+  "target_agent": "planner-executor.planner-agent",
+  "target_payload": {
+    "goal": "Plan safe deletion of inactive user accounts older than 90 days",
+    "constraints": ["soft-delete only", "us-east region", "audit trail required"]
+  }
+}

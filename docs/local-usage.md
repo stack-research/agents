@@ -133,6 +133,42 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Lineage recorder example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.lineage-recorder-agent \
+  --input catalog/projects/control-ops/agents/lineage-recorder-agent/examples/example-input.json \
+  --pretty
+```
+
+Scope validator example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.scope-validator-agent \
+  --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json \
+  --pretty
+```
+
+Blast radius assessor example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.blast-radius-assessor-agent \
+  --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json \
+  --pretty
+```
+
+Kill path auditor example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.kill-path-auditor-agent \
+  --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -154,6 +190,22 @@ Workflow pipeline example:
 ```bash
 python3 scripts/run_workflow_pipeline.py \
   --input catalog/projects/workflow-ops/examples/pipeline-input.json \
+  --pretty
+```
+
+Governance pipeline example:
+
+```bash
+python3 scripts/run_governance_pipeline.py \
+  --input catalog/projects/control-ops/examples/governance-pipeline-input.json \
+  --pretty
+```
+
+Resilience pipeline example:
+
+```bash
+python3 scripts/run_resilience_pipeline.py \
+  --input catalog/projects/control-ops/examples/resilience-pipeline-input.json \
   --pretty
 ```
 
@@ -194,6 +246,10 @@ Accepted `--agent` values:
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.checkpoint-agent` or `checkpoint-agent`
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
+- `control-ops.lineage-recorder-agent` or `lineage-recorder-agent`
+- `control-ops.scope-validator-agent` or `scope-validator-agent`
+- `control-ops.blast-radius-assessor-agent` or `blast-radius-assessor-agent`
+- `control-ops.kill-path-auditor-agent` or `kill-path-auditor-agent`
 
 ## LLM Mode (Fast Local Model)
 
@@ -273,6 +329,18 @@ make run-test-case-generator-llm
 make run-regression-triage-llm
 make run-router-llm
 make run-checkpoint-llm
+make run-lineage-recorder-example
+make run-scope-validator-example
+make run-blast-radius-assessor-example
+make run-kill-path-auditor-example
+make run-lineage-recorder-llm
+make run-scope-validator-llm
+make run-blast-radius-assessor-llm
+make run-kill-path-auditor-llm
+make run-governance-pipeline-example
+make run-resilience-pipeline-example
+make run-governance-pipeline-llm
+make run-resilience-pipeline-llm
 make run-support-pipeline-llm
 make run-planner-executor-pipeline-llm
 make run-workflow-pipeline-llm

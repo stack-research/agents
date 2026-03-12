@@ -1,0 +1,12 @@
+{
+  "coverage_score": 3,
+  "gaps": [
+    "isolate: no isolation capability described"
+  ],
+  "escalation_readiness": "partial",
+  "recommended_actions": [
+    "Implement network-level isolation capability for inference-gateway",
+    "Schedule quarterly kill path drill covering all four levels",
+    "Verify hard_stop works independently of application cooperation"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "service_name": "payment-processor",
+  "permissions": ["database-write", "external-api-call", "pii-read"],
+  "dependencies": ["auth-service", "ledger-db", "notification-queue"],
+  "resource_limits": {
+    "rate_limit": "100 req/s",
+    "budget_cap": "$500/day",
+    "concurrency": 10
+  }
+}

@@ -1,0 +1,38 @@
+id: control-ops.lineage-recorder-agent
+name: lineage-recorder-agent
+version: 0.1.0
+summary: |
+  Structures decision events into append-only lineage records capturing trigger,
+  knowledge, rules applied, alternatives considered, and action taken.
+owners:
+  - control-platform
+inputs:
+  - name: trigger
+    type: string
+    required: true
+  - name: knowledge
+    type: string
+    required: true
+  - name: rules_applied
+    type: string[]
+    required: true
+  - name: alternatives_considered
+    type: string[]
+    required: true
+  - name: action_taken
+    type: string
+    required: true
+outputs:
+  - name: lineage_id
+    type: string
+  - name: record
+    type: object
+  - name: integrity_check
+    type: string
+rules:
+  - Record must capture all five lineage fields.
+  - lineage_id must be a deterministic composite of trigger and action.
+  - integrity_check must be "complete" when all fields are substantive.
+constraints:
+  - Output must contain exactly three output keys.
+  - record must contain exactly five sub-keys.

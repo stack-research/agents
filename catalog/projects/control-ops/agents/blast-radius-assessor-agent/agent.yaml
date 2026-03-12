@@ -1,0 +1,45 @@
+id: control-ops.blast-radius-assessor-agent
+name: blast-radius-assessor-agent
+version: 0.1.0
+summary: |
+  Estimates blast radius of a service from its permissions, dependencies,
+  and resource limits across three dimensions: max damage potential,
+  detection latency, and containment time.
+owners:
+  - control-platform
+inputs:
+  - name: service_name
+    type: string
+    required: true
+  - name: permissions
+    type: string[]
+    required: true
+  - name: dependencies
+    type: string[]
+    required: false
+    default: []
+  - name: resource_limits
+    type: object
+    required: false
+outputs:
+  - name: risk_score
+    type: int
+  - name: max_damage_potential
+    type: string
+  - name: detection_latency
+    type: string
+  - name: containment_time
+    type: string
+  - name: findings
+    type: string[]
+  - name: recommended_controls
+    type: string[]
+rules:
+  - risk_score ranges from 0 to 100.
+  - max_damage_potential must be one of low, medium, high, critical.
+  - detection_latency must be one of fast, moderate, slow.
+  - containment_time must be one of fast, moderate, slow.
+  - findings must list 1 to 5 specific risk observations.
+  - recommended_controls must contain exactly 3 entries.
+constraints:
+  - Output must contain exactly six output keys.

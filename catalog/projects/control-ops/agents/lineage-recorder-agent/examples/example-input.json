@@ -1,0 +1,7 @@
+{
+  "trigger": "customer-payment-failed webhook received",
+  "knowledge": "account has 3 prior failures this month; retry policy allows 5 max",
+  "rules_applied": ["retry-if-under-limit", "notify-on-third-failure"],
+  "alternatives_considered": ["escalate-to-human", "block-account"],
+  "action_taken": "queued automatic retry and sent notification to billing team"
+}

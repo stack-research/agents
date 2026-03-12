@@ -632,6 +632,18 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["security scan", "owasp", "scan repo", "controls"]):
         target_agent = "security-ops.agentic-security-scanner-agent"
         rationale = "Security scanning intent detected; route to scanner."
+    elif any(token in lowered for token in ["lineage", "decision record", "audit trail", "decision log"]):
+        target_agent = "control-ops.lineage-recorder-agent"
+        rationale = "Lineage/audit intent detected; route to lineage recorder."
+    elif any(token in lowered for token in ["scope", "governance", "permission check", "validate action"]):
+        target_agent = "control-ops.scope-validator-agent"
+        rationale = "Governance/scope intent detected; route to scope validator."
+    elif any(token in lowered for token in ["blast radius", "failure impact", "damage assessment"]):
+        target_agent = "control-ops.blast-radius-assessor-agent"
+        rationale = "Blast radius intent detected; route to assessor."
+    elif any(token in lowered for token in ["kill path", "shutdown", "kill switch", "emergency stop"]):
+        target_agent = "control-ops.kill-path-auditor-agent"
+        rationale = "Kill path intent detected; route to auditor."
 
     if available_agents and target_agent not in available_agents:
         target_agent = available_agents[0]
@@ -684,6 +696,285 @@ def run_checkpoint_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_lineage_recorder_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    trigger = require(payload, "trigger")
+    knowledge = require(payload, "knowledge")
+    rules_applied = require(payload, "rules_applied")
+    alternatives_considered = require(payload, "alternatives_considered")
+    action_taken = require(payload, "action_taken")
+
+    if not isinstance(trigger, str) or not trigger.strip():
+        raise ValidationError("trigger must be a non-empty string")
+    if not isinstance(knowledge, str) or not knowledge.strip():
+        raise ValidationError("knowledge must be a non-empty string")
+    if not isinstance(rules_applied, list) or not rules_applied or not all(isinstance(item, str) for item in rules_applied):
+        raise ValidationError("rules_applied must be a non-empty string array")
+    if not isinstance(alternatives_considered, list) or not alternatives_considered or not all(isinstance(item, str) for item in alternatives_considered):
+        raise ValidationError("alternatives_considered must be a non-empty string array")
+    if not isinstance(action_taken, str) or not action_taken.strip():
+        raise ValidationError("action_taken must be a non-empty string")
+
+    safe_trigger = sanitize_untrusted_text(trigger.strip())
+    safe_knowledge = sanitize_untrusted_text(knowledge.strip())
+    safe_rules = [sanitize_untrusted_text(r.strip()) for r in rules_applied if r.strip()]
+    safe_alts = [sanitize_untrusted_text(a.strip()) for a in alternatives_considered if a.strip()]
+    safe_action = sanitize_untrusted_text(action_taken.strip())
+
+    trigger_slug = "-".join(safe_trigger.lower().split()[:6])
+    action_slug = "-".join(safe_action.lower().split()[:6])
+    lineage_id = f"{trigger_slug}::{action_slug}"[:80]
+
+    record = {
+        "trigger": " ".join(safe_trigger.split()[:20]),
+        "knowledge": " ".join(safe_knowledge.split()[:30]),
+        "rules_applied": [" ".join(r.split()[:12]) for r in safe_rules[:5]],
+        "alternatives_considered": [" ".join(a.split()[:12]) for a in safe_alts[:5]],
+        "action_taken": " ".join(safe_action.split()[:20]),
+    }
+
+    all_substantive = (
+        bool(record["trigger"])
+        and bool(record["knowledge"])
+        and len(record["rules_applied"]) > 0
+        and len(record["alternatives_considered"]) > 0
+        and bool(record["action_taken"])
+    )
+    integrity_check = "complete" if all_substantive else "partial"
+
+    return {"lineage_id": lineage_id, "record": record, "integrity_check": integrity_check}
+
+
+def run_scope_validator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    action_description = require(payload, "action_description")
+    permissions_requested = require(payload, "permissions_requested")
+    reversibility_plan = payload.get("reversibility_plan", "")
+    scope_boundary = payload.get("scope_boundary", "")
+
+    if not isinstance(action_description, str) or not action_description.strip():
+        raise ValidationError("action_description must be a non-empty string")
+    if not isinstance(permissions_requested, list) or not permissions_requested or not all(
+        isinstance(item, str) for item in permissions_requested
+    ):
+        raise ValidationError("permissions_requested must be a non-empty string array")
+    if reversibility_plan is None:
+        reversibility_plan = ""
+    if not isinstance(reversibility_plan, str):
+        raise ValidationError("reversibility_plan must be a string when provided")
+    if scope_boundary is None:
+        scope_boundary = ""
+    if not isinstance(scope_boundary, str):
+        raise ValidationError("scope_boundary must be a string when provided")
+
+    safe_action = sanitize_untrusted_text(action_description.strip())
+    safe_perms = [sanitize_untrusted_text(p.strip()) for p in permissions_requested if p.strip()]
+    safe_reversibility = sanitize_untrusted_text(reversibility_plan.strip())
+    safe_scope = sanitize_untrusted_text(scope_boundary.strip())
+
+    lowered = safe_action.lower()
+    findings: list[str] = []
+
+    destructive_keywords = {"delete", "drop", "remove", "purge", "destroy", "truncate", "wipe"}
+    is_destructive = any(kw in lowered for kw in destructive_keywords)
+
+    sensitive_keywords = {"admin", "root", "pii", "production", "billing", "payment", "credential"}
+    sensitive_perms = [p for p in safe_perms if any(kw in p.lower() for kw in sensitive_keywords)]
+
+    if safe_scope:
+        findings.append(f"Scope boundary is explicit: {' '.join(safe_scope.split()[:12])}")
+    else:
+        findings.append("Scope boundary is missing; action has unbounded reach")
+
+    if safe_reversibility:
+        findings.append(f"Reversibility plan present: {' '.join(safe_reversibility.split()[:12])}")
+    elif is_destructive:
+        findings.append("Reversibility plan missing for destructive action")
+    else:
+        findings.append("No reversibility plan provided")
+
+    if sensitive_perms:
+        findings.append(f"Sensitive permissions requested: {', '.join(sensitive_perms[:3])}")
+
+    audit_perm = any("audit" in p.lower() or "log" in p.lower() for p in safe_perms)
+    if audit_perm:
+        findings.append("Permissions include audit/log capability for traceability")
+
+    fail_conditions = 0
+    if is_destructive and not safe_reversibility:
+        fail_conditions += 1
+    if not safe_scope:
+        fail_conditions += 1
+    if len(sensitive_perms) > 2:
+        fail_conditions += 1
+
+    if fail_conditions >= 2:
+        verdict = "fail"
+    elif fail_conditions == 1 or (is_destructive and safe_reversibility):
+        verdict = "review"
+    else:
+        verdict = "pass"
+
+    if is_destructive or sensitive_perms:
+        risk_level = "high" if fail_conditions >= 1 else "medium"
+    elif any(kw in lowered for kw in {"update", "modify", "write", "create"}):
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    return {
+        "verdict": verdict,
+        "findings": [" ".join(f.split()[:18]) for f in findings[:5]],
+        "risk_level": risk_level,
+    }
+
+
+def run_blast_radius_assessor_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    service_name = require(payload, "service_name")
+    permissions = require(payload, "permissions")
+    dependencies = payload.get("dependencies", [])
+    resource_limits = payload.get("resource_limits") or {}
+
+    if not isinstance(service_name, str) or not service_name.strip():
+        raise ValidationError("service_name must be a non-empty string")
+    if not isinstance(permissions, list) or not permissions or not all(
+        isinstance(item, str) for item in permissions
+    ):
+        raise ValidationError("permissions must be a non-empty string array")
+    if dependencies is None:
+        dependencies = []
+    if not isinstance(dependencies, list) or not all(isinstance(item, str) for item in dependencies):
+        raise ValidationError("dependencies must be an array of strings")
+    if not isinstance(resource_limits, dict):
+        raise ValidationError("resource_limits must be an object when provided")
+
+    safe_name = sanitize_untrusted_text(service_name.strip())
+    safe_perms = [sanitize_untrusted_text(p.strip()) for p in permissions if p.strip()]
+    safe_deps = [sanitize_untrusted_text(d.strip()) for d in dependencies if isinstance(d, str) and d.strip()]
+
+    high_risk_keywords = {"write", "admin", "pii", "delete", "root", "credential", "production"}
+    external_keywords = {"external", "api-call", "internet", "public", "third-party"}
+    perm_risk_score = 0
+    for perm in safe_perms:
+        lowered_perm = perm.lower()
+        if any(kw in lowered_perm for kw in high_risk_keywords):
+            perm_risk_score += 15
+        elif any(kw in lowered_perm for kw in external_keywords):
+            perm_risk_score += 10
+        else:
+            perm_risk_score += 5
+
+    dep_risk_score = min(30, len(safe_deps) * 10)
+    limit_reduction = min(20, len(resource_limits) * 5) if resource_limits else 0
+    risk_score = min(100, max(0, perm_risk_score + dep_risk_score - limit_reduction))
+
+    if risk_score >= 75:
+        max_damage = "critical"
+    elif risk_score >= 50:
+        max_damage = "high"
+    elif risk_score >= 25:
+        max_damage = "medium"
+    else:
+        max_damage = "low"
+
+    has_external = any(any(kw in p.lower() for kw in external_keywords) for p in safe_perms)
+    detection_latency = "slow" if has_external else ("moderate" if risk_score >= 40 else "fast")
+    containment_time = "slow" if len(safe_deps) >= 4 else ("moderate" if len(safe_deps) >= 2 else "fast")
+
+    findings: list[str] = []
+    pii_perms = [p for p in safe_perms if "pii" in p.lower()]
+    write_perms = [p for p in safe_perms if "write" in p.lower() or "delete" in p.lower()]
+    ext_perms = [p for p in safe_perms if any(kw in p.lower() for kw in external_keywords)]
+
+    if pii_perms or write_perms:
+        findings.append(
+            f"Service holds {', '.join((pii_perms + write_perms)[:3])} permissions increasing data exposure risk"
+        )
+    if ext_perms:
+        findings.append(
+            f"External dependency ({', '.join(ext_perms[:2])}) extends blast radius beyond internal boundary"
+        )
+    if safe_deps:
+        findings.append(f"{len(safe_deps)} dependencies create cascading failure surface")
+    if not resource_limits:
+        findings.append("No resource limits defined; unbounded execution risk")
+    elif limit_reduction > 0:
+        findings.append("Resource limits present providing partial containment")
+    if not findings:
+        findings.append(f"{safe_name} has a contained permission and dependency profile")
+
+    recommended_controls = [
+        f"Scope write permissions to specific resources and enforce audit logging for {safe_name}",
+        "Add circuit breaker on external calls with timeout and fallback" if ext_perms else f"Add rate limiting to {safe_name} to bound throughput impact",
+        "Enforce budget cap alerting at 80% threshold with automatic throttle at 100%" if resource_limits else "Define explicit resource limits for rate, budget, and concurrency",
+    ]
+
+    return {
+        "risk_score": risk_score,
+        "max_damage_potential": max_damage,
+        "detection_latency": detection_latency,
+        "containment_time": containment_time,
+        "findings": [" ".join(f.split()[:18]) for f in findings[:5]],
+        "recommended_controls": [" ".join(c.split()[:18]) for c in recommended_controls],
+    }
+
+
+def run_kill_path_auditor_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    system_name = require(payload, "system_name")
+    capabilities = require(payload, "capabilities")
+    last_tested = payload.get("last_tested", "")
+
+    if not isinstance(system_name, str) or not system_name.strip():
+        raise ValidationError("system_name must be a non-empty string")
+    if not isinstance(capabilities, dict):
+        raise ValidationError("capabilities must be an object")
+    if last_tested is None:
+        last_tested = ""
+    if not isinstance(last_tested, str):
+        raise ValidationError("last_tested must be a string when provided")
+
+    safe_name = sanitize_untrusted_text(system_name.strip())
+    safe_tested = sanitize_untrusted_text(last_tested.strip())
+
+    levels = ["throttle", "degrade", "isolate", "hard_stop"]
+    coverage_score = 0
+    gaps: list[str] = []
+
+    for level in levels:
+        desc = capabilities.get(level, "")
+        if isinstance(desc, str) and desc.strip():
+            coverage_score += 1
+        else:
+            gaps.append(f"{level}: no {level.replace('_', ' ')} capability described")
+
+    if not safe_tested:
+        gaps.append("last_tested: no test date recorded")
+
+    if coverage_score == 4 and safe_tested:
+        escalation_readiness = "ready"
+    elif coverage_score >= 2:
+        escalation_readiness = "partial"
+    else:
+        escalation_readiness = "unprepared"
+
+    missing_levels = [g.split(":")[0] for g in gaps if g.split(":")[0] in levels]
+    if missing_levels:
+        first_action = f"Implement {missing_levels[0].replace('_', ' ')} capability for {safe_name}"
+    else:
+        first_action = f"Verify all four kill path levels function independently for {safe_name}"
+
+    recommended_actions = [
+        first_action,
+        "Schedule quarterly kill path drill covering all four levels",
+        "Verify hard_stop works independently of application cooperation",
+    ]
+
+    return {
+        "coverage_score": coverage_score,
+        "gaps": [" ".join(g.split()[:12]) for g in gaps[:4]],
+        "escalation_readiness": escalation_readiness,
+        "recommended_actions": [" ".join(a.split()[:16]) for a in recommended_actions],
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -698,16 +989,20 @@ def run_agent(
     if selected_mode == "llm":
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
+            run_blast_radius_assessor_agent_llm,
             run_checkpoint_agent_llm,
             run_classifier_agent_llm,
             run_executor_agent_llm,
             run_heartbeat_agent_llm,
+            run_kill_path_auditor_agent_llm,
+            run_lineage_recorder_agent_llm,
             run_planner_agent_llm,
             run_regression_triage_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
             run_handoff_agent_llm,
+            run_scope_validator_agent_llm,
             run_summary_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
@@ -815,6 +1110,34 @@ def run_agent(
             return run_checkpoint_agent(payload)
         if selected_mode == "llm":
             return run_checkpoint_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"lineage-recorder-agent", "control-ops.lineage-recorder-agent"}:
+        if selected_mode == "deterministic":
+            return run_lineage_recorder_agent(payload)
+        if selected_mode == "llm":
+            return run_lineage_recorder_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"scope-validator-agent", "control-ops.scope-validator-agent"}:
+        if selected_mode == "deterministic":
+            return run_scope_validator_agent(payload)
+        if selected_mode == "llm":
+            return run_scope_validator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"blast-radius-assessor-agent", "control-ops.blast-radius-assessor-agent"}:
+        if selected_mode == "deterministic":
+            return run_blast_radius_assessor_agent(payload)
+        if selected_mode == "llm":
+            return run_blast_radius_assessor_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"kill-path-auditor-agent", "control-ops.kill-path-auditor-agent"}:
+        if selected_mode == "deterministic":
+            return run_kill_path_auditor_agent(payload)
+        if selected_mode == "llm":
+            return run_kill_path_auditor_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     raise ValidationError(f"unsupported agent: {agent}")

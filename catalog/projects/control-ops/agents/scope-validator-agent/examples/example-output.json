@@ -1,0 +1,9 @@
+{
+  "verdict": "pass",
+  "findings": [
+    "Scope boundary is explicit: inactive accounts in us-east region only",
+    "Reversibility plan present: soft-delete with 30-day recovery window",
+    "Permissions include audit-log-write for traceability"
+  ],
+  "risk_level": "medium"
+}

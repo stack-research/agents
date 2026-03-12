@@ -39,6 +39,8 @@ Repository-level runtime and tests:
 - `scripts/run_support_pipeline.py` - support triage->reply pipeline runner.
 - `scripts/run_planner_executor_pipeline.py` - planner->executor pipeline runner.
 - `scripts/run_workflow_pipeline.py` - workflow router->target->checkpoint pipeline runner.
+- `scripts/run_governance_pipeline.py` - governance scope-validator->target->lineage-recorder->checkpoint pipeline runner.
+- `scripts/run_resilience_pipeline.py` - resilience blast-radius-assessor->kill-path-auditor pipeline runner.
 - `scripts/run_security_scan.py` - security scanner runner.
 - `scripts/check_policy_pack.py` - runtime policy-pack enforcement check.
 - `policy/asi-control-baselines.json` - environment ASI control baseline policy pack.
@@ -82,6 +84,10 @@ Repository-level runtime and tests:
 - `tests/test_support_ops_llm.py` - support-ops checks in LLM mode.
 - `tests/test_agent_schema.py` - `agent.yaml` schema consistency checks (id/name/version and IO sections).
 - `tests/test_catalog_structure.py` - required file checks across catalog.
+- `tests/test_control_ops.py` - deterministic control-ops behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
+- `tests/test_control_ops_llm.py` - control-ops checks in LLM mode.
+- `tests/test_governance_pipeline.py` - governance pipeline composition test.
+- `tests/test_resilience_pipeline.py` - resilience pipeline composition test.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `docker-compose.yml` - local Ollama service for speed-first LLM testing.
 
@@ -115,6 +121,11 @@ Repository-level runtime and tests:
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
   - `checkpoint-agent`: records workflow progress with structured checkpoint summaries.
+- `control-ops`
+  - `lineage-recorder-agent`: structures decision events into append-only lineage records.
+  - `scope-validator-agent`: validates proposed actions against governance requirements.
+  - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
+  - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
 
 ## Update Rule
 

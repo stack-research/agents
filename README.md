@@ -52,6 +52,11 @@ catalog/
 7. `workflow-ops`
    - `router-agent`: routes work items to the best-fit agent with a priority.
    - `checkpoint-agent`: records workflow stage/status checkpoints for traceability.
+8. `control-ops`
+   - `lineage-recorder-agent`: structures decision events into append-only lineage records.
+   - `scope-validator-agent`: validates proposed actions against governance requirements.
+   - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
+   - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
 
 ## Run Agents Locally
 
@@ -72,6 +77,12 @@ catalog/
 - `python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.lineage-recorder-agent --input catalog/projects/control-ops/agents/lineage-recorder-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.scope-validator-agent --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty`
+- `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
@@ -231,6 +242,45 @@ This pipeline composes:
 
 and returns a single structured object with route decision, target output, checkpoint record, and `pipeline_status`.
 
+## Governance Pipeline (`run_governance_pipeline.py`)
+
+```
+scope-validator -> [target agent] -> lineage-recorder -> checkpoint
+```
+
+- Validates action scope/permissions/reversibility **before** executing the target agent
+- If scope validation returns `fail`, the pipeline **short-circuits**: records lineage ("blocked by governance gate") and a failed checkpoint, but never runs the target
+- If `pass` or `review`, proceeds to execute the target, then records full decision lineage and a completion checkpoint
+- Returns `pipeline_status`: `ok`, `blocked`, or `degraded`
+
+```bash
+python3 scripts/run_governance_pipeline.py \
+  --input catalog/projects/control-ops/examples/governance-pipeline-input.json \
+  --pretty
+```
+
+## Resilience Pipeline (`run_resilience_pipeline.py`)
+
+```
+blast-radius-assessor -> kill-path-auditor
+```
+
+- Assesses blast radius first (risk score, damage potential, detection/containment speeds)
+- Then audits kill path coverage against the same system
+- Computes a combined `resilience_verdict`:
+  - **adequate**: full kill path coverage (4/4)
+  - **partial**: moderate coverage
+  - **at-risk**: high risk score + low coverage
+  - **inadequate**: high risk score + very low coverage
+
+Both follow the standard degraded-mode fallback pattern on validation failures. 10 new tests cover happy path, short-circuit blocking, degraded modes, and verdict logic.
+
+```bash
+python3 scripts/run_resilience_pipeline.py \
+  --input catalog/projects/control-ops/examples/resilience-pipeline-input.json \
+  --pretty
+```
+
 ## Test Suite
 
 - `python3 -m unittest discover -s tests -v`
@@ -242,6 +292,9 @@ and returns a single structured object with route decision, target output, check
 
 The test suite currently includes:
 
+- control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
+- governance pipeline composition tests.
+- resilience pipeline composition tests.
 - behavior tests for local agent runtime logic.
 - support-ops deterministic and LLM behavior tests (triage/reply/summary/handoff).
 - pipeline composition tests.

@@ -1,0 +1,37 @@
+id: control-ops.scope-validator-agent
+name: scope-validator-agent
+version: 0.1.0
+summary: |
+  Validates proposed actions against governance requirements by checking scope
+  boundaries, reversibility plans, and permission proportionality.
+owners:
+  - control-platform
+inputs:
+  - name: action_description
+    type: string
+    required: true
+  - name: permissions_requested
+    type: string[]
+    required: true
+  - name: reversibility_plan
+    type: string
+    required: false
+    default: ""
+  - name: scope_boundary
+    type: string
+    required: false
+    default: ""
+outputs:
+  - name: verdict
+    type: string
+  - name: findings
+    type: string[]
+  - name: risk_level
+    type: string
+rules:
+  - verdict must be one of pass, fail, review.
+  - findings must list specific governance gaps or confirmations.
+  - risk_level must be one of low, medium, high.
+constraints:
+  - Output must contain exactly three output keys.
+  - findings must contain 1 to 5 entries.

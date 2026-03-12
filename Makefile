@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-router-example run-checkpoint-example run-lineage-recorder-example run-scope-validator-example run-blast-radius-assessor-example run-kill-path-auditor-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-governance-pipeline-example run-resilience-pipeline-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-router-llm run-checkpoint-llm run-lineage-recorder-llm run-scope-validator-llm run-blast-radius-assessor-llm run-kill-path-auditor-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm run-governance-pipeline-llm run-resilience-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -83,6 +83,18 @@ run-router-example:
 run-checkpoint-example:
 	python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty
 
+run-lineage-recorder-example:
+	python3 scripts/run_agent.py --agent control-ops.lineage-recorder-agent --input catalog/projects/control-ops/agents/lineage-recorder-agent/examples/example-input.json --pretty
+
+run-scope-validator-example:
+	python3 scripts/run_agent.py --agent control-ops.scope-validator-agent --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json --pretty
+
+run-blast-radius-assessor-example:
+	python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty
+
+run-kill-path-auditor-example:
+	python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty
+
 run-security-scan-example:
 	python3 scripts/run_security_scan.py --target-path . --pretty
 
@@ -94,6 +106,12 @@ run-planner-executor-pipeline-example:
 
 run-workflow-pipeline-example:
 	python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty
+
+run-governance-pipeline-example:
+	python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty
+
+run-resilience-pipeline-example:
+	python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty
 
 run-heartbeat-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent starter-kit.heartbeat-agent --input catalog/projects/starter-kit/agents/heartbeat-agent/examples/example-input.json --pretty
@@ -137,6 +155,18 @@ run-router-llm: check-policy-pack-llm
 run-checkpoint-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty
 
+run-lineage-recorder-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent control-ops.lineage-recorder-agent --input catalog/projects/control-ops/agents/lineage-recorder-agent/examples/example-input.json --pretty
+
+run-scope-validator-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent control-ops.scope-validator-agent --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json --pretty
+
+run-blast-radius-assessor-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty
+
+run-kill-path-auditor-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty
+
 run-support-pipeline-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty
 
@@ -145,3 +175,9 @@ run-planner-executor-pipeline-llm: check-policy-pack-llm
 
 run-workflow-pipeline-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty
+
+run-governance-pipeline-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty
+
+run-resilience-pipeline-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty
