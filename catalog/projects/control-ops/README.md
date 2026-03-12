@@ -1,4 +1,4 @@
-# control-ops
+# ControlOps
 
 Operational control agents for governance, lineage, blast radius assessment, and kill path auditing of autonomous systems.
 
