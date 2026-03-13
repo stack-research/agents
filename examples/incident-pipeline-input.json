@@ -1,0 +1,14 @@
+{
+  "workflow_id": "incident-auth-2026-03-12",
+  "incident_text": "Multiple customers cannot login after the latest auth service deploy. SSO flow returns 500 errors.",
+  "customer_tier": "enterprise",
+  "feature_area": "SSO authentication flow",
+  "acceptance_criteria": [
+    "Users can sign in with SAML",
+    "Session persists for 24 hours"
+  ],
+  "action_description": "Deploy hotfix to auth service in production",
+  "permissions_requested": ["deploy:production", "config:write"],
+  "reversibility_plan": "Rollback to previous image tag within 5 minutes via CI",
+  "scope_boundary": "Auth service production namespace only"
+}

@@ -98,6 +98,7 @@ catalog/
 - `python3 scripts/run_agent.py --agent observability-ops.slo-reporter-agent --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty`
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
+- `python3 scripts/run_incident_pipeline.py --input examples/incident-pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make state-up` to start Redis for pipeline state persistence
@@ -297,6 +298,29 @@ python3 scripts/run_resilience_pipeline.py \
   --pretty
 ```
 
+## Incident Pipeline (`run_incident_pipeline.py`)
+
+```
+router -> triage -> test-case-generator -> synthesis -> scope-validator -> checkpoint
+```
+
+Cross-domain orchestration that chains 6 agents from 5 different domains into a single incident response flow:
+
+1. **Route** (workflow-ops): classifies the incident and selects a target agent
+2. **Triage** (support-ops): assigns priority, category, and next action
+3. **QA** (qa-ops): generates test cases for the affected feature area
+4. **Synthesis** (research-ops): combines findings into a stakeholder summary
+5. **Governance** (control-ops): validates the proposed response action against scope/permissions
+6. **Checkpoint** (workflow-ops): records the pipeline outcome for traceability
+
+If governance returns `verdict: fail`, the pipeline status is `blocked`. Validation failures at any stage produce `degraded` status with prior stage outputs preserved.
+
+```bash
+python3 scripts/run_incident_pipeline.py \
+  --input examples/incident-pipeline-input.json \
+  --pretty
+```
+
 ## Pipeline State Persistence (Redis)
 
 Pipelines can optionally persist intermediate stage outputs and final results to Redis. This enables multi-turn workflows, debugging, and auditing.
@@ -362,6 +386,7 @@ The test suite currently includes:
 - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
 - `agent.yaml` JSON Schema validation (`schemas/agent.json`).
 - benchmark/eval fixtures: 86 cases across 24 agents (`evals/cases.json` per agent).
+- incident pipeline cross-domain composition tests.
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
 
@@ -396,6 +421,5 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 
 ## Next Ideas
 
-1. Cross-domain orchestration pipeline (incident → workflow routes → support triages → qa generates tests → research synthesizes → control-ops governs).
-2. Generalize security scanner to work against any agent catalog.
-3. CI pipeline (GitHub Actions for `make test` and `make test-security`).
+1. Generalize security scanner to work against any agent catalog.
+2. CI pipeline (GitHub Actions for `make test` and `make test-security`).
