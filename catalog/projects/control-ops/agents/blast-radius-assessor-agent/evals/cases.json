@@ -1,0 +1,159 @@
+{
+  "agent_id": "control-ops.blast-radius-assessor-agent",
+  "cases": [
+    {
+      "id": "low-risk-service",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "static-asset-cdn",
+        "permissions": [
+          "cdn:read"
+        ],
+        "dependencies": [],
+        "resource_limits": {
+          "max_rps": 1000
+        }
+      },
+      "expected_output": {
+        "risk_score": 0,
+        "max_damage_potential": "low",
+        "detection_latency": "fast",
+        "containment_time": "fast",
+        "findings": [
+          "Resource limits present providing partial containment"
+        ],
+        "recommended_controls": [
+          "Scope write permissions to specific resources and enforce audit logging for static-asset-cdn",
+          "Add rate limiting to static-asset-cdn to bound throughput impact",
+          "Enforce budget cap alerting at 80% threshold with automatic throttle at 100%"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "risk_score",
+          "op": "range",
+          "value": [
+            0,
+            25
+          ]
+        },
+        {
+          "field": "max_damage_potential",
+          "op": "eq",
+          "value": "low"
+        },
+        {
+          "field": "containment_time",
+          "op": "eq",
+          "value": "fast"
+        }
+      ]
+    },
+    {
+      "id": "high-risk-service",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "payment-processor",
+        "permissions": [
+          "pii:read",
+          "db:write",
+          "billing:admin"
+        ],
+        "dependencies": [
+          "auth-service",
+          "ledger-db",
+          "stripe-api"
+        ],
+        "resource_limits": {}
+      },
+      "expected_output": {
+        "risk_score": 75,
+        "max_damage_potential": "critical",
+        "detection_latency": "moderate",
+        "containment_time": "moderate",
+        "findings": [
+          "Service holds pii:read, db:write permissions increasing data exposure risk",
+          "3 dependencies create cascading failure surface",
+          "No resource limits defined; unbounded execution risk"
+        ],
+        "recommended_controls": [
+          "Scope write permissions to specific resources and enforce audit logging for payment-processor",
+          "Add rate limiting to payment-processor to bound throughput impact",
+          "Define explicit resource limits for rate, budget, and concurrency"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "risk_score",
+          "op": "range",
+          "value": [
+            50,
+            100
+          ]
+        },
+        {
+          "field": "max_damage_potential",
+          "op": "in",
+          "value": [
+            "high",
+            "critical"
+          ]
+        },
+        {
+          "field": "findings",
+          "op": "min_length",
+          "value": 2
+        },
+        {
+          "field": "recommended_controls",
+          "op": "length",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "external-dependency",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "service_name": "webhook-relay",
+        "permissions": [
+          "external:api-call",
+          "queue:write"
+        ],
+        "dependencies": [
+          "message-queue"
+        ]
+      },
+      "expected_output": {
+        "risk_score": 35,
+        "max_damage_potential": "medium",
+        "detection_latency": "slow",
+        "containment_time": "fast",
+        "findings": [
+          "Service holds queue:write permissions increasing data exposure risk",
+          "External dependency (external:api-call) extends blast radius beyond internal boundary",
+          "1 dependencies create cascading failure surface",
+          "No resource limits defined; unbounded execution risk"
+        ],
+        "recommended_controls": [
+          "Scope write permissions to specific resources and enforce audit logging for webhook-relay",
+          "Add circuit breaker on external calls with timeout and fallback",
+          "Define explicit resource limits for rate, budget, and concurrency"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "detection_latency",
+          "op": "eq",
+          "value": "slow"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "agent_id": "research-ops.retrieval-agent",
+  "cases": [
+    {
+      "id": "with-sources",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "query": "What are the best practices for API rate limiting?",
+        "sources": [
+          "Use token buckets",
+          "Set per-client quotas"
+        ],
+        "max_points": 4
+      },
+      "expected_output": {
+        "notes": [
+          "Research objective: What are the best practices for API rate limiting?",
+          "Source note: Use token buckets",
+          "Source note: Set per-client quotas",
+          "Gap: additional primary sources may be required for verification."
+        ],
+        "confidence": 0.65
+      },
+      "assertions": [
+        {
+          "field": "notes",
+          "op": "min_length",
+          "value": 3
+        },
+        {
+          "field": "confidence",
+          "op": "eq",
+          "value": 0.65
+        }
+      ]
+    },
+    {
+      "id": "no-sources",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "query": "Explain container orchestration patterns",
+        "sources": [],
+        "max_points": 3
+      },
+      "expected_output": {
+        "notes": [
+          "Research objective: Explain container orchestration patterns",
+          "Gap: additional primary sources may be required for verification."
+        ],
+        "confidence": 0.45
+      },
+      "assertions": [
+        {
+          "field": "confidence",
+          "op": "eq",
+          "value": 0.45
+        },
+        {
+          "field": "notes",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "max-points-one",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "query": "Single point query",
+        "sources": [
+          "Source A",
+          "Source B"
+        ],
+        "max_points": 1
+      },
+      "expected_output": {
+        "notes": [
+          "Research objective: Single point query"
+        ],
+        "confidence": 0.65
+      },
+      "assertions": [
+        {
+          "field": "notes",
+          "op": "length",
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

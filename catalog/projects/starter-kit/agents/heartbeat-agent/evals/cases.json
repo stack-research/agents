@@ -1,0 +1,196 @@
+{
+  "agent_id": "starter-kit.heartbeat-agent",
+  "cases": [
+    {
+      "id": "healthy-service",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "api-gateway",
+        "heartbeat_age_seconds": 10,
+        "error_rate_percent": 1.5
+      },
+      "expected_output": {
+        "status": "ok",
+        "report": "api-gateway heartbeat age 10s, error rate 1.5%; status ok."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "ok"
+        },
+        {
+          "field": "report",
+          "op": "contains",
+          "value": "api-gateway"
+        },
+        {
+          "field": "report",
+          "op": "max_words",
+          "value": 45
+        }
+      ]
+    },
+    {
+      "id": "warn-age",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "auth-service",
+        "heartbeat_age_seconds": 45,
+        "error_rate_percent": 2.0
+      },
+      "expected_output": {
+        "status": "warn",
+        "report": "auth-service heartbeat age 45s, error rate 2%; status warn."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "warn"
+        }
+      ]
+    },
+    {
+      "id": "critical-age",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "db-proxy",
+        "heartbeat_age_seconds": 120,
+        "error_rate_percent": 0.5
+      },
+      "expected_output": {
+        "status": "critical",
+        "report": "db-proxy heartbeat age 120s, error rate 0.5%; status critical."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "id": "error-escalation",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "service_name": "payment-svc",
+        "heartbeat_age_seconds": 50,
+        "error_rate_percent": 8.0
+      },
+      "expected_output": {
+        "status": "critical",
+        "report": "payment-svc heartbeat age 50s, error rate 8%; status critical."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "critical"
+        }
+      ]
+    },
+    {
+      "id": "negative-clamped",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "service_name": "worker",
+        "heartbeat_age_seconds": -5,
+        "error_rate_percent": -1
+      },
+      "expected_output": {
+        "status": "ok",
+        "report": "worker heartbeat age 0s, error rate 0%; status ok. Negative metrics were clamped to zero."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "ok"
+        },
+        {
+          "field": "report",
+          "op": "contains",
+          "value": "clamped"
+        }
+      ]
+    },
+    {
+      "id": "zero-boundary",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "service_name": "cache",
+        "heartbeat_age_seconds": 0,
+        "error_rate_percent": 0
+      },
+      "expected_output": {
+        "status": "ok",
+        "report": "cache heartbeat age 0s, error rate 0%; status ok."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "ok"
+        }
+      ]
+    },
+    {
+      "id": "exact-threshold-30",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "service_name": "cdn",
+        "heartbeat_age_seconds": 30,
+        "error_rate_percent": 5
+      },
+      "expected_output": {
+        "status": "ok",
+        "report": "cdn heartbeat age 30s, error rate 5%; status ok."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "ok"
+        }
+      ]
+    },
+    {
+      "id": "exact-threshold-31",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "service_name": "cdn",
+        "heartbeat_age_seconds": 31,
+        "error_rate_percent": 5
+      },
+      "expected_output": {
+        "status": "warn",
+        "report": "cdn heartbeat age 31s, error rate 5%; status warn."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "warn"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "agent_id": "control-ops.lineage-recorder-agent",
+  "cases": [
+    {
+      "id": "complete-record",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "trigger": "Customer escalation from support queue",
+        "knowledge": "Tier mapping policy requires enterprise escalation",
+        "rules_applied": [
+          "Enterprise SLA clause 4.2",
+          "Priority override policy"
+        ],
+        "alternatives_considered": [
+          "Standard queue routing",
+          "Self-service portal redirect"
+        ],
+        "action_taken": "Escalated to dedicated enterprise support team"
+      },
+      "expected_output": {
+        "lineage_id": "customer-escalation-from-support-queue::escalated-to-dedicated-enterprise-suppor",
+        "record": {
+          "trigger": "Customer escalation from support queue",
+          "knowledge": "Tier mapping policy requires enterprise escalation",
+          "rules_applied": [
+            "Enterprise SLA clause 4.2",
+            "Priority override policy"
+          ],
+          "alternatives_considered": [
+            "Standard queue routing",
+            "Self-service portal redirect"
+          ],
+          "action_taken": "Escalated to dedicated enterprise support team"
+        },
+        "integrity_check": "complete"
+      },
+      "assertions": [
+        {
+          "field": "integrity_check",
+          "op": "eq",
+          "value": "complete"
+        },
+        {
+          "field": "lineage_id",
+          "op": "type",
+          "value": "string"
+        },
+        {
+          "field": "record",
+          "op": "has_keys",
+          "value": [
+            "trigger",
+            "knowledge",
+            "rules_applied",
+            "alternatives_considered",
+            "action_taken"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "agent_id": "code-ops.code-reviewer-agent",
+  "cases": [
+    {
+      "id": "security-issues",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "diff": "password = 'hunter2'\nselect * from users where id = $input",
+        "context": "Auth module update"
+      },
+      "expected_output": {
+        "findings": [
+          "hardcoded credential detected in diff",
+          "Potential SQL injection via string interpolation"
+        ],
+        "severity": "critical",
+        "suggested_actions": [
+          "Move credentials to environment variables or secret manager",
+          "Use parameterized queries instead of string interpolation"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "critical"
+        },
+        {
+          "field": "findings",
+          "op": "min_length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "clean-diff",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "diff": "def add(a, b):\n    return a + b",
+        "context": "Math utility"
+      },
+      "expected_output": {
+        "findings": [],
+        "severity": "clean",
+        "suggested_actions": [
+          "No issues detected; approve for merge"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "clean"
+        },
+        {
+          "field": "findings",
+          "op": "length",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "eval-usage",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "diff": "result = eval(user_input)"
+      },
+      "expected_output": {
+        "findings": [
+          "Unsafe eval usage on user input"
+        ],
+        "severity": "critical",
+        "suggested_actions": [
+          "Replace eval with safe parsing or allowlisted operations"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "critical"
+        },
+        {
+          "field": "findings",
+          "op": "contains",
+          "value": "Unsafe eval usage on user input"
+        }
+      ]
+    },
+    {
+      "id": "broad-exception",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "diff": "try:\n    do_work()\nexcept Exception:\n    pass"
+      },
+      "expected_output": {
+        "findings": [
+          "Broad exception catch may hide errors"
+        ],
+        "severity": "major",
+        "suggested_actions": [
+          "Narrow exception handling to specific error types"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "major"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "agent_id": "data-ops.schema-drift-detector-agent",
+  "cases": [
+    {
+      "id": "breaking-changes",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "schema_before": {
+          "id": "integer",
+          "name": "string",
+          "email": "string"
+        },
+        "schema_after": {
+          "id": "string",
+          "name": "string",
+          "phone": "string"
+        }
+      },
+      "expected_output": {
+        "changes": [
+          {
+            "field": "email",
+            "change_type": "removed",
+            "detail": "field removed from schema"
+          },
+          {
+            "field": "phone",
+            "change_type": "added",
+            "detail": "new field added to schema"
+          },
+          {
+            "field": "id",
+            "change_type": "type_changed",
+            "detail": "type changed from integer to string"
+          }
+        ],
+        "drift_severity": "high",
+        "recommended_actions": [
+          "Verify removal of email is intentional and migrate dependent consumers",
+          "Update downstream pipelines to handle new field(s): phone",
+          "Update consumers for type change in: id"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "drift_severity",
+          "op": "in",
+          "value": [
+            "medium",
+            "high"
+          ]
+        },
+        {
+          "field": "changes",
+          "op": "min_length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "no-drift",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "schema_before": {
+          "id": "integer",
+          "name": "string"
+        },
+        "schema_after": {
+          "id": "integer",
+          "name": "string"
+        }
+      },
+      "expected_output": {
+        "changes": [],
+        "drift_severity": "none",
+        "recommended_actions": [
+          "No schema drift detected; no action required"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "drift_severity",
+          "op": "eq",
+          "value": "none"
+        },
+        {
+          "field": "changes",
+          "op": "length",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "additive-only",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "schema_before": {
+          "id": "integer"
+        },
+        "schema_after": {
+          "id": "integer",
+          "created_at": "timestamp"
+        }
+      },
+      "expected_output": {
+        "changes": [
+          {
+            "field": "created_at",
+            "change_type": "added",
+            "detail": "new field added to schema"
+          }
+        ],
+        "drift_severity": "low",
+        "recommended_actions": [
+          "Update downstream pipelines to handle new field(s): created_at"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "drift_severity",
+          "op": "eq",
+          "value": "low"
+        },
+        {
+          "field": "changes",
+          "op": "length",
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

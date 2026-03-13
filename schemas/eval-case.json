@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eval-case.json",
+  "title": "Eval Case Schema",
+  "description": "Schema for agent benchmark/eval fixture files.",
+  "type": "object",
+  "required": ["agent_id", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "type": "string",
+      "description": "Fully qualified agent identifier (e.g. starter-kit.heartbeat-agent).",
+      "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$"
+    },
+    "cases": {
+      "type": "array",
+      "description": "Ordered list of eval cases.",
+      "items": { "$ref": "#/$defs/evalCase" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "evalCase": {
+      "type": "object",
+      "required": ["id", "tags", "input"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Short unique case identifier within this fixture file.",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Scenario categories for filtering and reporting.",
+          "items": {
+            "type": "string",
+            "enum": ["happy-path", "edge-case", "boundary", "adversarial", "regression"]
+          },
+          "minItems": 1
+        },
+        "input": {
+          "type": "object",
+          "description": "Agent input payload."
+        },
+        "expected_output": {
+          "type": "object",
+          "description": "Exact expected output for deterministic mode. If present, the test asserts deep equality."
+        },
+        "assertions": {
+          "type": "array",
+          "description": "Additional semantic checks on the output.",
+          "items": { "$ref": "#/$defs/assertion" }
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": ["field", "op", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Dot-separated path to the output field (e.g. 'status', 'breakdown.p1')."
+        },
+        "op": {
+          "type": "string",
+          "description": "Assertion operator.",
+          "enum": [
+            "eq", "in", "type", "length",
+            "min_length", "max_length",
+            "contains", "matches",
+            "range", "has_keys", "max_words"
+          ]
+        },
+        "value": {
+          "description": "Expected value — interpretation depends on the operator."
+        }
+      }
+    }
+  }
+}

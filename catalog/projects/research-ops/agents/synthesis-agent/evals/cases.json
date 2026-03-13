@@ -1,0 +1,81 @@
+{
+  "agent_id": "research-ops.synthesis-agent",
+  "cases": [
+    {
+      "id": "brief-engineering",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "notes": [
+          "Token bucket is standard",
+          "Per-client quotas improve fairness"
+        ],
+        "audience": "engineering",
+        "output_format": "brief"
+      },
+      "expected_output": {
+        "headline": "Engineering Brief Summary",
+        "summary": "Key findings: Token bucket is standard; Per-client quotas improve fairness",
+        "next_actions": [
+          "Validate highest-impact claim with one primary source",
+          "Document assumptions and unresolved risks",
+          "Share summary with stakeholders for review"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "headline",
+          "op": "eq",
+          "value": "Engineering Brief Summary"
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "Key findings"
+        },
+        {
+          "field": "next_actions",
+          "op": "length",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "report-leadership",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "notes": [
+          "Q1 revenue grew 15%",
+          "Churn down 2%",
+          "NPS at 72"
+        ],
+        "audience": "leadership",
+        "output_format": "report"
+      },
+      "expected_output": {
+        "headline": "Leadership Report Summary",
+        "summary": "Research report summary: Q1 revenue grew 15%; Churn down 2%; NPS at 72",
+        "next_actions": [
+          "Validate highest-impact claim with one primary source",
+          "Document assumptions and unresolved risks",
+          "Share summary with stakeholders for review"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "headline",
+          "op": "eq",
+          "value": "Leadership Report Summary"
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "Research report summary"
+        }
+      ]
+    }
+  ]
+}

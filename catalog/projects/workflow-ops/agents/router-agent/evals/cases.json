@@ -1,0 +1,132 @@
+{
+  "agent_id": "workflow-ops.router-agent",
+  "cases": [
+    {
+      "id": "support-route",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "task": "A customer reported they cannot login to their account",
+        "available_agents": []
+      },
+      "expected_output": {
+        "target_agent": "support-ops.triage-agent",
+        "priority": "p2",
+        "rationale": "Support issue intent detected; route to triage."
+      },
+      "assertions": [
+        {
+          "field": "target_agent",
+          "op": "eq",
+          "value": "support-ops.triage-agent"
+        },
+        {
+          "field": "priority",
+          "op": "in",
+          "value": [
+            "p1",
+            "p2",
+            "p3",
+            "p4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qa-route",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "task": "Generate acceptance test scenarios for the new API",
+        "available_agents": []
+      },
+      "expected_output": {
+        "target_agent": "qa-ops.test-case-generator-agent",
+        "priority": "p4",
+        "rationale": "QA/test intent detected; route to test-case generator."
+      },
+      "assertions": [
+        {
+          "field": "target_agent",
+          "op": "eq",
+          "value": "qa-ops.test-case-generator-agent"
+        }
+      ]
+    },
+    {
+      "id": "critical-priority",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "task": "Critical production outage affecting all customers",
+        "available_agents": []
+      },
+      "expected_output": {
+        "target_agent": "support-ops.triage-agent",
+        "priority": "p1",
+        "rationale": "Support issue intent detected; route to triage."
+      },
+      "assertions": [
+        {
+          "field": "priority",
+          "op": "eq",
+          "value": "p1"
+        }
+      ]
+    },
+    {
+      "id": "fallback-unavailable",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "task": "Investigate a customer support ticket",
+        "available_agents": [
+          "planner-executor.planner-agent"
+        ]
+      },
+      "expected_output": {
+        "target_agent": "planner-executor.planner-agent",
+        "priority": "p4",
+        "rationale": "Preferred route unavailable; selected first available agent."
+      },
+      "assertions": [
+        {
+          "field": "target_agent",
+          "op": "eq",
+          "value": "planner-executor.planner-agent"
+        },
+        {
+          "field": "rationale",
+          "op": "contains",
+          "value": "unavailable"
+        }
+      ]
+    },
+    {
+      "id": "default-planner",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "task": "Build a new onboarding flow for the mobile app",
+        "available_agents": []
+      },
+      "expected_output": {
+        "target_agent": "planner-executor.planner-agent",
+        "priority": "p4",
+        "rationale": "General planning intent detected; route to planner."
+      },
+      "assertions": [
+        {
+          "field": "target_agent",
+          "op": "eq",
+          "value": "planner-executor.planner-agent"
+        }
+      ]
+    }
+  ]
+}

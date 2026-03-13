@@ -1,0 +1,93 @@
+{
+  "agent_id": "support-ops.reply-drafter-agent",
+  "cases": [
+    {
+      "id": "billing-p2",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "priority": "p2",
+        "category": "billing",
+        "issue_summary": "Double charge on monthly subscription",
+        "customer_name": "Alice"
+      },
+      "expected_output": {
+        "subject": "Update on your billing request",
+        "reply": "Hi Alice, thanks for reporting this. We understand: Double charge on monthly subscription. We're reviewing the charge details with our billing team. We will share another update within 60 minutes."
+      },
+      "assertions": [
+        {
+          "field": "subject",
+          "op": "eq",
+          "value": "Update on your billing request"
+        },
+        {
+          "field": "reply",
+          "op": "contains",
+          "value": "Hi Alice,"
+        },
+        {
+          "field": "reply",
+          "op": "contains",
+          "value": "within 60 minutes"
+        }
+      ]
+    },
+    {
+      "id": "access-no-name",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "priority": "p1",
+        "category": "access",
+        "issue_summary": "All users locked out of the portal"
+      },
+      "expected_output": {
+        "subject": "Update on your sign-in issue",
+        "reply": "Hi, thanks for reporting this. We understand: All users locked out of the portal. We're checking authentication logs and account status now. We will share another update within 30 minutes."
+      },
+      "assertions": [
+        {
+          "field": "reply",
+          "op": "contains",
+          "value": "Hi,"
+        },
+        {
+          "field": "reply",
+          "op": "contains",
+          "value": "within 30 minutes"
+        }
+      ]
+    },
+    {
+      "id": "how-to-p4",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "priority": "p4",
+        "category": "how-to",
+        "issue_summary": "Need help setting up API keys",
+        "customer_name": "Bob"
+      },
+      "expected_output": {
+        "subject": "Guidance for your setup question",
+        "reply": "Hi Bob, thanks for reporting this. We understand: Need help setting up API keys. We're preparing step-by-step guidance for your setup. We will share another update within two business days."
+      },
+      "assertions": [
+        {
+          "field": "subject",
+          "op": "eq",
+          "value": "Guidance for your setup question"
+        },
+        {
+          "field": "reply",
+          "op": "contains",
+          "value": "within two business days"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "agent_id": "observability-ops.slo-reporter-agent",
+  "cases": [
+    {
+      "id": "all-met",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "api-gateway",
+        "metrics": {
+          "availability": 99.99,
+          "latency_p99": 180
+        },
+        "slo_targets": {
+          "availability": 99.9,
+          "latency_p99": 200
+        }
+      },
+      "expected_output": {
+        "compliance_status": "met",
+        "findings": [
+          "availability: 99.99 meets target 99.9 (met)",
+          "latency_p99: 180 within target 200 (met)"
+        ],
+        "recommended_actions": [
+          "All SLO targets met for api-gateway; continue monitoring"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "compliance_status",
+          "op": "eq",
+          "value": "met"
+        },
+        {
+          "field": "findings",
+          "op": "min_length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "breached",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "service_name": "payment-api",
+        "metrics": {
+          "availability": 98.0,
+          "latency_p99": 500
+        },
+        "slo_targets": {
+          "availability": 99.9,
+          "latency_p99": 200
+        }
+      },
+      "expected_output": {
+        "compliance_status": "breached",
+        "findings": [
+          "availability: 98.0 within 5% of target 99.9 (at risk)",
+          "latency_p99: 500 above target 200 (breached)"
+        ],
+        "recommended_actions": [
+          "Investigate latency_p99 breach and review recent deployments for payment-api",
+          "Monitor availability closely to prevent SLO breach"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "compliance_status",
+          "op": "eq",
+          "value": "breached"
+        },
+        {
+          "field": "recommended_actions",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "at-risk",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "service_name": "search-api",
+        "metrics": {
+          "availability": 99.85,
+          "latency_p99": 195
+        },
+        "slo_targets": {
+          "availability": 99.9,
+          "latency_p99": 200
+        }
+      },
+      "expected_output": {
+        "compliance_status": "at_risk",
+        "findings": [
+          "availability: 99.85 within 5% of target 99.9 (at risk)",
+          "latency_p99: 195 within target 200 (met)"
+        ],
+        "recommended_actions": [
+          "Monitor availability closely to prevent SLO breach"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "compliance_status",
+          "op": "eq",
+          "value": "at_risk"
+        }
+      ]
+    }
+  ]
+}

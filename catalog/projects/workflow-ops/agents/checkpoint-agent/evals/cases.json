@@ -1,0 +1,91 @@
+{
+  "agent_id": "workflow-ops.checkpoint-agent",
+  "cases": [
+    {
+      "id": "in-progress",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "workflow_id": "release-2026-03-10",
+        "stage": "qa-validation",
+        "status": "in_progress",
+        "notes": "Integration tests running on staging."
+      },
+      "expected_output": {
+        "checkpoint_id": "release-2026-03-10:qa-validation:in_progress",
+        "recorded": true,
+        "summary": "Checkpoint recorded for workflow release-2026-03-10 at stage qa-validation with status in_progress. Notes: Integration tests running on staging."
+      },
+      "assertions": [
+        {
+          "field": "recorded",
+          "op": "eq",
+          "value": true
+        },
+        {
+          "field": "checkpoint_id",
+          "op": "contains",
+          "value": "release-2026-03-10"
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "qa-validation"
+        }
+      ]
+    },
+    {
+      "id": "completed-no-notes",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "workflow_id": "deploy-v2",
+        "stage": "rollout",
+        "status": "completed"
+      },
+      "expected_output": {
+        "checkpoint_id": "deploy-v2:rollout:completed",
+        "recorded": true,
+        "summary": "Checkpoint recorded for workflow deploy-v2 at stage rollout with status completed. No notes provided."
+      },
+      "assertions": [
+        {
+          "field": "recorded",
+          "op": "eq",
+          "value": true
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "No notes"
+        }
+      ]
+    },
+    {
+      "id": "failed-checkpoint",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "workflow_id": "migration-job",
+        "stage": "schema-apply",
+        "status": "failed",
+        "notes": "Column type mismatch on users table."
+      },
+      "expected_output": {
+        "checkpoint_id": "migration-job:schema-apply:failed",
+        "recorded": true,
+        "summary": "Checkpoint recorded for workflow migration-job at stage schema-apply with status failed. Notes: Column type mismatch on users table."
+      },
+      "assertions": [
+        {
+          "field": "checkpoint_id",
+          "op": "contains",
+          "value": "failed"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "agent_id": "planner-executor.executor-agent",
+  "cases": [
+    {
+      "id": "short-plan",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "plan_steps": [
+          "Step A",
+          "Step B",
+          "Step C"
+        ],
+        "context": "Routine maintenance window"
+      },
+      "expected_output": {
+        "status": "done",
+        "completed_steps": 3,
+        "blocked_steps": 0,
+        "summary": "Executed 3 of 3 planned steps. Status: done. Context considered: Routine maintenance window"
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "in",
+          "value": [
+            "done",
+            "partial"
+          ]
+        },
+        {
+          "field": "completed_steps",
+          "op": "range",
+          "value": [
+            1,
+            3
+          ]
+        },
+        {
+          "field": "summary",
+          "op": "type",
+          "value": "string"
+        }
+      ]
+    },
+    {
+      "id": "no-context",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "plan_steps": [
+          "Step 1",
+          "Step 2",
+          "Step 3",
+          "Step 4",
+          "Step 5"
+        ]
+      },
+      "expected_output": {
+        "status": "partial",
+        "completed_steps": 3,
+        "blocked_steps": 2,
+        "summary": "Executed 3 of 5 planned steps. Status: partial. No additional context provided."
+      },
+      "assertions": [
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "partial"
+        },
+        {
+          "field": "completed_steps",
+          "op": "eq",
+          "value": 3
+        },
+        {
+          "field": "blocked_steps",
+          "op": "eq",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "single-step",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "plan_steps": [
+          "Do the thing"
+        ],
+        "context": "urgent fix"
+      },
+      "expected_output": {
+        "status": "done",
+        "completed_steps": 1,
+        "blocked_steps": 0,
+        "summary": "Executed 1 of 1 planned steps. Status: done. Context considered: urgent fix"
+      },
+      "assertions": [
+        {
+          "field": "completed_steps",
+          "op": "range",
+          "value": [
+            1,
+            1
+          ]
+        },
+        {
+          "field": "status",
+          "op": "eq",
+          "value": "done"
+        }
+      ]
+    }
+  ]
+}

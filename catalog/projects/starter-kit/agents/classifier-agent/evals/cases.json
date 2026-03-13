@@ -1,0 +1,126 @@
+{
+  "agent_id": "starter-kit.classifier-agent",
+  "cases": [
+    {
+      "id": "billing-clear",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "I was charged twice on my invoice for the subscription"
+      },
+      "expected_output": {
+        "label": "billing",
+        "confidence": 0.95,
+        "rationale": "Text signals billing based on strongest keyword overlap."
+      },
+      "assertions": [
+        {
+          "field": "label",
+          "op": "eq",
+          "value": "billing"
+        },
+        {
+          "field": "confidence",
+          "op": "range",
+          "value": [
+            0.55,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bug-clear",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "The app crashes with an error every time I open it"
+      },
+      "expected_output": {
+        "label": "bug-report",
+        "confidence": 0.75,
+        "rationale": "Text signals bug-report based on strongest keyword overlap."
+      },
+      "assertions": [
+        {
+          "field": "label",
+          "op": "eq",
+          "value": "bug-report"
+        }
+      ]
+    },
+    {
+      "id": "feature-request",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "Please add support for dark mode enhancement"
+      },
+      "expected_output": {
+        "label": "feature-request",
+        "confidence": 0.85,
+        "rationale": "Text signals feature-request based on strongest keyword overlap."
+      },
+      "assertions": [
+        {
+          "field": "label",
+          "op": "eq",
+          "value": "feature-request"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-text",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "text": "Hello, I have a question about your product."
+      },
+      "expected_output": {
+        "label": "unknown",
+        "confidence": 0.4,
+        "rationale": "No clear dominant intent was detected from the text."
+      },
+      "assertions": [
+        {
+          "field": "confidence",
+          "op": "range",
+          "value": [
+            0.3,
+            0.5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "empty-labels-unknown",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "text": "nothing matches here",
+        "labels": [
+          "billing",
+          "bug-report",
+          "unknown"
+        ]
+      },
+      "expected_output": {
+        "label": "unknown",
+        "confidence": 0.4,
+        "rationale": "No clear dominant intent was detected from the text."
+      },
+      "assertions": [
+        {
+          "field": "label",
+          "op": "eq",
+          "value": "unknown"
+        }
+      ]
+    }
+  ]
+}

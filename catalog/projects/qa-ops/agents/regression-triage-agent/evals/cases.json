@@ -1,0 +1,131 @@
+{
+  "agent_id": "qa-ops.regression-triage-agent",
+  "cases": [
+    {
+      "id": "dependency-failure",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "failure_summary": "Failure after dependency version update in SDK package",
+        "changed_components": [
+          "auth-service",
+          "sdk-client"
+        ]
+      },
+      "expected_output": {
+        "probable_cause": "dependency",
+        "severity": "sev3",
+        "recommended_actions": [
+          "Reproduce failure with focused logs for: Failure after dependency version update in SDK package",
+          "Compare failure window with most recent merged changes",
+          "Review changed components: auth-service, sdk-client"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "probable_cause",
+          "op": "eq",
+          "value": "dependency"
+        },
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "sev3"
+        },
+        {
+          "field": "recommended_actions",
+          "op": "length",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "config-issue",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "failure_summary": "Application fails after config flag change in staging env",
+        "changed_components": [
+          "config-service"
+        ]
+      },
+      "expected_output": {
+        "probable_cause": "config",
+        "severity": "sev3",
+        "recommended_actions": [
+          "Reproduce failure with focused logs for: Application fails after config flag change in staging env",
+          "Compare failure window with most recent merged changes",
+          "Review changed components: config-service"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "probable_cause",
+          "op": "eq",
+          "value": "config"
+        }
+      ]
+    },
+    {
+      "id": "data-loss-sev1",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "failure_summary": "Data loss detected in backup restoration process",
+        "changed_components": [
+          "backup-svc"
+        ]
+      },
+      "expected_output": {
+        "probable_cause": "unknown",
+        "severity": "sev1",
+        "recommended_actions": [
+          "Reproduce failure with focused logs for: Data loss detected in backup restoration process",
+          "Compare failure window with most recent merged changes",
+          "Review changed components: backup-svc"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "sev1"
+        }
+      ]
+    },
+    {
+      "id": "minor-cosmetic",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "failure_summary": "Minor cosmetic alignment issue in dashboard header",
+        "changed_components": []
+      },
+      "expected_output": {
+        "probable_cause": "unknown",
+        "severity": "sev4",
+        "recommended_actions": [
+          "Reproduce failure with focused logs for: Minor cosmetic alignment issue in dashboard header",
+          "Compare failure window with most recent merged changes",
+          "Review changed components linked to the failing area"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "sev4"
+        },
+        {
+          "field": "probable_cause",
+          "op": "eq",
+          "value": "unknown"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "agent_id": "observability-ops.log-analyzer-agent",
+  "cases": [
+    {
+      "id": "error-spike",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "log_entries": [
+          "2026-03-10 ERROR: connection timeout to db-primary",
+          "2026-03-10 ERROR: connection timeout to db-primary",
+          "2026-03-10 ERROR: connection refused on port 5432",
+          "2026-03-10 WARN: slow query detected",
+          "2026-03-10 INFO: health check passed"
+        ],
+        "time_range": "2026-03-10 00:00 to 06:00"
+      },
+      "expected_output": {
+        "patterns": [
+          "3 ERROR entries detected across 5 log lines",
+          "1 WARN entries detected across 5 log lines",
+          "1 INFO entries detected across 5 log lines",
+          "Repeated timeout: 2 occurrences",
+          "Repeated connection timeout: 2 occurrences"
+        ],
+        "anomalies": [
+          "Error spike: 3 errors in window",
+          "Timeout spike: 2 occurrences in short window",
+          "Connection Timeout spike: 2 occurrences in short window"
+        ],
+        "severity": "critical"
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "critical"
+        },
+        {
+          "field": "patterns",
+          "op": "min_length",
+          "value": 2
+        },
+        {
+          "field": "anomalies",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "clean-logs",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "log_entries": [
+          "2026-03-10 INFO: request completed in 45ms",
+          "2026-03-10 INFO: health check passed"
+        ]
+      },
+      "expected_output": {
+        "patterns": [
+          "2 INFO entries detected across 2 log lines"
+        ],
+        "anomalies": [],
+        "severity": "normal"
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "normal"
+        },
+        {
+          "field": "anomalies",
+          "op": "length",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "auth-failures",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "log_entries": [
+          "2026-03-10 ERROR: authentication failed for user unknown",
+          "2026-03-10 ERROR: authentication failed for user admin",
+          "2026-03-10 ERROR: unauthorized access attempt"
+        ]
+      },
+      "expected_output": {
+        "patterns": [
+          "3 ERROR entries detected across 3 log lines"
+        ],
+        "anomalies": [
+          "Error spike: 3 errors in window",
+          "Authentication failure from multiple sources"
+        ],
+        "severity": "critical"
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "critical"
+        },
+        {
+          "field": "anomalies",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "oom-critical",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "log_entries": [
+          "2026-03-10 ERROR: out of memory on worker-3",
+          "2026-03-10 INFO: restarting worker-3"
+        ]
+      },
+      "expected_output": {
+        "patterns": [
+          "1 ERROR entries detected across 2 log lines",
+          "1 INFO entries detected across 2 log lines"
+        ],
+        "anomalies": [],
+        "severity": "critical"
+      },
+      "assertions": [
+        {
+          "field": "severity",
+          "op": "eq",
+          "value": "critical"
+        }
+      ]
+    }
+  ]
+}

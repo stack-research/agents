@@ -1,0 +1,219 @@
+{
+  "agent_id": "support-ops.summary-agent",
+  "cases": [
+    {
+      "id": "mixed-tickets",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "period_start": "2026-03-01",
+        "period_end": "2026-03-07",
+        "tickets": [
+          {
+            "priority": "p1",
+            "category": "access"
+          },
+          {
+            "priority": "p2",
+            "category": "access"
+          },
+          {
+            "priority": "p3",
+            "category": "billing"
+          },
+          {
+            "priority": "p4",
+            "category": "bug"
+          },
+          {
+            "priority": "p2",
+            "category": "access"
+          }
+        ],
+        "top_n_actions": 3
+      },
+      "expected_output": {
+        "ticket_count": 5,
+        "priority_breakdown": {
+          "p1": 1,
+          "p2": 2,
+          "p3": 1,
+          "p4": 1
+        },
+        "top_categories": [
+          "access:3",
+          "billing:1",
+          "bug:1"
+        ],
+        "summary": "Support volume from 2026-03-01 to 2026-03-07: 5 tickets. Top category: access. Priority mix p1=1, p2=2, p3=1, p4=1.",
+        "recommended_actions": [
+          "Run a brief incident review for p1 themes and preventive controls",
+          "Publish one trend note with priority shifts and customer impact",
+          "Select one recurring issue and define mitigation experiment"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "ticket_count",
+          "op": "eq",
+          "value": 5
+        },
+        {
+          "field": "priority_breakdown",
+          "op": "has_keys",
+          "value": [
+            "p1",
+            "p2",
+            "p3",
+            "p4"
+          ]
+        },
+        {
+          "field": "top_categories",
+          "op": "min_length",
+          "value": 1
+        },
+        {
+          "field": "recommended_actions",
+          "op": "length",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "empty-tickets",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "period_start": "2026-03-01",
+        "period_end": "2026-03-07",
+        "tickets": [],
+        "top_n_actions": 3
+      },
+      "expected_output": {
+        "ticket_count": 0,
+        "priority_breakdown": {
+          "p1": 0,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0
+        },
+        "top_categories": [],
+        "summary": "Support volume from 2026-03-01 to 2026-03-07: 0 tickets. Top category: none. Priority mix p1=0, p2=0, p3=0, p4=0.",
+        "recommended_actions": [
+          "Review top category queue and confirm owner coverage for next week",
+          "Publish one trend note with priority shifts and customer impact",
+          "Select one recurring issue and define mitigation experiment"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "ticket_count",
+          "op": "eq",
+          "value": 0
+        },
+        {
+          "field": "top_categories",
+          "op": "length",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "p1-special-action",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "period_start": "2026-03-01",
+        "period_end": "2026-03-07",
+        "tickets": [
+          {
+            "priority": "p1",
+            "category": "bug"
+          }
+        ],
+        "top_n_actions": 2
+      },
+      "expected_output": {
+        "ticket_count": 1,
+        "priority_breakdown": {
+          "p1": 1,
+          "p2": 0,
+          "p3": 0,
+          "p4": 0
+        },
+        "top_categories": [
+          "bug:1"
+        ],
+        "summary": "Support volume from 2026-03-01 to 2026-03-07: 1 tickets. Top category: bug. Priority mix p1=1, p2=0, p3=0, p4=0.",
+        "recommended_actions": [
+          "Run a brief incident review for p1 themes and preventive controls",
+          "Publish one trend note with priority shifts and customer impact"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "recommended_actions.0",
+          "op": "contains",
+          "value": "p1"
+        },
+        {
+          "field": "recommended_actions",
+          "op": "length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "top-n-four",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "period_start": "2026-01-01",
+        "period_end": "2026-01-07",
+        "tickets": [
+          {
+            "priority": "p3",
+            "category": "feature"
+          },
+          {
+            "priority": "p4",
+            "category": "how-to"
+          }
+        ],
+        "top_n_actions": 4
+      },
+      "expected_output": {
+        "ticket_count": 2,
+        "priority_breakdown": {
+          "p1": 0,
+          "p2": 0,
+          "p3": 1,
+          "p4": 1
+        },
+        "top_categories": [
+          "feature:1",
+          "how-to:1"
+        ],
+        "summary": "Support volume from 2026-01-01 to 2026-01-07: 2 tickets. Top category: feature. Priority mix p1=0, p2=0, p3=1, p4=1.",
+        "recommended_actions": [
+          "Review top category queue and confirm owner coverage for next week",
+          "Publish one trend note with priority shifts and customer impact",
+          "Select one recurring issue and define mitigation experiment",
+          "Audit aged tickets and close stale items with explicit resolution notes"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "recommended_actions",
+          "op": "length",
+          "value": 4
+        }
+      ]
+    }
+  ]
+}

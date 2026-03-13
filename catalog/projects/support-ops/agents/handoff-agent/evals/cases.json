@@ -1,0 +1,136 @@
+{
+  "agent_id": "support-ops.handoff-agent",
+  "cases": [
+    {
+      "id": "active-incidents",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "shift_label": "APAC Night Shift",
+        "incidents": [
+          {
+            "id": "INC-101",
+            "severity": "sev1",
+            "status": "investigating",
+            "owner": "oncall-a",
+            "next_step": "check logs"
+          },
+          {
+            "id": "INC-102",
+            "severity": "sev3",
+            "status": "monitoring",
+            "owner": "oncall-b",
+            "next_step": "watch metrics"
+          }
+        ]
+      },
+      "expected_output": {
+        "active_count": 2,
+        "critical_items": [
+          "INC-101:sev1:investigating"
+        ],
+        "handoff_brief": "Handoff for APAC Night Shift: 2 active incidents for next 8 hours. Critical items: INC-101:sev1:investigating. Keep updates in the incident channel and checkpoint owner handoff.",
+        "recommended_checks": [
+          "Confirm incident owners acknowledge handoff and next-step deadlines",
+          "Post one timeline update for each active sev1/sev2 incident",
+          "Re-check mitigation status before end of current shift window"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "active_count",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "field": "critical_items",
+          "op": "min_length",
+          "value": 1
+        },
+        {
+          "field": "handoff_brief",
+          "op": "contains",
+          "value": "APAC Night Shift"
+        }
+      ]
+    },
+    {
+      "id": "all-resolved",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "shift_label": "EU Day Shift",
+        "incidents": [
+          {
+            "id": "INC-200",
+            "severity": "sev2",
+            "status": "resolved",
+            "owner": "oncall-c",
+            "next_step": ""
+          }
+        ]
+      },
+      "expected_output": {
+        "active_count": 0,
+        "critical_items": [],
+        "handoff_brief": "Handoff for EU Day Shift: 0 active incidents for next 8 hours. Critical items: none. Keep updates in the incident channel and checkpoint owner handoff.",
+        "recommended_checks": [
+          "Verify no hidden blockers remain in pending queues",
+          "Record clean handoff note and monitoring posture",
+          "Keep alert channel watch active for the next shift window"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "active_count",
+          "op": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "unowned-incident",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "shift_label": "US West Shift",
+        "incidents": [
+          {
+            "id": "INC-300",
+            "severity": "sev2",
+            "status": "investigating",
+            "owner": "",
+            "next_step": "triage"
+          }
+        ]
+      },
+      "expected_output": {
+        "active_count": 1,
+        "critical_items": [
+          "INC-300:sev2:investigating"
+        ],
+        "handoff_brief": "Handoff for US West Shift: 1 active incidents for next 8 hours. Critical items: INC-300:sev2:investigating. Keep updates in the incident channel and checkpoint owner handoff.",
+        "recommended_checks": [
+          "Assign owner for unowned incidents and confirm acknowledgement",
+          "Post one timeline update for each active sev1/sev2 incident",
+          "Re-check mitigation status before end of current shift window"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "active_count",
+          "op": "eq",
+          "value": 1
+        },
+        {
+          "field": "recommended_checks.0",
+          "op": "contains",
+          "value": "unowned"
+        }
+      ]
+    }
+  ]
+}

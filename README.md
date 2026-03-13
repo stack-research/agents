@@ -360,7 +360,8 @@ The test suite currently includes:
 - ASI10 rogue-agent LLM adversarial regression tests.
 - security scanner tests.
 - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
-- `agent.yaml` schema consistency checks for id/name/version and IO sections.
+- `agent.yaml` JSON Schema validation (`schemas/agent.json`).
+- benchmark/eval fixtures: 86 cases across 24 agents (`evals/cases.json` per agent).
 - catalog structure checks for required per-agent files.
 - optional integration tests against local Ollama.
 
@@ -387,15 +388,14 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 ## Add a New Agent
 
 1. Create `catalog/projects/<project>/agents/<agent-name>/`.
-2. Add `agent.yaml` with purpose, IO contract, and runtime assumptions.
+2. Add `agent.yaml` with purpose, IO contract, and runtime assumptions (validated by `schemas/agent.json`).
 3. Add prompt/workflow/example/test docs.
-4. Update `catalog/projects/<project>/README.md`.
-5. Update root `README.md` and `AGENTS.md` catalog sections.
+4. Add `evals/cases.json` with benchmark fixtures (validated by `schemas/eval-case.json`).
+5. Update `catalog/projects/<project>/README.md`.
+6. Update root `README.md` and `AGENTS.md` catalog sections.
 
 ## Next Ideas
 
-1. Add JSON schema for `agent.yaml` (formalize validation beyond current test checks).
-2. Add benchmark/eval fixtures for each agent (structured evaluation beyond smoke tests).
-3. Cross-domain orchestration pipeline (incident → workflow routes → support triages → qa generates tests → research synthesizes → control-ops governs).
-4. Generalize security scanner to work against any agent catalog.
-5. CI pipeline (GitHub Actions for `make test` and `make test-security`).
+1. Cross-domain orchestration pipeline (incident → workflow routes → support triages → qa generates tests → research synthesizes → control-ops governs).
+2. Generalize security scanner to work against any agent catalog.
+3. CI pipeline (GitHub Actions for `make test` and `make test-security`).

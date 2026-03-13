@@ -1,0 +1,138 @@
+{
+  "agent_id": "control-ops.kill-path-auditor-agent",
+  "cases": [
+    {
+      "id": "full-coverage",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "system_name": "order-processor",
+        "capabilities": {
+          "throttle": "Rate limit to 10 rps via API gateway",
+          "degrade": "Disable non-critical enrichment steps",
+          "isolate": "Network policy blocks all egress",
+          "hard_stop": "Kill switch via infrastructure controller"
+        },
+        "last_tested": "2026-02-01"
+      },
+      "expected_output": {
+        "coverage_score": 4,
+        "gaps": [],
+        "escalation_readiness": "ready",
+        "recommended_actions": [
+          "Verify all four kill path levels function independently for order-processor",
+          "Schedule quarterly kill path drill covering all four levels",
+          "Verify hard_stop works independently of application cooperation"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "coverage_score",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "field": "escalation_readiness",
+          "op": "eq",
+          "value": "ready"
+        },
+        {
+          "field": "gaps",
+          "op": "length",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "missing-two-levels",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "system_name": "analytics-pipeline",
+        "capabilities": {
+          "throttle": "Rate limit via ingestion queue",
+          "degrade": "",
+          "isolate": "",
+          "hard_stop": "Container kill via orchestrator"
+        },
+        "last_tested": "2026-01-15"
+      },
+      "expected_output": {
+        "coverage_score": 2,
+        "gaps": [
+          "degrade: no degrade capability described",
+          "isolate: no isolate capability described"
+        ],
+        "escalation_readiness": "partial",
+        "recommended_actions": [
+          "Implement degrade capability for analytics-pipeline",
+          "Schedule quarterly kill path drill covering all four levels",
+          "Verify hard_stop works independently of application cooperation"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "coverage_score",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "field": "escalation_readiness",
+          "op": "eq",
+          "value": "partial"
+        },
+        {
+          "field": "gaps",
+          "op": "min_length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "no-test-date",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "system_name": "notification-svc",
+        "capabilities": {
+          "throttle": "Limit via queue",
+          "degrade": "Drop low-priority",
+          "isolate": "Firewall rule",
+          "hard_stop": "Process kill"
+        }
+      },
+      "expected_output": {
+        "coverage_score": 4,
+        "gaps": [
+          "last_tested: no test date recorded"
+        ],
+        "escalation_readiness": "partial",
+        "recommended_actions": [
+          "Verify all four kill path levels function independently for notification-svc",
+          "Schedule quarterly kill path drill covering all four levels",
+          "Verify hard_stop works independently of application cooperation"
+        ]
+      },
+      "assertions": [
+        {
+          "field": "coverage_score",
+          "op": "eq",
+          "value": 4
+        },
+        {
+          "field": "escalation_readiness",
+          "op": "eq",
+          "value": "partial"
+        },
+        {
+          "field": "gaps",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

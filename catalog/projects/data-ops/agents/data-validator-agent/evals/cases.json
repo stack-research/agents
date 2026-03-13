@@ -1,0 +1,145 @@
+{
+  "agent_id": "data-ops.data-validator-agent",
+  "cases": [
+    {
+      "id": "all-valid",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "records": [
+          {
+            "name": "Alice",
+            "age": 30
+          },
+          {
+            "name": "Bob",
+            "age": 25
+          }
+        ],
+        "rules": [
+          "name must not be empty",
+          "age must be non-negative"
+        ]
+      },
+      "expected_output": {
+        "valid_count": 2,
+        "invalid_count": 0,
+        "violations": [],
+        "verdict": "pass"
+      },
+      "assertions": [
+        {
+          "field": "verdict",
+          "op": "eq",
+          "value": "pass"
+        },
+        {
+          "field": "valid_count",
+          "op": "eq",
+          "value": 2
+        },
+        {
+          "field": "invalid_count",
+          "op": "eq",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "some-invalid",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "records": [
+          {
+            "name": "Alice",
+            "age": 30
+          },
+          {
+            "name": "",
+            "age": -5
+          },
+          {
+            "name": "Charlie",
+            "age": 20
+          }
+        ],
+        "rules": [
+          "name must not be empty",
+          "age must be non-negative"
+        ]
+      },
+      "expected_output": {
+        "valid_count": 2,
+        "invalid_count": 1,
+        "violations": [
+          "Record 2: name must not be empty (value is empty)",
+          "Record 2: age must be non-negative (value: -5)"
+        ],
+        "verdict": "warn"
+      },
+      "assertions": [
+        {
+          "field": "verdict",
+          "op": "in",
+          "value": [
+            "warn",
+            "fail"
+          ]
+        },
+        {
+          "field": "violations",
+          "op": "min_length",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "all-invalid",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "records": [
+          {
+            "name": "",
+            "age": -1
+          },
+          {
+            "name": "",
+            "age": -2
+          }
+        ],
+        "rules": [
+          "name must not be empty",
+          "age must be non-negative"
+        ]
+      },
+      "expected_output": {
+        "valid_count": 0,
+        "invalid_count": 2,
+        "violations": [
+          "Record 1: name must not be empty (value is empty)",
+          "Record 1: age must be non-negative (value: -1)",
+          "Record 2: name must not be empty (value is empty)",
+          "Record 2: age must be non-negative (value: -2)"
+        ],
+        "verdict": "fail"
+      },
+      "assertions": [
+        {
+          "field": "verdict",
+          "op": "eq",
+          "value": "fail"
+        },
+        {
+          "field": "invalid_count",
+          "op": "eq",
+          "value": 2
+        }
+      ]
+    }
+  ]
+}

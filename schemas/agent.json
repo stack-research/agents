@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent.json",
+  "title": "Agent Schema",
+  "description": "Schema for agent.yaml files in the agent catalog.",
+  "type": "object",
+  "required": ["id", "name", "version", "summary", "owners", "inputs", "outputs"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique agent identifier in the form <project>.<agent-name>.",
+      "pattern": "^[a-z0-9-]+\\.[a-z0-9-]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Agent name, must match the agent directory name.",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version (MAJOR.MINOR.PATCH).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short human-readable description of what this agent does.",
+      "minLength": 10
+    },
+    "owners": {
+      "type": "array",
+      "description": "One or more team or group identifiers responsible for this agent.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "minItems": 1
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Ordered list of input fields the agent accepts.",
+      "items": { "$ref": "#/$defs/field" },
+      "minItems": 1
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Ordered list of output fields the agent produces.",
+      "items": { "$ref": "#/$defs/outputField" },
+      "minItems": 1
+    },
+    "rules": {
+      "type": "array",
+      "description": "Behavioural rules the agent must follow when producing outputs.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Hard constraints on output format, length, or content.",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "agentType": {
+      "type": "string",
+      "description": "Data type for a field. Primitives, arrays, objects, and enums are all valid.",
+      "pattern": "^(string|integer|int|number|boolean|object|string\\[\\]|object\\[\\]|array\\[[a-z]+\\]|enum\\[[a-z0-9,_\\-]+\\])$"
+    },
+    "field": {
+      "type": "object",
+      "required": ["name", "type", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": { "$ref": "#/$defs/agentType" },
+        "required": { "type": "boolean" },
+        "default": {}
+      }
+    },
+    "outputField": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": { "$ref": "#/$defs/agentType" }
+      }
+    }
+  }
+}

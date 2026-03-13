@@ -1,0 +1,130 @@
+{
+  "agent_id": "support-ops.triage-agent",
+  "cases": [
+    {
+      "id": "outage-p1",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "Production is down, complete outage for all users",
+        "customer_tier": "free"
+      },
+      "expected_output": {
+        "priority": "p1",
+        "category": "other",
+        "next_action": "Acknowledge request and ask one clarifying question."
+      },
+      "assertions": [
+        {
+          "field": "priority",
+          "op": "eq",
+          "value": "p1"
+        },
+        {
+          "field": "category",
+          "op": "in",
+          "value": [
+            "bug",
+            "other"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "billing-free",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "I need a refund for my last invoice payment",
+        "customer_tier": "free"
+      },
+      "expected_output": {
+        "priority": "p3",
+        "category": "billing",
+        "next_action": "Route to billing queue and request invoice and charge identifiers."
+      },
+      "assertions": [
+        {
+          "field": "priority",
+          "op": "eq",
+          "value": "p3"
+        },
+        {
+          "field": "category",
+          "op": "eq",
+          "value": "billing"
+        }
+      ]
+    },
+    {
+      "id": "access-enterprise",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "text": "Users cannot login to SSO since the update",
+        "customer_tier": "enterprise"
+      },
+      "expected_output": {
+        "priority": "p1",
+        "category": "access",
+        "next_action": "Escalate to auth on-call and collect user and timestamp details."
+      },
+      "assertions": [
+        {
+          "field": "category",
+          "op": "eq",
+          "value": "access"
+        }
+      ]
+    },
+    {
+      "id": "enterprise-bump",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "text": "How do I configure the API integration?",
+        "customer_tier": "enterprise"
+      },
+      "expected_output": {
+        "priority": "p3",
+        "category": "how-to",
+        "next_action": "Send setup guide and offer a short assisted walkthrough."
+      },
+      "assertions": [
+        {
+          "field": "category",
+          "op": "eq",
+          "value": "how-to"
+        }
+      ]
+    },
+    {
+      "id": "default-tier",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "text": "General question about your service"
+      },
+      "expected_output": {
+        "priority": "p4",
+        "category": "other",
+        "next_action": "Acknowledge request and ask one clarifying question."
+      },
+      "assertions": [
+        {
+          "field": "priority",
+          "op": "in",
+          "value": [
+            "p3",
+            "p4"
+          ]
+        }
+      ]
+    }
+  ]
+}

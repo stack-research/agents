@@ -1,0 +1,99 @@
+{
+  "agent_id": "planner-executor.planner-agent",
+  "cases": [
+    {
+      "id": "security-goal",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "goal": "Investigate a potential security breach in the auth service",
+        "constraints": [
+          "Must complete within 2 hours",
+          "No production changes without approval"
+        ]
+      },
+      "expected_output": {
+        "plan_steps": [
+          "Clarify objective and success criteria for: Investigate a potential security breach in the auth service",
+          "List dependencies, owners, and required access upfront",
+          "Create implementation checklist with rollback and validation",
+          "Execute checklist in small stages and capture evidence",
+          "Summarize outcome, risks, and next follow-up actions",
+          "Respect constraints: Must complete within 2 hours, No production changes without approval"
+        ],
+        "risk_level": "high"
+      },
+      "assertions": [
+        {
+          "field": "risk_level",
+          "op": "eq",
+          "value": "high"
+        },
+        {
+          "field": "plan_steps",
+          "op": "min_length",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "low-risk-goal",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "goal": "Update the README with new contributor guidelines"
+      },
+      "expected_output": {
+        "plan_steps": [
+          "Clarify objective and success criteria for: Update the README with new contributor guidelines",
+          "List dependencies, owners, and required access upfront",
+          "Create implementation checklist with rollback and validation",
+          "Execute checklist in small stages and capture evidence",
+          "Summarize outcome, risks, and next follow-up actions"
+        ],
+        "risk_level": "low"
+      },
+      "assertions": [
+        {
+          "field": "risk_level",
+          "op": "eq",
+          "value": "low"
+        },
+        {
+          "field": "plan_steps",
+          "op": "min_length",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "migration-medium",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "goal": "Migrate user data to the new database schema",
+        "constraints": []
+      },
+      "expected_output": {
+        "plan_steps": [
+          "Clarify objective and success criteria for: Migrate user data to the new database schema",
+          "List dependencies, owners, and required access upfront",
+          "Create implementation checklist with rollback and validation",
+          "Execute checklist in small stages and capture evidence",
+          "Summarize outcome, risks, and next follow-up actions"
+        ],
+        "risk_level": "medium"
+      },
+      "assertions": [
+        {
+          "field": "risk_level",
+          "op": "eq",
+          "value": "medium"
+        }
+      ]
+    }
+  ]
+}

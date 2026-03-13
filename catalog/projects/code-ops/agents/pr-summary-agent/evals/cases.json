@@ -1,0 +1,115 @@
+{
+  "agent_id": "code-ops.pr-summary-agent",
+  "cases": [
+    {
+      "id": "small-safe-pr",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "title": "Fix typo in README",
+        "changed_files": [
+          "README.md"
+        ],
+        "diff_summary": "Corrected spelling in installation section"
+      },
+      "expected_output": {
+        "summary": "Fix typo in README. Changes span README.md. Corrected spelling in installation section",
+        "risk_areas": [
+          "No high-risk file paths detected"
+        ],
+        "review_focus": "low"
+      },
+      "assertions": [
+        {
+          "field": "review_focus",
+          "op": "eq",
+          "value": "low"
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "Fix typo in README"
+        }
+      ]
+    },
+    {
+      "id": "sensitive-files",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "title": "Update auth middleware",
+        "changed_files": [
+          "src/auth/middleware.py",
+          "src/auth/tokens.py",
+          "config/security.yaml"
+        ]
+      },
+      "expected_output": {
+        "summary": "Update auth middleware. Changes span src/auth/middleware.py, src/auth/tokens.py, config/security.yaml.",
+        "risk_areas": [
+          "Sensitive area touched: src/auth/middleware.py",
+          "Sensitive area touched: src/auth/tokens.py",
+          "Sensitive area touched: config/security.yaml",
+          "Infrastructure change: config/security.yaml"
+        ],
+        "review_focus": "high"
+      },
+      "assertions": [
+        {
+          "field": "review_focus",
+          "op": "eq",
+          "value": "high"
+        },
+        {
+          "field": "risk_areas",
+          "op": "min_length",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "many-files",
+      "tags": [
+        "boundary"
+      ],
+      "input": {
+        "title": "Refactor utils",
+        "changed_files": [
+          "src/util_0.py",
+          "src/util_1.py",
+          "src/util_2.py",
+          "src/util_3.py",
+          "src/util_4.py",
+          "src/util_5.py",
+          "src/util_6.py",
+          "src/util_7.py",
+          "src/util_8.py",
+          "src/util_9.py",
+          "src/util_10.py",
+          "src/util_11.py"
+        ]
+      },
+      "expected_output": {
+        "summary": "Refactor utils. Changes span 12 file(s).",
+        "risk_areas": [
+          "No high-risk file paths detected"
+        ],
+        "review_focus": "high"
+      },
+      "assertions": [
+        {
+          "field": "review_focus",
+          "op": "eq",
+          "value": "high"
+        },
+        {
+          "field": "summary",
+          "op": "contains",
+          "value": "12 file(s)"
+        }
+      ]
+    }
+  ]
+}

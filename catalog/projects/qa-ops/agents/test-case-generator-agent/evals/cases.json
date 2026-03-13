@@ -1,0 +1,129 @@
+{
+  "agent_id": "qa-ops.test-case-generator-agent",
+  "cases": [
+    {
+      "id": "auth-feature",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "feature": "SSO authentication flow",
+        "acceptance_criteria": [
+          "Users can sign in with SAML",
+          "Session persists for 24h"
+        ]
+      },
+      "expected_output": {
+        "test_cases": [
+          "Happy path: validate SSO authentication flow with Users can sign in with SAML",
+          "Validation edge: reject invalid input for SSO authentication flow",
+          "Boundary check: enforce limits and defaults for SSO authentication flow",
+          "Failure path: verify clear error handling for SSO authentication flow",
+          "Security check: block unauthorized access during SSO authentication flow"
+        ],
+        "risk_focus": "high"
+      },
+      "assertions": [
+        {
+          "field": "test_cases",
+          "op": "length",
+          "value": 5
+        },
+        {
+          "field": "risk_focus",
+          "op": "eq",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "id": "simple-feature",
+      "tags": [
+        "happy-path"
+      ],
+      "input": {
+        "feature": "Dark mode toggle",
+        "acceptance_criteria": [
+          "Theme switches instantly"
+        ]
+      },
+      "expected_output": {
+        "test_cases": [
+          "Happy path: validate Dark mode toggle with Theme switches instantly",
+          "Validation edge: reject invalid input for Dark mode toggle",
+          "Boundary check: enforce limits and defaults for Dark mode toggle",
+          "Failure path: verify clear error handling for Dark mode toggle",
+          "Security check: block unauthorized access during Dark mode toggle"
+        ],
+        "risk_focus": "medium"
+      },
+      "assertions": [
+        {
+          "field": "risk_focus",
+          "op": "eq",
+          "value": "medium"
+        },
+        {
+          "field": "test_cases",
+          "op": "min_length",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "id": "no-criteria",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "feature": "Export CSV report"
+      },
+      "expected_output": {
+        "test_cases": [
+          "Happy path: validate Export CSV report with basic flow",
+          "Validation edge: reject invalid input for Export CSV report",
+          "Boundary check: enforce limits and defaults for Export CSV report",
+          "Failure path: verify clear error handling for Export CSV report",
+          "Security check: block unauthorized access during Export CSV report"
+        ],
+        "risk_focus": "medium"
+      },
+      "assertions": [
+        {
+          "field": "test_cases",
+          "op": "min_length",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "id": "payment-high-risk",
+      "tags": [
+        "edge-case"
+      ],
+      "input": {
+        "feature": "Payment processing webhook",
+        "acceptance_criteria": [
+          "Handles retries"
+        ]
+      },
+      "expected_output": {
+        "test_cases": [
+          "Happy path: validate Payment processing webhook with Handles retries",
+          "Validation edge: reject invalid input for Payment processing webhook",
+          "Boundary check: enforce limits and defaults for Payment processing webhook",
+          "Failure path: verify clear error handling for Payment processing webhook",
+          "Security check: block unauthorized access during Payment processing webhook"
+        ],
+        "risk_focus": "high"
+      },
+      "assertions": [
+        {
+          "field": "risk_focus",
+          "op": "eq",
+          "value": "high"
+        }
+      ]
+    }
+  ]
+}
