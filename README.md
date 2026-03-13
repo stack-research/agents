@@ -100,6 +100,7 @@ catalog/
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_incident_pipeline.py --input examples/incident-pipeline-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
+- `python3 scripts/run_security_scan.py --target-path /path/to/other/catalog --rules custom-rules.json --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `make state-up` to start Redis for pipeline state persistence
 - `make llm-up && make llm-pull` for a speed-first local model (`llama3.2:3b`)
@@ -382,7 +383,7 @@ The test suite currently includes:
 - ASI09 human-agent-trust-exploitation LLM adversarial regression tests.
 - ASI10 rogue-agent adversarial regression tests.
 - ASI10 rogue-agent LLM adversarial regression tests.
-- security scanner tests.
+- security scanner tests (glob discovery, custom rules, check operators, nested catalogs).
 - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
 - `agent.yaml` JSON Schema validation (`schemas/agent.json`).
 - benchmark/eval fixtures: 86 cases across 24 agents (`evals/cases.json` per agent).
@@ -421,5 +422,4 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 
 ## Next Ideas
 
-1. Generalize security scanner to work against any agent catalog.
-2. CI pipeline (GitHub Actions for `make test` and `make test-security`).
+1. CI pipeline (GitHub Actions for `make test` and `make test-security`).

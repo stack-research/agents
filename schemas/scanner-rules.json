@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scanner-rules.json",
+  "title": "Scanner Rules Schema",
+  "description": "Schema for security scanner rule configuration files.",
+  "type": "object",
+  "required": ["agent_manifest", "agent_checks", "repo_checks"],
+  "additionalProperties": false,
+  "properties": {
+    "agent_manifest": {
+      "type": "string",
+      "description": "Filename used to discover agent directories (e.g. agent.yaml).",
+      "minLength": 1
+    },
+    "agent_checks": {
+      "type": "array",
+      "description": "Checks run against each discovered agent directory.",
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "repo_checks": {
+      "type": "array",
+      "description": "Checks run against the repository root.",
+      "items": { "$ref": "#/$defs/check" }
+    }
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": ["id", "asi", "severity", "title", "recommendation"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique check identifier."
+        },
+        "asi": {
+          "type": "string",
+          "description": "ASI category (e.g. ASI01, ASI08).",
+          "pattern": "^ASI\\d{2}$"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommendation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "description": "File path relative to agent dir (agent_checks) or repo root (repo_checks)."
+        },
+        "contains": {
+          "type": "string",
+          "description": "File must contain this string (case-insensitive)."
+        },
+        "contains_any": {
+          "type": "array",
+          "description": "File must contain at least one of these strings (case-insensitive).",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "contains_all": {
+          "type": "array",
+          "description": "File must contain all of these strings (case-insensitive).",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "exists": {
+          "type": "boolean",
+          "description": "File must exist (true) or must not exist (false)."
+        }
+      }
+    }
+  }
+}

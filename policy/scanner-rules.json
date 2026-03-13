@@ -1,0 +1,52 @@
+{
+  "agent_manifest": "agent.yaml",
+  "agent_checks": [
+    {
+      "id": "SEC-ASI01-001",
+      "asi": "ASI01",
+      "severity": "medium",
+      "title": "Prompt lacks strict output-boundary reminder",
+      "file": "prompts/system.md",
+      "contains": "do not include extra keys",
+      "recommendation": "Add explicit output-boundary language to reduce goal/prompt hijack ambiguity."
+    },
+    {
+      "id": "SEC-ASI01-002",
+      "asi": "ASI01",
+      "severity": "low",
+      "title": "Prompt does not mention validation or untrusted input",
+      "file": "prompts/system.md",
+      "contains_any": ["validate", "untrusted"],
+      "recommendation": "Document validation or untrusted-input handling to reduce injection risk."
+    },
+    {
+      "id": "SEC-ASI08-002",
+      "asi": "ASI08",
+      "severity": "low",
+      "title": "Runbook does not document failure handling",
+      "file": "workflows/runbook.md",
+      "contains": "failure",
+      "recommendation": "Add explicit failure modes and mitigation steps to reduce cascading failures."
+    }
+  ],
+  "repo_checks": [
+    {
+      "id": "SEC-ASI04-001",
+      "asi": "ASI04",
+      "severity": "low",
+      "title": "Git ignore policy is missing Python cache artifacts",
+      "file": ".gitignore",
+      "contains_all": ["__pycache__/", "*.pyc"],
+      "recommendation": "Ignore build/runtime artifacts to reduce accidental supply-chain and repo hygiene issues."
+    },
+    {
+      "id": "SEC-ASI04-002",
+      "asi": "ASI04",
+      "severity": "low",
+      "title": "No local container orchestration baseline found",
+      "file": "docker-compose.yml",
+      "exists": true,
+      "recommendation": "Define containerized local runtime controls for reproducible and isolated security testing."
+    }
+  ]
+}

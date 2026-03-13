@@ -1,11 +1,20 @@
-"""Deterministic security scanner aligned to OWASP Agentic AI themes."""
+"""Configurable security scanner aligned to OWASP Agentic AI themes.
+
+Discovers agents via glob (``**/agent.yaml`` by default) and evaluates
+configurable check rules from a JSON rules file.  Works against any
+agent catalog layout — no hardcoded directory structure.
+"""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .core import ValidationError
+
+_DEFAULT_RULES_PATH = Path(__file__).resolve().parents[1] / "policy" / "scanner-rules.json"
 
 
 @dataclass
@@ -35,114 +44,111 @@ def _read_text(path: Path) -> str:
 
 
 def _severity_points(severity: str) -> int:
-    return {"low": 8, "medium": 15, "high": 25}[severity]
+    return {"low": 8, "medium": 15, "high": 25}.get(severity, 0)
 
 
-def scan_repository_controls(target_path: str) -> dict[str, object]:
+def _load_rules(rules_path: Path | str | None = None) -> dict[str, Any]:
+    path = Path(rules_path) if rules_path else _DEFAULT_RULES_PATH
+    if not path.exists():
+        raise ValidationError(f"scanner rules file not found: {path}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _evaluate_check(check: dict[str, Any], base_dir: Path, root: Path) -> Finding | None:
+    """Evaluate a single check rule against a base directory.  Return a Finding on failure."""
+    file_rel = check.get("file", "")
+    if not file_rel:
+        return None
+
+    target = base_dir / file_rel
+    text = _read_text(target).lower()
+    rel_path = str(target.relative_to(root)) if target.is_relative_to(root) else str(target)
+
+    # exists check
+    if "exists" in check:
+        if check["exists"] and not target.exists():
+            return _finding(check, rel_path)
+        if not check["exists"] and target.exists():
+            return _finding(check, rel_path)
+        return None
+
+    # All text-based checks require the file to exist and have content.
+    # A missing file is a finding only for contains / contains_any / contains_all.
+    if not text:
+        if "contains" in check or "contains_any" in check or "contains_all" in check:
+            return _finding(check, rel_path)
+        return None
+
+    if "contains" in check:
+        if check["contains"].lower() not in text:
+            return _finding(check, rel_path)
+
+    if "contains_any" in check:
+        if not any(item.lower() in text for item in check["contains_any"]):
+            return _finding(check, rel_path)
+
+    if "contains_all" in check:
+        if not all(item.lower() in text for item in check["contains_all"]):
+            return _finding(check, rel_path)
+
+    return None
+
+
+def _finding(check: dict[str, Any], path: str) -> Finding:
+    return Finding(
+        id=check["id"],
+        severity=check["severity"],
+        asi=check["asi"],
+        title=check["title"],
+        path=path,
+        recommendation=check["recommendation"],
+    )
+
+
+def scan_repository_controls(
+    target_path: str,
+    rules_path: str | None = None,
+) -> dict[str, object]:
+    """Scan an agent catalog at *target_path* using rules from *rules_path*.
+
+    When *rules_path* is ``None`` the default rules at
+    ``policy/scanner-rules.json`` are used.
+    """
     root = Path(target_path).resolve()
     if not root.exists() or not root.is_dir():
         raise ValidationError(f"target_path does not exist or is not a directory: {target_path}")
 
-    agents_root = root / "catalog" / "projects"
-    if not agents_root.exists():
-        raise ValidationError(f"catalog projects folder not found under: {root}")
+    rules = _load_rules(rules_path)
+    manifest = rules.get("agent_manifest", "agent.yaml")
+    agent_checks = rules.get("agent_checks", [])
+    repo_checks = rules.get("repo_checks", [])
 
     findings: list[Finding] = []
-    project_count = 0
-    agent_count = 0
 
-    for project_dir in sorted(agents_root.iterdir()):
-        if not project_dir.is_dir():
-            continue
-        project_count += 1
-        agents_dir = project_dir / "agents"
-        if not agents_dir.exists():
-            findings.append(
-                Finding(
-                    id="SEC-ASI08-001",
-                    severity="medium",
-                    asi="ASI08",
-                    title="Project missing agents directory",
-                    path=str(project_dir.relative_to(root)),
-                    recommendation="Create agents/ and define at least one scoped agent to keep project boundaries explicit.",
-                )
-            )
-            continue
+    # ── Discover agents via glob ───────────────────────────────────
+    agent_dirs: list[Path] = []
+    for manifest_path in sorted(root.rglob(manifest)):
+        agent_dir = manifest_path.parent
+        agent_dirs.append(agent_dir)
 
-        for agent_dir in sorted(agents_dir.iterdir()):
-            if not agent_dir.is_dir():
-                continue
-            agent_count += 1
-            rel_agent = str(agent_dir.relative_to(root))
+    # ── Agent-level checks ─────────────────────────────────────────
+    for agent_dir in agent_dirs:
+        for check in agent_checks:
+            result = _evaluate_check(check, agent_dir, root)
+            if result is not None:
+                findings.append(result)
 
-            prompt_path = agent_dir / "prompts" / "system.md"
-            prompt_text = _read_text(prompt_path).lower()
-            if "do not include extra keys" not in prompt_text:
-                findings.append(
-                    Finding(
-                        id="SEC-ASI01-001",
-                        severity="medium",
-                        asi="ASI01",
-                        title="Prompt lacks strict output-boundary reminder",
-                        path=rel_agent + "/prompts/system.md",
-                        recommendation="Add explicit output-boundary language to reduce goal/prompt hijack ambiguity.",
-                    )
-                )
-            if "validate" not in prompt_text and "untrusted" not in prompt_text:
-                findings.append(
-                    Finding(
-                        id="SEC-ASI01-002",
-                        severity="low",
-                        asi="ASI01",
-                        title="Prompt does not mention validation or untrusted input",
-                        path=rel_agent + "/prompts/system.md",
-                        recommendation="Document validation or untrusted-input handling to reduce injection risk.",
-                    )
-                )
+    # ── Repository-level checks ────────────────────────────────────
+    for check in repo_checks:
+        result = _evaluate_check(check, root, root)
+        if result is not None:
+            findings.append(result)
 
-            runbook_path = agent_dir / "workflows" / "runbook.md"
-            runbook_text = _read_text(runbook_path).lower()
-            if "failure" not in runbook_text:
-                findings.append(
-                    Finding(
-                        id="SEC-ASI08-002",
-                        severity="low",
-                        asi="ASI08",
-                        title="Runbook does not document failure handling",
-                        path=rel_agent + "/workflows/runbook.md",
-                        recommendation="Add explicit failure modes and mitigation steps to reduce cascading failures.",
-                    )
-                )
-
-    gitignore_text = _read_text(root / ".gitignore")
-    if "__pycache__/" not in gitignore_text or "*.pyc" not in gitignore_text:
-        findings.append(
-            Finding(
-                id="SEC-ASI04-001",
-                severity="low",
-                asi="ASI04",
-                title="Git ignore policy is missing Python cache artifacts",
-                path=".gitignore",
-                recommendation="Ignore build/runtime artifacts to reduce accidental supply-chain and repo hygiene issues.",
-            )
-        )
-
-    if not (root / "docker-compose.yml").exists():
-        findings.append(
-            Finding(
-                id="SEC-ASI04-002",
-                severity="low",
-                asi="ASI04",
-                title="No local container orchestration baseline found",
-                path="docker-compose.yml",
-                recommendation="Define containerized local runtime controls for reproducible and isolated security testing.",
-            )
-        )
-
-    risk_score = min(100, sum(_severity_points(item.severity) for item in findings))
-    findings_out = [item.as_dict() for item in findings]
+    # ── Summary ────────────────────────────────────────────────────
+    risk_score = min(100, sum(_severity_points(f.severity) for f in findings))
+    findings_out = [f.as_dict() for f in findings]
     summary = (
-        f"Scanned {project_count} projects and {agent_count} agents; "
+        f"Scanned {len(agent_dirs)} agents; "
         f"identified {len(findings_out)} findings."
     )
 

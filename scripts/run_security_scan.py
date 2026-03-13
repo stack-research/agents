@@ -20,6 +20,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run agentic-security-scanner-agent")
     parser.add_argument("--target-path", default=".", help="Repository path to scan")
     parser.add_argument(
+        "--rules",
+        default=None,
+        help="Path to scanner rules JSON (defaults to policy/scanner-rules.json)",
+    )
+    parser.add_argument(
         "--mode",
         choices=["deterministic", "llm"],
         default=os.getenv("AGENT_MODE", "deterministic"),
@@ -34,10 +39,14 @@ def main() -> int:
     parser.add_argument("--pretty", action="store_true", help="Pretty print output")
     args = parser.parse_args()
 
+    payload: dict[str, object] = {"target_path": args.target_path}
+    if args.rules:
+        payload["rules_path"] = args.rules
+
     try:
         result = run_agent(
             agent="security-ops.agentic-security-scanner-agent",
-            payload={"target_path": args.target_path},
+            payload=payload,
             mode=args.mode,
             model=args.model,
             base_url=args.base_url,

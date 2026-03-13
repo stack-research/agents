@@ -397,9 +397,12 @@ def run_handoff_agent(payload: dict[str, Any]) -> dict[str, Any]:
 
 def run_agentic_security_scanner_agent(payload: dict[str, Any]) -> dict[str, Any]:
     target_path = payload.get("target_path", ".")
+    rules_path = payload.get("rules_path")
     if not isinstance(target_path, str) or not target_path.strip():
         raise ValidationError("target_path must be a non-empty string")
-    return scan_repository_controls(target_path.strip())
+    if rules_path is not None and (not isinstance(rules_path, str) or not rules_path.strip()):
+        raise ValidationError("rules_path must be a non-empty string when provided")
+    return scan_repository_controls(target_path.strip(), rules_path=rules_path)
 
 
 def run_planner_agent(payload: dict[str, Any]) -> dict[str, Any]:
