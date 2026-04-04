@@ -5,6 +5,5 @@
     "degrade": "read-only mode disables write endpoints",
     "isolate": "",
     "hard_stop": "container kill via orchestrator"
-  },
-  "last_tested": "2026-01-15"
+  }
 }

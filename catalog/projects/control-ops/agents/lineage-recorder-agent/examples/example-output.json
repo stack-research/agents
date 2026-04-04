@@ -1,5 +1,5 @@
 {
-  "lineage_id": "customer-payment-failed-webhook-received::queued-automatic-retry-and-sent-notification-to-billing-team",
+  "lineage_id": "customer-payment-failed-webh--queued-automatic-retry-and-s-408794fc",
   "record": {
     "trigger": "customer-payment-failed webhook received",
     "knowledge": "account has 3 prior failures this month; retry policy allows 5 max",

@@ -3,7 +3,7 @@ name: scope-validator-agent
 version: 0.1.0
 summary: |
   Validates proposed actions against governance requirements by checking scope
-  boundaries, reversibility plans, and permission proportionality.
+  boundaries, reversibility plans, permission sensitivity, and traceability.
 owners:
   - control-platform
 inputs:
@@ -30,7 +30,7 @@ outputs:
     type: string
 rules:
   - verdict must be one of pass, fail, review.
-  - findings must list specific governance gaps or confirmations.
+  - findings must list specific governance gaps or confirmations from the shared scoring factors.
   - risk_level must be one of low, medium, high.
 constraints:
   - Output must contain exactly three output keys.

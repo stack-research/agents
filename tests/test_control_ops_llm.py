@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from datetime import date, timedelta
 
 from local_agents.engine import run_agent
 
@@ -41,25 +42,38 @@ class LineageRecorderLLMTests(unittest.TestCase):
         self.assertIn("lineage_id", out)
         self.assertIn("record", out)
         self.assertIn("integrity_check", out)
-        self.assertIn(out["integrity_check"], {"complete", "partial"})
+        self.assertRegex(out["lineage_id"], r"^[a-z0-9-]+--[a-z0-9-]+-[0-9a-f]{8}$")
 
 
 @unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
 class ScopeValidatorLLMTests(unittest.TestCase):
-    def test_output_shape(self) -> None:
+    def test_pass_path(self) -> None:
         out = run_agent(
             agent="control-ops.scope-validator-agent",
             payload={
-                "action_description": "update user preferences",
-                "permissions_requested": ["database-read"],
+                "action_description": "read user preferences",
+                "permissions_requested": ["database-read", "audit-log"],
                 "reversibility_plan": "rollback via flag",
-                "scope_boundary": "user prefs table",
+                "scope_boundary": "user prefs table only",
             },
             mode="llm",
         )
-        self.assertIn(out["verdict"], {"pass", "fail", "review"})
-        self.assertIn(out["risk_level"], {"low", "medium", "high"})
-        self.assertTrue(1 <= len(out["findings"]) <= 5)
+        self.assertEqual(out["verdict"], "pass")
+        self.assertEqual(out["risk_level"], "low")
+
+    def test_review_path(self) -> None:
+        out = run_agent(
+            agent="control-ops.scope-validator-agent",
+            payload={
+                "action_description": "delete inactive accounts",
+                "permissions_requested": ["database-write"],
+                "reversibility_plan": "soft-delete with 30-day window",
+                "scope_boundary": "us-east region",
+            },
+            mode="llm",
+        )
+        self.assertEqual(out["verdict"], "review")
+        self.assertEqual(out["risk_level"], "medium")
 
 
 @unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
@@ -77,6 +91,19 @@ class BlastRadiusAssessorLLMTests(unittest.TestCase):
         self.assertTrue(0 <= out["risk_score"] <= 100)
         self.assertIn(out["max_damage_potential"], {"low", "medium", "high", "critical"})
         self.assertEqual(len(out["recommended_controls"]), 3)
+
+    def test_high_risk_path(self) -> None:
+        out = run_agent(
+            agent="control-ops.blast-radius-assessor-agent",
+            payload={
+                "service_name": "admin-svc",
+                "permissions": ["admin-write", "pii-read", "delete-all", "external-api-call"],
+                "dependencies": ["db", "queue", "external"],
+            },
+            mode="llm",
+        )
+        self.assertGreaterEqual(out["risk_score"], 40)
+        self.assertEqual(out["detection_latency"], "slow")
 
 
 @unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
@@ -98,6 +125,24 @@ class KillPathAuditorLLMTests(unittest.TestCase):
         self.assertTrue(0 <= out["coverage_score"] <= 4)
         self.assertIn(out["escalation_readiness"], {"ready", "partial", "unprepared"})
         self.assertEqual(len(out["recommended_actions"]), 3)
+
+    def test_recent_full_coverage_is_ready(self) -> None:
+        out = run_agent(
+            agent="control-ops.kill-path-auditor-agent",
+            payload={
+                "system_name": "ready-system",
+                "capabilities": {
+                    "throttle": "rate limit",
+                    "degrade": "read-only",
+                    "isolate": "network seg",
+                    "hard_stop": "kill container",
+                },
+                "last_tested": (date.today() - timedelta(days=5)).isoformat(),
+            },
+            mode="llm",
+        )
+        self.assertEqual(out["coverage_score"], 4)
+        self.assertEqual(out["escalation_readiness"], "ready")
 
 
 if __name__ == "__main__":

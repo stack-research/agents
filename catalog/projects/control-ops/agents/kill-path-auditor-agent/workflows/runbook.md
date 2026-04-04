@@ -21,12 +21,14 @@
 2. Check each of the four kill path levels: throttle, degrade, isolate, hard_stop.
 3. Count present levels (non-empty description) for coverage_score.
 4. List missing or empty levels as gaps.
-5. Determine escalation_readiness from coverage and test recency.
-6. Generate recommended actions.
-7. Return strict output JSON.
+5. Parse `last_tested` as ISO date when present and flag missing or stale test evidence.
+6. Determine escalation_readiness from coverage plus recency.
+7. Generate recommended actions.
+8. Return strict output JSON.
 
 ## Failure Modes
 
 - Missing required fields: return validation error.
 - Empty system_name: return validation error.
 - capabilities not an object: return validation error.
+- non-ISO or future `last_tested`: return validation error.

@@ -7,6 +7,12 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from .control_ops import (
+    assess_blast_radius,
+    assess_kill_path,
+    assess_scope_validation,
+    build_lineage_record,
+)
 from .core import DEFAULT_LABELS, ValidationError, require, sanitize_untrusted_text
 
 
@@ -719,219 +725,37 @@ Input:
 
 
 def run_lineage_recorder_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
-    trigger = require(payload, "trigger")
-    knowledge = require(payload, "knowledge")
-    rules_applied = require(payload, "rules_applied")
-    alternatives_considered = require(payload, "alternatives_considered")
-    action_taken = require(payload, "action_taken")
-
-    if not isinstance(trigger, str) or not trigger.strip():
-        raise ValidationError("trigger must be a non-empty string")
-    if not isinstance(knowledge, str) or not knowledge.strip():
-        raise ValidationError("knowledge must be a non-empty string")
-    if not isinstance(rules_applied, list) or not rules_applied or not all(isinstance(item, str) for item in rules_applied):
-        raise ValidationError("rules_applied must be a non-empty string array")
-    if not isinstance(alternatives_considered, list) or not alternatives_considered or not all(isinstance(item, str) for item in alternatives_considered):
-        raise ValidationError("alternatives_considered must be a non-empty string array")
-    if not isinstance(action_taken, str) or not action_taken.strip():
-        raise ValidationError("action_taken must be a non-empty string")
-
-    prompt = f"""
-You are lineage-recorder-agent.
-Return only JSON with keys lineage_id, record, integrity_check.
-Rules:
-- lineage_id must be a deterministic slug from trigger and action_taken.
-- record must be an object with keys trigger, knowledge, rules_applied, alternatives_considered, action_taken.
-- integrity_check must be "complete" if all fields substantive, "partial" otherwise.
-Input:
-{{"trigger":{json.dumps(trigger)},"knowledge":{json.dumps(knowledge)},"rules_applied":{json.dumps(rules_applied)},"alternatives_considered":{json.dumps(alternatives_considered)},"action_taken":{json.dumps(action_taken)}}}
-""".strip()
-
-    raw = _post_ollama(model, base_url, prompt)
-    out = _extract_json(raw)
-    lineage_id = out.get("lineage_id")
-    record = out.get("record")
-    integrity_check = out.get("integrity_check")
-
-    if not isinstance(lineage_id, str) or not lineage_id.strip():
-        raise ValidationError("LLM output lineage_id must be a non-empty string")
-    if not isinstance(record, dict):
-        raise ValidationError("LLM output record must be an object")
-    for key in ["trigger", "knowledge", "rules_applied", "alternatives_considered", "action_taken"]:
-        if key not in record:
-            raise ValidationError(f"LLM output record must contain key: {key}")
-    if integrity_check not in {"complete", "partial"}:
-        raise ValidationError("LLM output integrity_check must be complete or partial")
-
-    safe_id = sanitize_untrusted_text(lineage_id.strip())[:80]
-    safe_record = {
-        "trigger": sanitize_untrusted_text(" ".join(str(record["trigger"]).split()[:20])),
-        "knowledge": sanitize_untrusted_text(" ".join(str(record["knowledge"]).split()[:30])),
-        "rules_applied": [sanitize_untrusted_text(" ".join(str(r).split()[:12])) for r in (record["rules_applied"] if isinstance(record["rules_applied"], list) else [str(record["rules_applied"])])][:5],
-        "alternatives_considered": [sanitize_untrusted_text(" ".join(str(a).split()[:12])) for a in (record["alternatives_considered"] if isinstance(record["alternatives_considered"], list) else [str(record["alternatives_considered"])])][:5],
-        "action_taken": sanitize_untrusted_text(" ".join(str(record["action_taken"]).split()[:20])),
-    }
-    return {"lineage_id": safe_id, "record": safe_record, "integrity_check": integrity_check}
+    return build_lineage_record(payload)
 
 
 def run_scope_validator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
-    action_description = require(payload, "action_description")
-    permissions_requested = require(payload, "permissions_requested")
-    reversibility_plan = payload.get("reversibility_plan", "")
-    scope_boundary = payload.get("scope_boundary", "")
-
-    if not isinstance(action_description, str) or not action_description.strip():
-        raise ValidationError("action_description must be a non-empty string")
-    if not isinstance(permissions_requested, list) or not permissions_requested or not all(
-        isinstance(item, str) for item in permissions_requested
-    ):
-        raise ValidationError("permissions_requested must be a non-empty string array")
-
-    prompt = f"""
-You are scope-validator-agent.
-Return only JSON with keys verdict, findings, risk_level.
-Rules:
-- verdict must be one of pass, fail, review.
-- findings must be 1 to 5 concise strings.
-- risk_level must be one of low, medium, high.
-- Fail when reversibility plan missing and action is destructive.
-Input:
-{{"action_description":{json.dumps(action_description)},"permissions_requested":{json.dumps(permissions_requested)},"reversibility_plan":{json.dumps(reversibility_plan or "")},"scope_boundary":{json.dumps(scope_boundary or "")}}}
-""".strip()
-
-    raw = _post_ollama(model, base_url, prompt)
-    out = _extract_json(raw)
-    verdict = out.get("verdict")
-    findings = out.get("findings")
-    risk_level = out.get("risk_level")
-
-    if verdict not in {"pass", "fail", "review"}:
-        raise ValidationError("LLM output verdict must be one of pass, fail, review")
-    if not isinstance(findings, list) or not (1 <= len(findings) <= 5):
-        raise ValidationError("LLM output findings must be 1 to 5 items")
-    if not all(isinstance(item, str) and item.strip() for item in findings):
-        raise ValidationError("LLM output findings items must be non-empty strings")
-    if risk_level not in {"low", "medium", "high"}:
-        raise ValidationError("LLM output risk_level must be one of low, medium, high")
-
-    safe_findings = [sanitize_untrusted_text(" ".join(f.strip().split()[:18])) for f in findings]
-    return {"verdict": verdict, "findings": safe_findings, "risk_level": risk_level}
+    assessment = assess_scope_validation(payload)
+    return {
+        "verdict": assessment["verdict"],
+        "findings": assessment["findings"],
+        "risk_level": assessment["risk_level"],
+    }
 
 
 def run_blast_radius_assessor_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
-    service_name = require(payload, "service_name")
-    permissions = require(payload, "permissions")
-    dependencies = payload.get("dependencies", [])
-    resource_limits = payload.get("resource_limits") or {}
-
-    if not isinstance(service_name, str) or not service_name.strip():
-        raise ValidationError("service_name must be a non-empty string")
-    if not isinstance(permissions, list) or not permissions or not all(
-        isinstance(item, str) for item in permissions
-    ):
-        raise ValidationError("permissions must be a non-empty string array")
-
-    prompt = f"""
-You are blast-radius-assessor-agent.
-Return only JSON with keys risk_score, max_damage_potential, detection_latency, containment_time, findings, recommended_controls.
-Rules:
-- risk_score must be integer 0-100.
-- max_damage_potential must be one of low, medium, high, critical.
-- detection_latency must be one of fast, moderate, slow.
-- containment_time must be one of fast, moderate, slow.
-- findings must be 1 to 5 concise strings.
-- recommended_controls must contain exactly 3 concise strings.
-Input:
-{{"service_name":{json.dumps(service_name)},"permissions":{json.dumps(permissions)},"dependencies":{json.dumps(dependencies if isinstance(dependencies, list) else [])},"resource_limits":{json.dumps(resource_limits if isinstance(resource_limits, dict) else {{}})}}}
-""".strip()
-
-    raw = _post_ollama(model, base_url, prompt)
-    out = _extract_json(raw)
-    risk_score = out.get("risk_score")
-    max_damage_potential = out.get("max_damage_potential")
-    detection_latency = out.get("detection_latency")
-    containment_time = out.get("containment_time")
-    findings = out.get("findings")
-    recommended_controls = out.get("recommended_controls")
-
-    if not isinstance(risk_score, int) or not (0 <= risk_score <= 100):
-        raise ValidationError("LLM output risk_score must be integer 0-100")
-    if max_damage_potential not in {"low", "medium", "high", "critical"}:
-        raise ValidationError("LLM output max_damage_potential must be one of low, medium, high, critical")
-    if detection_latency not in {"fast", "moderate", "slow"}:
-        raise ValidationError("LLM output detection_latency must be one of fast, moderate, slow")
-    if containment_time not in {"fast", "moderate", "slow"}:
-        raise ValidationError("LLM output containment_time must be one of fast, moderate, slow")
-    if not isinstance(findings, list) or not (1 <= len(findings) <= 5):
-        raise ValidationError("LLM output findings must be 1 to 5 items")
-    if not all(isinstance(item, str) and item.strip() for item in findings):
-        raise ValidationError("LLM output findings items must be non-empty strings")
-    if not isinstance(recommended_controls, list) or len(recommended_controls) != 3:
-        raise ValidationError("LLM output recommended_controls must contain exactly 3 items")
-    if not all(isinstance(item, str) and item.strip() for item in recommended_controls):
-        raise ValidationError("LLM output recommended_controls items must be non-empty strings")
-
-    safe_findings = [sanitize_untrusted_text(" ".join(f.strip().split()[:18])) for f in findings]
-    safe_controls = [sanitize_untrusted_text(" ".join(c.strip().split()[:18])) for c in recommended_controls]
+    assessment = assess_blast_radius(payload)
     return {
-        "risk_score": risk_score,
-        "max_damage_potential": max_damage_potential,
-        "detection_latency": detection_latency,
-        "containment_time": containment_time,
-        "findings": safe_findings,
-        "recommended_controls": safe_controls,
+        "risk_score": assessment["risk_score"],
+        "max_damage_potential": assessment["max_damage_potential"],
+        "detection_latency": assessment["detection_latency"],
+        "containment_time": assessment["containment_time"],
+        "findings": assessment["findings"],
+        "recommended_controls": assessment["recommended_controls"],
     }
 
 
 def run_kill_path_auditor_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
-    system_name = require(payload, "system_name")
-    capabilities = require(payload, "capabilities")
-    last_tested = payload.get("last_tested", "")
-
-    if not isinstance(system_name, str) or not system_name.strip():
-        raise ValidationError("system_name must be a non-empty string")
-    if not isinstance(capabilities, dict):
-        raise ValidationError("capabilities must be an object")
-
-    prompt = f"""
-You are kill-path-auditor-agent.
-Return only JSON with keys coverage_score, gaps, escalation_readiness, recommended_actions.
-Rules:
-- coverage_score must be integer 0-4 (one point per present level: throttle, degrade, isolate, hard_stop).
-- gaps must list missing or untested kill path levels.
-- escalation_readiness must be one of ready, partial, unprepared.
-- recommended_actions must contain exactly 3 concise strings.
-Input:
-{{"system_name":{json.dumps(system_name)},"capabilities":{json.dumps(capabilities)},"last_tested":{json.dumps(last_tested or "")}}}
-""".strip()
-
-    raw = _post_ollama(model, base_url, prompt)
-    out = _extract_json(raw)
-    coverage_score = out.get("coverage_score")
-    gaps = out.get("gaps")
-    escalation_readiness = out.get("escalation_readiness")
-    recommended_actions = out.get("recommended_actions")
-
-    if not isinstance(coverage_score, int) or not (0 <= coverage_score <= 4):
-        raise ValidationError("LLM output coverage_score must be integer 0-4")
-    if not isinstance(gaps, list):
-        raise ValidationError("LLM output gaps must be an array")
-    if not all(isinstance(item, str) for item in gaps):
-        raise ValidationError("LLM output gaps items must be strings")
-    if escalation_readiness not in {"ready", "partial", "unprepared"}:
-        raise ValidationError("LLM output escalation_readiness must be one of ready, partial, unprepared")
-    if not isinstance(recommended_actions, list) or len(recommended_actions) != 3:
-        raise ValidationError("LLM output recommended_actions must contain exactly 3 items")
-    if not all(isinstance(item, str) and item.strip() for item in recommended_actions):
-        raise ValidationError("LLM output recommended_actions items must be non-empty strings")
-
-    safe_gaps = [sanitize_untrusted_text(" ".join(g.strip().split()[:12])) for g in gaps[:4]]
-    safe_actions = [sanitize_untrusted_text(" ".join(a.strip().split()[:16])) for a in recommended_actions]
+    assessment = assess_kill_path(payload)
     return {
-        "coverage_score": coverage_score,
-        "gaps": safe_gaps,
-        "escalation_readiness": escalation_readiness,
-        "recommended_actions": safe_actions,
+        "coverage_score": assessment["coverage_score"],
+        "gaps": assessment["gaps"],
+        "escalation_readiness": assessment["escalation_readiness"],
+        "recommended_actions": assessment["recommended_actions"],
     }
 
 

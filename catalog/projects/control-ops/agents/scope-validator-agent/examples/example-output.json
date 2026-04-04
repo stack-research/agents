@@ -1,9 +1,11 @@
 {
-  "verdict": "pass",
+  "verdict": "review",
   "findings": [
+    "Action is classified as destructive",
     "Scope boundary is explicit: inactive accounts in us-east region only",
-    "Reversibility plan present: soft-delete with 30-day recovery window",
-    "Permissions include audit-log-write for traceability"
+    "Reversibility plan is concrete: soft-delete with 30-day recovery window",
+    "Sensitive permissions requested: database-write",
+    "No audit or log capability is requested for a mutating action"
   ],
   "risk_level": "medium"
 }

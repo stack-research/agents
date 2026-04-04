@@ -3,138 +3,101 @@
   "cases": [
     {
       "id": "safe-read-action",
-      "tags": [
-        "happy-path"
-      ],
+      "tags": ["happy-path"],
       "input": {
         "action_description": "Read user preferences from the settings API",
-        "permissions_requested": [
-          "settings:read"
-        ],
+        "permissions_requested": ["settings:read", "audit-log"],
         "reversibility_plan": "Read-only, no changes needed",
         "scope_boundary": "User settings service only"
       },
       "expected_output": {
         "verdict": "pass",
         "findings": [
+          "Action is classified as read-only",
           "Scope boundary is explicit: User settings service only",
-          "Reversibility plan present: Read-only, no changes needed"
+          "Reversibility plan exists but needs more detail: Read-only, no changes needed",
+          "Requested permissions appear low-sensitivity: settings:read, audit-log",
+          "Traceability controls are requested alongside the action"
         ],
         "risk_level": "low"
       },
       "assertions": [
-        {
-          "field": "verdict",
-          "op": "eq",
-          "value": "pass"
-        },
-        {
-          "field": "risk_level",
-          "op": "eq",
-          "value": "low"
-        }
+        {"field": "verdict", "op": "eq", "value": "pass"},
+        {"field": "risk_level", "op": "eq", "value": "low"}
       ]
     },
     {
       "id": "destructive-no-plan",
-      "tags": [
-        "edge-case"
-      ],
+      "tags": ["edge-case"],
       "input": {
         "action_description": "Delete all archived user records from production",
-        "permissions_requested": [
-          "db:delete",
-          "admin:write",
-          "pii:access"
-        ],
+        "permissions_requested": ["db:delete", "admin:write", "pii:access"],
         "reversibility_plan": "",
         "scope_boundary": ""
       },
       "expected_output": {
         "verdict": "fail",
         "findings": [
-          "Scope boundary is missing; action has unbounded reach",
-          "Reversibility plan missing for destructive action",
-          "Sensitive permissions requested: admin:write, pii:access"
+          "Action is classified as destructive",
+          "Scope boundary is missing; action remains unbounded",
+          "Reversibility plan is missing for a destructive action",
+          "Sensitive permissions requested: db:delete, admin:write, pii:access",
+          "No audit or log capability is requested for a mutating action"
         ],
         "risk_level": "high"
       },
       "assertions": [
-        {
-          "field": "verdict",
-          "op": "eq",
-          "value": "fail"
-        },
-        {
-          "field": "risk_level",
-          "op": "eq",
-          "value": "high"
-        }
+        {"field": "verdict", "op": "eq", "value": "fail"},
+        {"field": "risk_level", "op": "eq", "value": "high"}
       ]
     },
     {
       "id": "destructive-with-plan",
-      "tags": [
-        "edge-case"
-      ],
+      "tags": ["edge-case"],
       "input": {
-        "action_description": "Remove stale cache entries from Redis cluster",
-        "permissions_requested": [
-          "cache:delete"
-        ],
-        "reversibility_plan": "Cache auto-repopulates within 5 minutes",
-        "scope_boundary": "Redis staging cluster only"
+        "action_description": "Delete inactive accounts",
+        "permissions_requested": ["database-write"],
+        "reversibility_plan": "soft-delete with 30-day window",
+        "scope_boundary": "us-east region"
       },
       "expected_output": {
         "verdict": "review",
         "findings": [
-          "Scope boundary is explicit: Redis staging cluster only",
-          "Reversibility plan present: Cache auto-repopulates within 5 minutes"
+          "Action is classified as destructive",
+          "Scope boundary is explicit: us-east region",
+          "Reversibility plan is concrete: soft-delete with 30-day window",
+          "Sensitive permissions requested: database-write",
+          "No audit or log capability is requested for a mutating action"
         ],
         "risk_level": "medium"
       },
       "assertions": [
-        {
-          "field": "verdict",
-          "op": "eq",
-          "value": "review"
-        },
-        {
-          "field": "risk_level",
-          "op": "in",
-          "value": [
-            "medium",
-            "high"
-          ]
-        }
+        {"field": "verdict", "op": "eq", "value": "review"},
+        {"field": "risk_level", "op": "eq", "value": "medium"}
       ]
     },
     {
       "id": "update-medium-risk",
-      "tags": [
-        "boundary"
-      ],
+      "tags": ["boundary"],
       "input": {
         "action_description": "Update feature flag for dark mode rollout",
-        "permissions_requested": [
-          "flags:write"
-        ],
+        "permissions_requested": ["flags:write"],
         "scope_boundary": "Feature flag service"
       },
       "expected_output": {
-        "verdict": "pass",
+        "verdict": "review",
         "findings": [
+          "Action is classified as mutating",
           "Scope boundary is explicit: Feature flag service",
-          "No reversibility plan provided"
+          "Reversibility plan is missing for a mutating action",
+          "Sensitive permissions requested: flags:write",
+          "No audit or log capability is requested for a mutating action"
         ],
         "risk_level": "medium"
       },
       "assertions": [
-        {
-          "field": "risk_level",
-          "op": "eq",
-          "value": "medium"
-        }
+        {"field": "verdict", "op": "eq", "value": "review"},
+        {"field": "risk_level", "op": "eq", "value": "medium"}
       ]
     }
   ]

@@ -17,5 +17,5 @@ Rules:
 2. `gaps` must list missing or untested kill path levels.
 3. `escalation_readiness` must be one of `ready`, `partial`, `unprepared`.
 4. `recommended_actions` must contain exactly 3 concise imperative strings.
-5. Flag levels that have not been tested recently.
+5. Treat `last_tested` as ISO date or empty and use recency to influence `gaps` and `escalation_readiness`.
 6. Do not include extra keys.

@@ -16,7 +16,7 @@
 
 1. Validate all five required fields are present and non-empty.
 2. Sanitize all text inputs.
-3. Generate deterministic lineage_id from trigger and action_taken.
+3. Generate deterministic lineage_id from normalized trigger and action_taken plus a short stable hash.
 4. Assemble record object with all five fields.
 5. Assess integrity: complete if all fields substantive, partial otherwise.
 6. Return strict output JSON.

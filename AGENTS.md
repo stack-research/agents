@@ -128,9 +128,9 @@ Repository-level runtime and tests:
   - `checkpoint-agent`: records workflow progress with structured checkpoint summaries.
 - `control-ops`
   - `lineage-recorder-agent`: structures decision events into append-only lineage records.
-  - `scope-validator-agent`: validates proposed actions against governance requirements.
-  - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
-  - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
+  - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
+  - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
+  - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
 - `data-ops`
   - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
   - `data-validator-agent`: validates data records against rules and reports violations.

@@ -15,11 +15,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from local_agents import ValidationError, run_agent
+from local_agents.control_ops import governance_pipeline_status
 from local_agents.state import connect as connect_state, save_stage, save_result
 
 
 def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, object]:
     return {
+        "workflow_id": workflow_id,
         "scope_validation": {
             "verdict": "review",
             "findings": ["Pipeline degraded; manual governance review required."],
@@ -86,15 +88,24 @@ def run_pipeline(
     if store and run_id:
         save_stage(store, run_id, "scope-validator", scope_validation)
 
-    # If scope validation fails, short-circuit
-    if scope_validation["verdict"] == "fail":
+    # If scope validation does not pass, short-circuit with lineage and checkpoint.
+    if scope_validation["verdict"] in {"review", "fail"}:
+        pipeline_status, target_status, checkpoint_status = governance_pipeline_status(scope_validation["verdict"])
+        short_circuit_reason = (
+            "pending manual governance review"
+            if scope_validation["verdict"] == "review"
+            else "scope validation failed"
+        )
         lineage_record = _record_lineage(
             workflow_id=workflow_id,
             trigger=f"governance gate for: {action_description}",
             knowledge=f"permissions: {permissions_requested}; scope: {scope_boundary}",
-            rules_applied=["scope-validator-verdict-fail"],
-            alternatives_considered=["proceed-anyway", "request-review"],
-            action_taken="blocked by governance gate",
+            rules_applied=[
+                f"scope-verdict:{scope_validation['verdict']}",
+                f"risk:{scope_validation['risk_level']}",
+            ],
+            alternatives_considered=["execute-target", "escalate-to-human"],
+            action_taken=f"stopped before target execution: {short_circuit_reason}",
             mode=mode,
             model=model,
             base_url=base_url,
@@ -102,20 +113,25 @@ def run_pipeline(
         checkpoint = _record_checkpoint(
             workflow_id=workflow_id,
             stage="governance-gate",
-            status="failed",
-            notes=f"Scope validation failed: {'; '.join(scope_validation['findings'][:2])}",
+            status=checkpoint_status,
+            notes=f"Scope validation {scope_validation['verdict']}: {'; '.join(scope_validation['findings'][:2])}",
             mode=mode,
             model=model,
             base_url=base_url,
         )
-        return {
+        result = {
             "workflow_id": workflow_id,
             "scope_validation": scope_validation,
-            "target_output": {"status": "blocked", "reason": "scope validation failed"},
+            "target_output": {"status": target_status, "reason": short_circuit_reason},
             "lineage": lineage_record,
             "checkpoint": checkpoint,
-            "pipeline_status": "blocked",
+            "pipeline_status": pipeline_status,
         }
+        if store and run_id:
+            save_stage(store, run_id, "lineage", lineage_record)
+            save_stage(store, run_id, "checkpoint", checkpoint)
+            save_result(store, run_id, result)
+        return result
 
     # Stage 2: Execute target agent
     if not isinstance(target_agent, str) or not target_agent.strip():

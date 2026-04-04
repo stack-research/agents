@@ -489,7 +489,7 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
     "control-ops.scope-validator-agent": [
         ("safe-read-action", ["happy-path"], {
             "action_description": "Read user preferences from the settings API",
-            "permissions_requested": ["settings:read"],
+            "permissions_requested": ["settings:read", "audit-log"],
             "reversibility_plan": "Read-only, no changes needed",
             "scope_boundary": "User settings service only",
         }, [
@@ -506,19 +506,20 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
             {"field": "risk_level", "op": "eq", "value": "high"},
         ]),
         ("destructive-with-plan", ["edge-case"], {
-            "action_description": "Remove stale cache entries from Redis cluster",
-            "permissions_requested": ["cache:delete"],
-            "reversibility_plan": "Cache auto-repopulates within 5 minutes",
-            "scope_boundary": "Redis staging cluster only",
+            "action_description": "Delete inactive accounts",
+            "permissions_requested": ["database-write"],
+            "reversibility_plan": "soft-delete with 30-day window",
+            "scope_boundary": "us-east region",
         }, [
             {"field": "verdict", "op": "eq", "value": "review"},
-            {"field": "risk_level", "op": "in", "value": ["medium", "high"]},
+            {"field": "risk_level", "op": "eq", "value": "medium"},
         ]),
         ("update-medium-risk", ["boundary"], {
             "action_description": "Update feature flag for dark mode rollout",
             "permissions_requested": ["flags:write"],
             "scope_boundary": "Feature flag service",
         }, [
+            {"field": "verdict", "op": "eq", "value": "review"},
             {"field": "risk_level", "op": "eq", "value": "medium"},
         ]),
     ],
@@ -535,8 +536,8 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
         ]),
         ("high-risk-service", ["happy-path"], {
             "service_name": "payment-processor",
-            "permissions": ["pii:read", "db:write", "billing:admin"],
-            "dependencies": ["auth-service", "ledger-db", "stripe-api"],
+            "permissions": ["admin-write", "pii-read", "delete-all", "external-api-call"],
+            "dependencies": ["auth-service", "ledger-db", "external-ledger", "notification-queue"],
             "resource_limits": {},
         }, [
             {"field": "risk_score", "op": "range", "value": [50, 100]},
@@ -553,7 +554,7 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
         ]),
     ],
     "control-ops.kill-path-auditor-agent": [
-        ("full-coverage", ["happy-path"], {
+        ("full-coverage-no-test-date", ["happy-path"], {
             "system_name": "order-processor",
             "capabilities": {
                 "throttle": "Rate limit to 10 rps via API gateway",
@@ -561,11 +562,10 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
                 "isolate": "Network policy blocks all egress",
                 "hard_stop": "Kill switch via infrastructure controller",
             },
-            "last_tested": "2026-02-01",
         }, [
             {"field": "coverage_score", "op": "eq", "value": 4},
-            {"field": "escalation_readiness", "op": "eq", "value": "ready"},
-            {"field": "gaps", "op": "length", "value": 0},
+            {"field": "escalation_readiness", "op": "eq", "value": "partial"},
+            {"field": "gaps", "op": "min_length", "value": 1},
         ]),
         ("missing-two-levels", ["edge-case"], {
             "system_name": "analytics-pipeline",
@@ -575,24 +575,23 @@ CASES: dict[str, list[tuple[str, list[str], dict, list[dict]]]] = {
                 "isolate": "",
                 "hard_stop": "Container kill via orchestrator",
             },
-            "last_tested": "2026-01-15",
         }, [
             {"field": "coverage_score", "op": "eq", "value": 2},
             {"field": "escalation_readiness", "op": "eq", "value": "partial"},
             {"field": "gaps", "op": "min_length", "value": 2},
         ]),
-        ("no-test-date", ["boundary"], {
+        ("single-level-unprepared", ["boundary"], {
             "system_name": "notification-svc",
             "capabilities": {
                 "throttle": "Limit via queue",
-                "degrade": "Drop low-priority",
-                "isolate": "Firewall rule",
-                "hard_stop": "Process kill",
+                "degrade": "",
+                "isolate": "",
+                "hard_stop": "",
             },
         }, [
-            {"field": "coverage_score", "op": "eq", "value": 4},
-            {"field": "escalation_readiness", "op": "eq", "value": "partial"},
-            {"field": "gaps", "op": "min_length", "value": 1},
+            {"field": "coverage_score", "op": "eq", "value": 1},
+            {"field": "escalation_readiness", "op": "eq", "value": "unprepared"},
+            {"field": "gaps", "op": "min_length", "value": 3},
         ]),
     ],
     # ── data-ops ───────────────────────────────────────────────────

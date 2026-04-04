@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from scripts.run_governance_pipeline import run_pipeline as run_governance_pipeline
 from scripts.run_support_pipeline import run_pipeline
 
 
@@ -63,6 +64,25 @@ class ASI08CascadingFailuresTests(unittest.TestCase):
         )
         self.assertEqual(degraded.get("pipeline_status"), "degraded")
         self.assertEqual(ok.get("pipeline_status"), "ok")
+
+    def test_governance_review_short_circuits_without_target_failure(self) -> None:
+        out = run_governance_pipeline(
+            {
+                "workflow_id": "asi08-gov-001",
+                "action_description": "Delete inactive accounts",
+                "permissions_requested": ["database-write"],
+                "reversibility_plan": "Soft-delete with recovery window",
+                "scope_boundary": "us-east region only",
+                "target_agent": "planner-executor.planner-agent",
+                "target_payload": {"goal": "Delete accounts", "constraints": []},
+            },
+            mode="deterministic",
+            model="llama3.2:3b",
+            base_url="http://localhost:11434",
+        )
+        self.assertEqual(out["pipeline_status"], "needs_review")
+        self.assertEqual(out["target_output"]["status"], "needs_review")
+        self.assertNotIn("plan_steps", out["target_output"])
 
 
 if __name__ == "__main__":

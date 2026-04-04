@@ -12,7 +12,7 @@ Task:
 
 Rules:
 
-1. `lineage_id` must be a deterministic composite string of trigger and action.
+1. `lineage_id` must be a deterministic readable slug plus a short stable hash.
 2. `record` must contain exactly five keys: `trigger`, `knowledge`, `rules_applied`, `alternatives_considered`, `action_taken`.
 3. `integrity_check` must be `complete` when all fields are substantive, `partial` otherwise.
 4. Sanitize all text fields before recording.

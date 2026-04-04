@@ -14,11 +14,12 @@
 ## Steps
 
 1. Validate action_description and permissions_requested are present and non-empty.
-2. Check whether action keywords suggest irreversible or high-impact operations.
-3. Check whether reversibility_plan is present for destructive actions.
-4. Check permission proportionality against scope boundary.
-5. Determine verdict and risk_level.
-6. Return strict output JSON.
+2. Classify the action as read-only, mutating, or destructive.
+3. Score scope boundedness from the `scope_boundary` text.
+4. Score reversibility from the `reversibility_plan` text.
+5. Score permission sensitivity and traceability from `permissions_requested`.
+6. Determine `pass`, `review`, or `fail` from the shared threshold matrix.
+7. Return strict output JSON.
 
 ## Failure Modes
 

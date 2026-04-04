@@ -255,6 +255,13 @@ python3 scripts/run_governance_pipeline.py \
   --pretty
 ```
 
+Expected governance statuses:
+
+- `ok`: target executed after governance pass
+- `needs_review`: target skipped pending manual governance review
+- `blocked`: target skipped because governance failed
+- `degraded`: pipeline validation or orchestration failed
+
 Resilience pipeline example:
 
 ```bash
@@ -378,6 +385,16 @@ make llm-down
 
 ```bash
 python3 -m unittest discover -s tests -v
+```
+
+Focused control-ops regression pass:
+
+```bash
+python3 -m unittest \
+  tests/test_control_ops.py \
+  tests/test_governance_pipeline.py \
+  tests/test_resilience_pipeline.py \
+  tests/test_incident_pipeline.py
 ```
 
 Or with Make targets:

@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from local_agents import ValidationError, run_agent
+from local_agents.control_ops import resilience_verdict_from_scores
 from local_agents.state import connect as connect_state, save_stage, save_result
 
 
@@ -100,17 +101,11 @@ def run_pipeline(
         out["blast_radius"] = blast_radius
         return out
 
-    # Compute combined resilience assessment
-    risk_score = blast_radius["risk_score"]
-    coverage = kill_path["coverage_score"]
-    if risk_score >= 60 and coverage <= 2:
-        resilience_verdict = "inadequate"
-    elif risk_score >= 40 and coverage <= 2:
-        resilience_verdict = "at-risk"
-    elif coverage == 4:
-        resilience_verdict = "adequate"
-    else:
-        resilience_verdict = "partial"
+    # Compute combined resilience assessment from the shared control-ops matrix.
+    resilience_verdict = resilience_verdict_from_scores(
+        blast_radius["risk_score"],
+        kill_path["coverage_score"],
+    )
 
     if store and run_id:
         save_stage(store, run_id, "kill-path", kill_path)

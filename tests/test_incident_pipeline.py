@@ -26,9 +26,11 @@ class IncidentPipelineTests(unittest.TestCase):
                 "reversibility_plan": "Rollback via CI",
                 "scope_boundary": "Auth service only",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
-        self.assertIn(out.get("pipeline_status"), {"ok", "degraded", "blocked"})
+        self.assertIn(out.get("pipeline_status"), {"ok", "needs_review", "degraded", "blocked"})
         for key in ("route", "triage", "qa", "synthesis", "governance", "checkpoint"):
             self.assertIn(key, out, f"missing key: {key}")
 
@@ -40,32 +42,56 @@ class IncidentPipelineTests(unittest.TestCase):
                 "customer_tier": "pro",
                 "feature_area": "Dashboard rendering",
                 "acceptance_criteria": ["Page loads under 2s"],
-                "action_description": "Optimize dashboard queries",
-                "permissions_requested": ["database-read"],
-                "reversibility_plan": "Revert query changes",
-                "scope_boundary": "Dashboard read replicas",
+                "action_description": "Inspect dashboard query latency",
+                "permissions_requested": ["database-read", "audit-log"],
+                "reversibility_plan": "Read-only diagnostic",
+                "scope_boundary": "Dashboard read replicas only",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "ok")
+        self.assertEqual(out["governance"]["verdict"], "pass")
         self.assertIn("target_agent", out["route"])
         self.assertIn("priority", out["triage"])
         self.assertIn("test_cases", out["qa"])
         self.assertIn("headline", out["synthesis"])
-        self.assertIn("verdict", out["governance"])
         self.assertTrue(out["checkpoint"]["recorded"])
+
+    def test_pipeline_needs_review_for_mutating_action(self) -> None:
+        out = run_pipeline(
+            {
+                "workflow_id": "incident-test-003",
+                "incident_text": "Customers cannot login after the auth deploy",
+                "customer_tier": "enterprise",
+                "feature_area": "SSO authentication",
+                "acceptance_criteria": ["Users can sign in with SAML"],
+                "action_description": "Deploy hotfix to auth service",
+                "permissions_requested": ["deploy:production"],
+                "reversibility_plan": "Rollback via CI",
+                "scope_boundary": "Auth service only",
+            },
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
+        )
+        self.assertEqual(out.get("pipeline_status"), "needs_review")
+        self.assertEqual(out["governance"]["verdict"], "review")
 
     def test_pipeline_blocked_by_governance(self) -> None:
         out = run_pipeline(
             {
-                "workflow_id": "incident-test-003",
+                "workflow_id": "incident-test-004",
                 "incident_text": "Need to delete all archived user records",
                 "action_description": "Delete all archived user records from production",
                 "permissions_requested": ["admin:write", "production:access", "pii:read"],
                 "reversibility_plan": "",
                 "scope_boundary": "",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "blocked")
         self.assertEqual(out["governance"]["verdict"], "fail")
@@ -73,12 +99,14 @@ class IncidentPipelineTests(unittest.TestCase):
     def test_pipeline_degrades_on_missing_incident_text(self) -> None:
         out = run_pipeline(
             {
-                "workflow_id": "incident-test-004",
+                "workflow_id": "incident-test-005",
                 "incident_text": None,
                 "action_description": "Fix things",
                 "permissions_requested": ["read"],
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
         self.assertEqual(out.get("failure_stage"), "router")
@@ -86,10 +114,12 @@ class IncidentPipelineTests(unittest.TestCase):
     def test_pipeline_degrades_on_empty_incident_text(self) -> None:
         out = run_pipeline(
             {
-                "workflow_id": "incident-test-005",
+                "workflow_id": "incident-test-006",
                 "incident_text": "",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
         self.assertEqual(out.get("failure_stage"), "router")
@@ -99,9 +129,11 @@ class IncidentPipelineTests(unittest.TestCase):
             {
                 "incident_text": "Support ticket about billing confusion",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
-        self.assertIn(out.get("pipeline_status"), {"ok", "degraded", "blocked"})
+        self.assertIn(out.get("pipeline_status"), {"needs_review", "degraded", "blocked"})
         self.assertIn("workflow_id", out)
         self.assertTrue(out["workflow_id"].startswith("incident-"))
 
@@ -112,14 +144,16 @@ class IncidentPipelineTests(unittest.TestCase):
                 "incident_text": "Production outage affecting all users",
                 "feature_area": "API gateway",
                 "acceptance_criteria": ["Health check returns 200"],
-                "action_description": "Restart API gateway pods",
-                "permissions_requested": ["k8s:restart"],
-                "reversibility_plan": "Pods auto-heal",
+                "action_description": "Inspect gateway health and logs",
+                "permissions_requested": ["logs:read", "audit-log"],
+                "reversibility_plan": "Read-only investigation",
                 "scope_boundary": "API gateway namespace",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
-        if out.get("pipeline_status") in {"ok", "blocked"}:
+        if out.get("pipeline_status") in {"ok", "needs_review", "blocked"}:
             summary_text = out["synthesis"].get("summary", "")
             self.assertIn("Triage:", summary_text)
             self.assertIn("QA:", summary_text)
@@ -130,10 +164,13 @@ class IncidentPipelineTests(unittest.TestCase):
                 "workflow_id": "incident-test-008",
                 "incident_text": "Customer cannot access their account after password reset",
                 "action_description": "Check auth logs",
-                "permissions_requested": ["logs:read"],
+                "permissions_requested": ["logs:read", "audit-log"],
+                "reversibility_plan": "Read-only investigation",
                 "scope_boundary": "Auth logs only",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         if out.get("pipeline_status") != "degraded":
             self.assertEqual(out["route"]["target_agent"], "support-ops.triage-agent")
@@ -146,10 +183,13 @@ class IncidentPipelineTests(unittest.TestCase):
                 "feature_area": "Payment processing webhook",
                 "acceptance_criteria": ["Webhooks retry on failure"],
                 "action_description": "Review webhook handler",
-                "permissions_requested": ["code:read"],
+                "permissions_requested": ["code:read", "audit-log"],
+                "reversibility_plan": "Read-only review",
                 "scope_boundary": "Payment service",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         if out.get("pipeline_status") != "degraded":
             self.assertEqual(out["qa"]["risk_focus"], "high")
@@ -164,7 +204,9 @@ class IncidentPipelineTests(unittest.TestCase):
                 "reversibility_plan": "",
                 "scope_boundary": "",
             },
-            mode=_MODE, model=_MODEL, base_url=_BASE,
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "blocked")
         self.assertEqual(out["governance"]["verdict"], "fail")

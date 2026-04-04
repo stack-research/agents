@@ -3,7 +3,7 @@ name: kill-path-auditor-agent
 version: 0.1.0
 summary: |
   Audits system shutdown capabilities against the four-level kill path spectrum
-  (throttle, degrade, isolate, hard stop) and flags coverage gaps.
+  (throttle, degrade, isolate, hard stop) and flags coverage or recency gaps.
 owners:
   - control-platform
 inputs:
@@ -29,6 +29,7 @@ outputs:
 rules:
   - coverage_score ranges from 0 to 4 based on levels present.
   - capabilities must be checked for throttle, degrade, isolate, hard_stop keys.
+  - last_tested must be ISO date or empty when provided.
   - escalation_readiness must be one of ready, partial, unprepared.
   - recommended_actions must contain exactly 3 entries.
 constraints:

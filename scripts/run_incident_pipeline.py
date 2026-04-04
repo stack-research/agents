@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from local_agents import ValidationError, run_agent
+from local_agents.control_ops import governance_pipeline_status
 from local_agents.state import connect as connect_state, save_stage, save_result
 
 
@@ -161,8 +162,7 @@ def run_pipeline(
         save_stage(store, run_id, "governance", governance)
 
     # ── Stage 6: Checkpoint ────────────────────────────────────────
-    checkpoint_status = "completed" if governance.get("verdict") != "fail" else "failed"
-    pipeline_status = "ok" if governance.get("verdict") != "fail" else "blocked"
+    pipeline_status, _, checkpoint_status = governance_pipeline_status(governance.get("verdict", "review"))
     checkpoint_notes = (
         f"Route: {route.get('target_agent')}; "
         f"Triage: {triage.get('priority')}/{triage.get('category')}; "

@@ -1,17 +1,14 @@
 {
   "service_name": "payment-processor",
-  "permissions": ["database-write", "external-api-call", "pii-read"],
-  "dependencies": ["auth-service", "ledger-db", "notification-queue"],
+  "permissions": ["admin-write", "database-write", "external-api-call", "pii-read"],
+  "dependencies": ["auth-service", "ledger-db", "external-ledger", "notification-queue"],
   "resource_limits": {
-    "rate_limit": "100 req/s",
-    "budget_cap": "$500/day",
-    "concurrency": 10
+    "rate_limit": "100 req/s"
   },
   "capabilities": {
     "throttle": "rate limiter on API gateway reduces throughput to 10%",
     "degrade": "read-only mode disables write endpoints",
     "isolate": "",
     "hard_stop": "container kill via orchestrator"
-  },
-  "last_tested": "2026-01-15"
+  }
 }

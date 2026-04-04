@@ -1,16 +1,17 @@
 {
-  "risk_score": 72,
-  "max_damage_potential": "high",
-  "detection_latency": "moderate",
-  "containment_time": "moderate",
+  "risk_score": 43,
+  "max_damage_potential": "medium",
+  "detection_latency": "slow",
+  "containment_time": "slow",
   "findings": [
-    "Service holds pii-read and database-write permissions increasing data exposure risk",
-    "External API dependency (external-api-call) extends blast radius beyond internal boundary",
-    "3 dependencies create cascading failure surface"
+    "Sensitive permissions increase impact: admin-write",
+    "External exposure extends the blast radius beyond internal boundaries",
+    "4 dependencies expand cascading-failure surface",
+    "Resource limits are present and reduce runaway execution risk"
   ],
   "recommended_controls": [
-    "Scope database-write to specific tables and enforce row-level audit logging",
-    "Add circuit breaker on external-api-call with 5-second timeout and fallback",
-    "Enforce budget cap alerting at 80% threshold with automatic throttle at 100%"
+    "Split critical permissions into least-privilege roles for payment-processor",
+    "Add egress allowlists, timeouts, and circuit breakers for external integrations",
+    "Verify alerting and automatic throttles trigger before resource limits are exhausted"
   ]
 }

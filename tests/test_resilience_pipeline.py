@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from datetime import date, timedelta
 
 from scripts.run_resilience_pipeline import run_pipeline
+
+
+_MODE = "deterministic"
+_MODEL = "llama3.2:3b"
+_BASE = "http://localhost:11434"
 
 
 class ResiliencePipelineTests(unittest.TestCase):
@@ -19,11 +25,11 @@ class ResiliencePipelineTests(unittest.TestCase):
                     "isolate": "network seg",
                     "hard_stop": "kill container",
                 },
-                "last_tested": "2026-03-01",
+                "last_tested": (date.today() - timedelta(days=7)).isoformat(),
             },
-            mode="deterministic",
-            model="llama3.2:3b",
-            base_url="http://localhost:11434",
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "ok")
         self.assertIn("blast_radius", out)
@@ -45,14 +51,35 @@ class ResiliencePipelineTests(unittest.TestCase):
                 },
                 "last_tested": "",
             },
-            mode="deterministic",
-            model="llama3.2:3b",
-            base_url="http://localhost:11434",
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "ok")
-        self.assertIn(out["resilience_verdict"], {"inadequate", "at-risk"})
+        self.assertEqual(out["resilience_verdict"], "inadequate")
 
-    def test_full_coverage_is_adequate(self) -> None:
+    def test_elevated_risk_low_coverage_is_at_risk(self) -> None:
+        out = run_pipeline(
+            {
+                "service_name": "webhook-relay",
+                "permissions": ["admin-write", "pii-read", "external-api-call"],
+                "dependencies": ["message-queue", "public-webhook", "external-sink"],
+                "capabilities": {
+                    "throttle": "limit ingress",
+                    "degrade": "",
+                    "isolate": "",
+                    "hard_stop": "kill process",
+                },
+                "last_tested": (date.today() - timedelta(days=30)).isoformat(),
+            },
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
+        )
+        self.assertEqual(out.get("pipeline_status"), "ok")
+        self.assertEqual(out["resilience_verdict"], "at-risk")
+
+    def test_full_coverage_low_risk_is_adequate(self) -> None:
         out = run_pipeline(
             {
                 "service_name": "safe-service",
@@ -65,14 +92,36 @@ class ResiliencePipelineTests(unittest.TestCase):
                     "isolate": "network block",
                     "hard_stop": "container kill",
                 },
-                "last_tested": "2026-03-10",
+                "last_tested": (date.today() - timedelta(days=15)).isoformat(),
             },
-            mode="deterministic",
-            model="llama3.2:3b",
-            base_url="http://localhost:11434",
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "ok")
         self.assertEqual(out["resilience_verdict"], "adequate")
+
+    def test_partial_is_default_for_other_combinations(self) -> None:
+        out = run_pipeline(
+            {
+                "service_name": "internal-job-runner",
+                "permissions": ["queue-write", "database-read"],
+                "dependencies": ["scheduler", "queue"],
+                "resource_limits": {"concurrency": 5},
+                "capabilities": {
+                    "throttle": "limit jobs",
+                    "degrade": "pause optional queues",
+                    "isolate": "disable downstream jobs",
+                    "hard_stop": "",
+                },
+                "last_tested": (date.today() - timedelta(days=20)).isoformat(),
+            },
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
+        )
+        self.assertEqual(out.get("pipeline_status"), "ok")
+        self.assertEqual(out["resilience_verdict"], "partial")
 
     def test_pipeline_degrades_on_invalid_service(self) -> None:
         out = run_pipeline(
@@ -81,9 +130,9 @@ class ResiliencePipelineTests(unittest.TestCase):
                 "permissions": ["read"],
                 "capabilities": {"throttle": "yes"},
             },
-            mode="deterministic",
-            model="llama3.2:3b",
-            base_url="http://localhost:11434",
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
         self.assertEqual(out.get("failure_stage"), "blast-radius-assessor")
@@ -95,9 +144,9 @@ class ResiliencePipelineTests(unittest.TestCase):
                 "permissions": None,
                 "capabilities": {"throttle": "yes"},
             },
-            mode="deterministic",
-            model="llama3.2:3b",
-            base_url="http://localhost:11434",
+            mode=_MODE,
+            model=_MODEL,
+            base_url=_BASE,
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
 

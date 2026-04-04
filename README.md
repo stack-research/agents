@@ -54,9 +54,9 @@ catalog/
    - `checkpoint-agent`: records workflow stage/status checkpoints for traceability.
 8. `control-ops`
    - `lineage-recorder-agent`: structures decision events into append-only lineage records.
-   - `scope-validator-agent`: validates proposed actions against governance requirements.
-   - `blast-radius-assessor-agent`: estimates blast radius from permissions, dependencies, and resource limits.
-   - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum.
+   - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
+   - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
+   - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
 9. `data-ops`
    - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
    - `data-validator-agent`: validates data records against rules and reports violations.
@@ -311,7 +311,7 @@ Cross-domain orchestration that chains 6 agents from 5 different domains into a 
 2. **Triage** (support-ops): assigns priority, category, and next action
 3. **QA** (qa-ops): generates test cases for the affected feature area
 4. **Synthesis** (research-ops): combines findings into a stakeholder summary
-5. **Governance** (control-ops): validates the proposed response action against scope/permissions
+5. **Governance** (control-ops): validates the proposed response action against scope/permissions and stops on `review` or `fail`
 6. **Checkpoint** (workflow-ops): records the pipeline outcome for traceability
 
 If governance returns `verdict: fail`, the pipeline status is `blocked`. Validation failures at any stage produce `degraded` status with prior stage outputs preserved.

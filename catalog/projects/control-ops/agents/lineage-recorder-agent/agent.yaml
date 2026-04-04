@@ -31,7 +31,7 @@ outputs:
     type: string
 rules:
   - Record must capture all five lineage fields.
-  - lineage_id must be a deterministic composite of trigger and action.
+  - lineage_id must be a deterministic readable slug plus a short stable hash.
   - integrity_check must be "complete" when all fields are substantive.
 constraints:
   - Output must contain exactly three output keys.
