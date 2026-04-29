@@ -223,6 +223,24 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Exception policy example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.exception-policy-agent \
+  --input catalog/projects/control-ops/agents/exception-policy-agent/examples/example-input.json \
+  --pretty
+```
+
+Approval memory example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent control-ops.approval-memory-agent \
+  --input catalog/projects/control-ops/agents/approval-memory-agent/examples/example-input.json \
+  --pretty
+```
+
 Blast radius assessor example:
 
 ```bash
@@ -397,6 +415,8 @@ Accepted `--agent` values:
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
 - `control-ops.lineage-recorder-agent` or `lineage-recorder-agent`
 - `control-ops.scope-validator-agent` or `scope-validator-agent`
+- `control-ops.exception-policy-agent` or `exception-policy-agent`
+- `control-ops.approval-memory-agent` or `approval-memory-agent`
 - `control-ops.blast-radius-assessor-agent` or `blast-radius-assessor-agent`
 - `control-ops.kill-path-auditor-agent` or `kill-path-auditor-agent`
 - `data-ops.schema-drift-detector-agent` or `schema-drift-detector-agent`

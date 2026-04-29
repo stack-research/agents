@@ -86,8 +86,8 @@ Repository-level runtime and tests:
 - `tests/test_support_ops_llm.py` - support-ops checks in LLM mode.
 - `tests/test_agent_schema.py` - `agent.yaml` schema consistency checks (id/name/version and IO sections).
 - `tests/test_catalog_structure.py` - required file checks across catalog.
-- `tests/test_control_ops.py` - deterministic control-ops behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
-- `tests/test_control_ops_llm.py` - control-ops checks in LLM mode.
+- `tests/test_control_ops.py` - deterministic control-ops behavior tests (lineage-recorder/scope-validator/exception-policy/approval-memory/blast-radius-assessor/kill-path-auditor).
+- `tests/test_control_ops_llm.py` - control-ops checks in LLM mode (including exception-policy/approval-memory).
 - `tests/test_governance_pipeline.py` - governance pipeline composition test.
 - `tests/test_resilience_pipeline.py` - resilience pipeline composition test.
 - `tests/test_state.py` - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
@@ -140,6 +140,8 @@ Repository-level runtime and tests:
 - `control-ops`
   - `lineage-recorder-agent`: structures decision events into append-only lineage records.
   - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
+  - `exception-policy-agent`: evaluates controlled policy exceptions with owner/expiry constraints.
+  - `approval-memory-agent`: records approval state with approver, timestamps, and expiration status.
   - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
   - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
 - `data-ops`

@@ -7,7 +7,9 @@ from datetime import date, timedelta
 from local_agents.core import ValidationError
 from local_agents.engine import (
     run_agent,
+    run_approval_memory_agent,
     run_blast_radius_assessor_agent,
+    run_exception_policy_agent,
     run_kill_path_auditor_agent,
     run_lineage_recorder_agent,
     run_scope_validator_agent,
@@ -136,6 +138,39 @@ class ScopeValidatorTests(unittest.TestCase):
     def test_missing_action_raises(self) -> None:
         with self.assertRaises(ValidationError):
             run_scope_validator_agent({"permissions_requested": ["read"]})
+
+
+class ExceptionPolicyTests(unittest.TestCase):
+    def test_exception_policy_shape(self) -> None:
+        out = run_exception_policy_agent(
+            {
+                "action_id": "prod-log-retention-purge",
+                "scope": "prod logs in one region",
+                "requested_by": "platform-oncall",
+                "owner": "security-duty",
+                "justification": "Storage saturation risk requires temporary exception",
+                "expires_at": (date.today() + timedelta(days=14)).isoformat(),
+            }
+        )
+        self.assertIn(out["exception_verdict"], {"approved", "review", "denied"})
+        self.assertTrue(out["exception_id"])
+        self.assertTrue(out["reason_code"])
+
+
+class ApprovalMemoryTests(unittest.TestCase):
+    def test_approval_memory_shape(self) -> None:
+        out = run_approval_memory_agent(
+            {
+                "approval_subject": "prod-log-retention-exception",
+                "approver": "security-duty",
+                "approved_at": date.today().isoformat(),
+                "expires_at": (date.today() + timedelta(days=7)).isoformat(),
+                "metadata": {"ticket": "GOV-4421"},
+            }
+        )
+        self.assertIn("approval_record_id", out)
+        self.assertTrue(out["active"])
+        self.assertFalse(out["expired"])
 
 
 class BlastRadiusAssessorTests(unittest.TestCase):
@@ -295,6 +330,30 @@ class RunAgentAliasTests(unittest.TestCase):
             },
         )
         self.assertIn("coverage_score", out)
+
+    def test_new_control_ops_aliases(self) -> None:
+        exception_out = run_agent(
+            agent="control-ops.exception-policy-agent",
+            payload={
+                "action_id": "exp-1",
+                "scope": "prod shard",
+                "requested_by": "ops",
+                "owner": "security",
+                "justification": "incident mitigation needed",
+                "expires_at": (date.today() + timedelta(days=3)).isoformat(),
+            },
+        )
+        self.assertIn("exception_verdict", exception_out)
+        approval_out = run_agent(
+            agent="approval-memory-agent",
+            payload={
+                "approval_subject": "exp-1",
+                "approver": "security",
+                "approved_at": date.today().isoformat(),
+                "expires_at": (date.today() + timedelta(days=3)).isoformat(),
+            },
+        )
+        self.assertIn("approval_record_id", approval_out)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ Add or update the project selected. Then update the roadmap checklist when finis
   - Add `dependency-router-agent` (routes based on prerequisites, not only intent text).
   - Tooling: standard stage timing + failure taxonomy fields.
 
-- [ ] `control-ops`
+- [x] `control-ops`
   - Add `exception-policy-agent` (handles controlled policy exceptions with expiry and owner).
   - Add `approval-memory-agent` (tracks what was approved, by whom, and when it expires).
   - Tooling: stronger “why blocked” structured output for downstream automation.

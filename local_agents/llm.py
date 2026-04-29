@@ -8,7 +8,9 @@ import urllib.request
 from typing import Any
 
 from .control_ops import (
+    assess_approval_memory,
     assess_blast_radius,
+    assess_exception_policy,
     assess_kill_path,
     assess_scope_validation,
     build_lineage_record,
@@ -1168,6 +1170,30 @@ def run_scope_validator_agent_llm(payload: dict[str, Any], model: str, base_url:
         "verdict": assessment["verdict"],
         "findings": assessment["findings"],
         "risk_level": assessment["risk_level"],
+    }
+
+
+def run_exception_policy_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    assessment = assess_exception_policy(payload)
+    return {
+        "exception_verdict": assessment["exception_verdict"],
+        "exception_id": assessment["exception_id"],
+        "owner": assessment["owner"],
+        "expires_at": assessment["expires_at"],
+        "conditions": assessment["conditions"],
+        "reason_code": assessment["reason_code"],
+    }
+
+
+def run_approval_memory_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    assessment = assess_approval_memory(payload)
+    return {
+        "approval_record_id": assessment["approval_record_id"],
+        "active": assessment["active"],
+        "expired": assessment["expired"],
+        "approver": assessment["approver"],
+        "expires_at": assessment["expires_at"],
+        "recall_hint": assessment["recall_hint"],
     }
 
 

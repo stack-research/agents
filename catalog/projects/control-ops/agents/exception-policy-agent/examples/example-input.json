@@ -1,0 +1,8 @@
+{
+  "action_id": "log-retention-purge",
+  "scope": "prod logs in one region",
+  "requested_by": "platform-oncall",
+  "owner": "security-duty",
+  "justification": "Storage saturation risk requires temporary retention exception",
+  "expires_at": "2026-05-31"
+}

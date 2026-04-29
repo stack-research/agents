@@ -20,6 +20,14 @@ from local_agents.state import connect as connect_state, save_stage, save_result
 
 
 def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, object]:
+    reason_lower = reason.lower()
+    block_code = "unknown"
+    if "must be" in reason_lower or "missing" in reason_lower:
+        block_code = "validation_error"
+    elif "timeout" in reason_lower:
+        block_code = "timeout"
+    elif "policy" in reason_lower:
+        block_code = "policy_block"
     return {
         "workflow_id": workflow_id,
         "scope_validation": {
@@ -44,6 +52,13 @@ def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, obj
         "pipeline_status": "degraded",
         "failure_stage": stage,
         "failure_reason": reason,
+        "why_blocked": {
+            "block_code": block_code,
+            "block_stage": stage,
+            "block_reasons": [reason],
+            "required_actions": ["Run manual governance review before retry"],
+            "can_retry": False,
+        },
     }
 
 
@@ -55,6 +70,37 @@ def run_pipeline(
     run_id: str = "",
     store: object | None = None,
 ) -> dict[str, object]:
+    def _build_why_blocked(verdict: str, findings: list[str], stage: str) -> dict[str, object]:
+        if verdict == "review":
+            return {
+                "block_code": "needs_review",
+                "block_stage": stage,
+                "block_reasons": findings[:3],
+                "required_actions": [
+                    "Collect missing governance evidence",
+                    "Obtain explicit human approval",
+                ],
+                "can_retry": True,
+            }
+        if verdict == "fail":
+            return {
+                "block_code": "scope_violation",
+                "block_stage": stage,
+                "block_reasons": findings[:3],
+                "required_actions": [
+                    "Reduce requested permissions and scope",
+                    "Add reversibility and traceability controls",
+                ],
+                "can_retry": False,
+            }
+        return {
+            "block_code": "unknown",
+            "block_stage": stage,
+            "block_reasons": findings[:3],
+            "required_actions": ["Manual governance review required"],
+            "can_retry": False,
+        }
+
     action_description = payload.get("action_description")
     permissions_requested = payload.get("permissions_requested")
     reversibility_plan = payload.get("reversibility_plan", "")
@@ -126,6 +172,7 @@ def run_pipeline(
             "lineage": lineage_record,
             "checkpoint": checkpoint,
             "pipeline_status": pipeline_status,
+            "why_blocked": _build_why_blocked(scope_validation["verdict"], scope_validation["findings"], "governance-gate"),
         }
         if store and run_id:
             save_stage(store, run_id, "lineage", lineage_record)
@@ -188,6 +235,13 @@ def run_pipeline(
         "lineage": lineage_record,
         "checkpoint": checkpoint,
         "pipeline_status": "ok",
+        "why_blocked": {
+            "block_code": "none",
+            "block_stage": "",
+            "block_reasons": [],
+            "required_actions": [],
+            "can_retry": False,
+        },
     }
     if store and run_id:
         save_result(store, run_id, result)

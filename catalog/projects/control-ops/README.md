@@ -14,6 +14,12 @@ Operational control agents for governance, lineage, blast radius assessment, and
    - Purpose: estimate blast radius of a service from weighted permission, dependency, and resource-limit factors.
    - Output: `risk_score`, `max_damage_potential`, `detection_latency`, `containment_time`, `findings`, `recommended_controls`.
 4. `kill-path-auditor-agent`
+5. `exception-policy-agent`
+   - Purpose: evaluate controlled policy exceptions with owner and expiry constraints.
+   - Output: `exception_verdict`, `exception_id`, `owner`, `expires_at`, `conditions`, `reason_code`.
+6. `approval-memory-agent`
+   - Purpose: store and recall approval state with expiration semantics.
+   - Output: `approval_record_id`, `active`, `expired`, `approver`, `expires_at`, `recall_hint`.
    - Purpose: audit system shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
    - Output: `coverage_score`, `gaps`, `escalation_readiness`, `recommended_actions`.
 
@@ -66,6 +72,10 @@ Run:
   `python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty`
 - Run kill-path-auditor example:
   `python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty`
+- Run exception-policy example:
+  `python3 scripts/run_agent.py --agent control-ops.exception-policy-agent --input catalog/projects/control-ops/agents/exception-policy-agent/examples/example-input.json --pretty`
+- Run approval-memory example:
+  `python3 scripts/run_agent.py --agent control-ops.approval-memory-agent --input catalog/projects/control-ops/agents/approval-memory-agent/examples/example-input.json --pretty`
 
 ## Review Matrix
 

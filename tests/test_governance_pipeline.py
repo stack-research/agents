@@ -36,6 +36,7 @@ class GovernancePipelineTests(unittest.TestCase):
         self.assertIn("target_output", out)
         self.assertIn("lineage", out)
         self.assertIn("checkpoint", out)
+        self.assertIn("why_blocked", out)
 
     def test_pipeline_allows_pass_and_executes_target(self) -> None:
         out = run_pipeline(
@@ -59,6 +60,7 @@ class GovernancePipelineTests(unittest.TestCase):
         self.assertEqual(out["scope_validation"]["verdict"], "pass")
         self.assertIn("plan_steps", out["target_output"])
         self.assertEqual(out["checkpoint"]["recorded"], True)
+        self.assertEqual(out["why_blocked"]["block_code"], "none")
 
     def test_pipeline_returns_needs_review_without_target_execution(self) -> None:
         out = run_pipeline(
@@ -79,6 +81,8 @@ class GovernancePipelineTests(unittest.TestCase):
         self.assertEqual(out["scope_validation"]["verdict"], "review")
         self.assertEqual(out["target_output"]["status"], "needs_review")
         self.assertNotIn("plan_steps", out["target_output"])
+        self.assertEqual(out["why_blocked"]["block_code"], "needs_review")
+        self.assertTrue(out["why_blocked"]["can_retry"])
 
     def test_pipeline_blocks_on_fail_verdict(self) -> None:
         out = run_pipeline(
@@ -98,6 +102,7 @@ class GovernancePipelineTests(unittest.TestCase):
         self.assertEqual(out.get("pipeline_status"), "blocked")
         self.assertEqual(out["scope_validation"]["verdict"], "fail")
         self.assertEqual(out["target_output"]["status"], "blocked")
+        self.assertEqual(out["why_blocked"]["block_code"], "scope_violation")
 
     def test_pipeline_degrades_on_missing_action(self) -> None:
         out = run_pipeline(
@@ -114,6 +119,7 @@ class GovernancePipelineTests(unittest.TestCase):
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
         self.assertEqual(out.get("failure_stage"), "scope-validator")
+        self.assertIn("why_blocked", out)
 
     def test_pipeline_degrades_on_missing_target(self) -> None:
         out = run_pipeline(

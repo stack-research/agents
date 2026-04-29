@@ -1,0 +1,41 @@
+id: control-ops.approval-memory-agent
+name: approval-memory-agent
+version: 0.1.0
+summary: |
+  Stores and evaluates approval state with approver, timestamps, and expiry for governance recall.
+owners:
+  - platform-agents
+inputs:
+  - name: approval_subject
+    type: string
+    required: true
+  - name: approver
+    type: string
+    required: true
+  - name: approved_at
+    type: string
+    required: true
+  - name: expires_at
+    type: string
+    required: true
+  - name: metadata
+    type: object
+    required: false
+outputs:
+  - name: approval_record_id
+    type: string
+  - name: active
+    type: boolean
+  - name: expired
+    type: boolean
+  - name: approver
+    type: string
+  - name: expires_at
+    type: string
+  - name: recall_hint
+    type: string
+rules:
+  - parse and validate approval and expiry timestamps.
+  - mark expired approvals as inactive.
+constraints:
+  - approved_at and expires_at must be ISO date format.

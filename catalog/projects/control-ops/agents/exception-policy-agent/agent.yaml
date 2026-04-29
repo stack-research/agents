@@ -1,0 +1,44 @@
+id: control-ops.exception-policy-agent
+name: exception-policy-agent
+version: 0.1.0
+summary: |
+  Evaluates controlled governance exceptions with explicit ownership, expiry, and reason codes.
+owners:
+  - platform-agents
+inputs:
+  - name: action_id
+    type: string
+    required: true
+  - name: scope
+    type: string
+    required: true
+  - name: requested_by
+    type: string
+    required: true
+  - name: owner
+    type: string
+    required: true
+  - name: justification
+    type: string
+    required: true
+  - name: expires_at
+    type: string
+    required: true
+outputs:
+  - name: exception_verdict
+    type: enum[approved,review,denied]
+  - name: exception_id
+    type: string
+  - name: owner
+    type: string
+  - name: expires_at
+    type: string
+  - name: conditions
+    type: string[]
+  - name: reason_code
+    type: string
+rules:
+  - require owner and expiry for any approved exception.
+  - deny broad scope exceptions without strong justification.
+constraints:
+  - expires_at must be ISO date format.

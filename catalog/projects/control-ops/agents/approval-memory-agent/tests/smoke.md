@@ -1,0 +1,3 @@
+- Run deterministic example and verify `active` and `expired` booleans.
+- Verify record ID is emitted and non-empty.
+- Verify expired approvals return `active=false`.

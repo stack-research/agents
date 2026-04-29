@@ -523,6 +523,107 @@ def governance_pipeline_status(verdict: str) -> tuple[str, str, str]:
     raise ValidationError(f"unsupported governance verdict: {verdict}")
 
 
+def assess_exception_policy(payload: dict[str, Any], *, today: date | None = None) -> dict[str, Any]:
+    action_id = _require_non_empty_string(payload, "action_id")
+    scope = _require_non_empty_string(payload, "scope")
+    requested_by = _require_non_empty_string(payload, "requested_by")
+    owner = _require_non_empty_string(payload, "owner")
+    justification = _require_non_empty_string(payload, "justification")
+    expires_at = _require_non_empty_string(payload, "expires_at")
+
+    try:
+        expiry_date = date.fromisoformat(expires_at)
+    except ValueError as exc:
+        raise ValidationError("expires_at must be an ISO date") from exc
+
+    current_day = today or date.today()
+    days_remaining = (expiry_date - current_day).days
+    lowered_scope = scope.lower()
+    lowered_justification = justification.lower()
+
+    broad_scope = any(token in lowered_scope for token in {"all", "global", "entire", "production"})
+    weak_justification = len(lowered_justification.split()) < 4
+    emergency_hint = any(token in lowered_justification for token in {"incident", "outage", "saturation", "breach"})
+
+    if days_remaining < 0:
+        verdict = "denied"
+        reason_code = "exception_expired"
+    elif broad_scope and not emergency_hint:
+        verdict = "denied"
+        reason_code = "scope_violation"
+    elif weak_justification or days_remaining > 90:
+        verdict = "review"
+        reason_code = "needs_review"
+    else:
+        verdict = "approved"
+        reason_code = "policy_exception_approved"
+
+    conditions = [
+        f"Owner {owner} must review exception weekly",
+        "Record all actions taken under this exception in lineage logs",
+    ]
+    if verdict != "approved":
+        conditions.append("Require explicit human approval before execution")
+
+    exception_id = f"exc-{_slugify(action_id, 28)}-{_stable_hash({'a': action_id, 'o': owner, 'e': expires_at})}"
+    return {
+        "exception_verdict": verdict,
+        "exception_id": exception_id[:80],
+        "owner": owner,
+        "expires_at": expires_at,
+        "conditions": _truncate_list(conditions, max_items=3, max_words=14),
+        "reason_code": reason_code,
+    }
+
+
+def assess_approval_memory(payload: dict[str, Any], *, today: date | None = None) -> dict[str, Any]:
+    approval_subject = _require_non_empty_string(payload, "approval_subject")
+    approver = _require_non_empty_string(payload, "approver")
+    approved_at = _require_non_empty_string(payload, "approved_at")
+    expires_at = _require_non_empty_string(payload, "expires_at")
+    metadata = payload.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValidationError("metadata must be an object when provided")
+
+    try:
+        approved_date = date.fromisoformat(approved_at)
+    except ValueError as exc:
+        raise ValidationError("approved_at must be an ISO date") from exc
+    try:
+        expiry_date = date.fromisoformat(expires_at)
+    except ValueError as exc:
+        raise ValidationError("expires_at must be an ISO date") from exc
+
+    if expiry_date < approved_date:
+        raise ValidationError("expires_at must be on or after approved_at")
+
+    current_day = today or date.today()
+    expired = expiry_date < current_day
+    active = not expired
+
+    record_seed = {
+        "subject": approval_subject,
+        "approver": approver,
+        "approved_at": approved_at,
+        "expires_at": expires_at,
+        "metadata": metadata,
+    }
+    approval_record_id = f"apr-{_slugify(approval_subject, 24)}-{_stable_hash(record_seed)}"[:80]
+    recall_hint = (
+        "Approval expired; request renewal before privileged execution"
+        if expired
+        else "Re-check approval status before executing privileged action"
+    )
+    return {
+        "approval_record_id": approval_record_id,
+        "active": active,
+        "expired": expired,
+        "approver": approver,
+        "expires_at": expires_at,
+        "recall_hint": _truncate_words(recall_hint, 14),
+    }
+
+
 def resilience_verdict_from_scores(risk_score: int, coverage_score: int) -> str:
     if risk_score >= 50 and coverage_score <= 1:
         return "inadequate"

@@ -6,7 +6,9 @@ import os
 from typing import Any
 
 from .control_ops import (
+    assess_approval_memory,
     assess_blast_radius,
+    assess_exception_policy,
     assess_kill_path,
     assess_scope_validation,
     build_lineage_record,
@@ -1151,6 +1153,30 @@ def run_scope_validator_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_exception_policy_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    assessment = assess_exception_policy(payload)
+    return {
+        "exception_verdict": assessment["exception_verdict"],
+        "exception_id": assessment["exception_id"],
+        "owner": assessment["owner"],
+        "expires_at": assessment["expires_at"],
+        "conditions": assessment["conditions"],
+        "reason_code": assessment["reason_code"],
+    }
+
+
+def run_approval_memory_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    assessment = assess_approval_memory(payload)
+    return {
+        "approval_record_id": assessment["approval_record_id"],
+        "active": assessment["active"],
+        "expired": assessment["expired"],
+        "approver": assessment["approver"],
+        "expires_at": assessment["expires_at"],
+        "recall_hint": assessment["recall_hint"],
+    }
+
+
 def run_blast_radius_assessor_agent(payload: dict[str, Any]) -> dict[str, Any]:
     assessment = assess_blast_radius(payload)
     return {
@@ -1562,6 +1588,7 @@ def run_agent(
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
             run_blast_radius_assessor_agent_llm,
+            run_approval_memory_agent_llm,
             run_checkpoint_agent_llm,
             run_classifier_agent_llm,
             run_code_reviewer_agent_llm,
@@ -1583,6 +1610,7 @@ def run_agent(
             run_handoff_agent_llm,
             run_gap_detector_agent_llm,
             run_memory_curator_agent_llm,
+            run_exception_policy_agent_llm,
             run_retry_policy_agent_llm,
             run_source_planner_agent_llm,
             run_schema_drift_detector_agent_llm,
@@ -1766,6 +1794,20 @@ def run_agent(
             return run_scope_validator_agent(payload)
         if selected_mode == "llm":
             return run_scope_validator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"exception-policy-agent", "control-ops.exception-policy-agent"}:
+        if selected_mode == "deterministic":
+            return run_exception_policy_agent(payload)
+        if selected_mode == "llm":
+            return run_exception_policy_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"approval-memory-agent", "control-ops.approval-memory-agent"}:
+        if selected_mode == "deterministic":
+            return run_approval_memory_agent(payload)
+        if selected_mode == "llm":
+            return run_approval_memory_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"blast-radius-assessor-agent", "control-ops.blast-radius-assessor-agent"}:

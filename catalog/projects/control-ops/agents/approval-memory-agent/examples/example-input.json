@@ -1,0 +1,10 @@
+{
+  "approval_subject": "prod-log-retention-exception",
+  "approver": "security-duty",
+  "approved_at": "2026-04-29",
+  "expires_at": "2026-05-31",
+  "metadata": {
+    "ticket": "GOV-4421",
+    "environment": "prod"
+  }
+}

@@ -64,6 +64,8 @@ catalog/
 9. `control-ops`
    - `lineage-recorder-agent`: structures decision events into append-only lineage records.
    - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
+   - `exception-policy-agent`: evaluates controlled policy exceptions with explicit owner and expiry.
+   - `approval-memory-agent`: tracks approval state and expiration for governance recall.
    - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
    - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
 10. `data-ops`
@@ -107,6 +109,8 @@ catalog/
 - `python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.lineage-recorder-agent --input catalog/projects/control-ops/agents/lineage-recorder-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.scope-validator-agent --input catalog/projects/control-ops/agents/scope-validator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.exception-policy-agent --input catalog/projects/control-ops/agents/exception-policy-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent control-ops.approval-memory-agent --input catalog/projects/control-ops/agents/approval-memory-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.blast-radius-assessor-agent --input catalog/projects/control-ops/agents/blast-radius-assessor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent control-ops.kill-path-auditor-agent --input catalog/projects/control-ops/agents/kill-path-auditor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent data-ops.schema-drift-detector-agent --input catalog/projects/data-ops/agents/schema-drift-detector-agent/examples/example-input.json --pretty`
@@ -378,7 +382,7 @@ The test suite currently includes:
 - code-ops deterministic behavior tests (code-reviewer/pr-summary).
 - observability-ops deterministic behavior tests (log-analyzer/slo-reporter).
 - knowledge-ops deterministic and LLM behavior tests (evidence-ranker/claim-trace/memory-curator/temporal-watch).
-- control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
+- control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/exception-policy/approval-memory/blast-radius-assessor/kill-path-auditor).
 - governance pipeline composition tests.
 - resilience pipeline composition tests.
 - behavior tests for local agent runtime logic.

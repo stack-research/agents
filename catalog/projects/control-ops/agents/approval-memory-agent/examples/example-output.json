@@ -1,0 +1,8 @@
+{
+  "approval_record_id": "apr-prod-log-retention-exception-3f1e9c2a",
+  "active": true,
+  "expired": false,
+  "approver": "security-duty",
+  "expires_at": "2026-05-31",
+  "recall_hint": "Re-check approval status before executing privileged action"
+}

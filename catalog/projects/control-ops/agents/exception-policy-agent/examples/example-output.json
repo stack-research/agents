@@ -1,0 +1,11 @@
+{
+  "exception_verdict": "review",
+  "exception_id": "exc-log-retention-purge-a1b2c3d4",
+  "owner": "security-duty",
+  "expires_at": "2026-05-31",
+  "conditions": [
+    "Enable enhanced audit logging during exception window",
+    "Run weekly owner review until exception expiry"
+  ],
+  "reason_code": "sensitive_scope_requires_review"
+}

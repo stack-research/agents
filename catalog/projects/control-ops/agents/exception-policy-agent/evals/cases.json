@@ -1,0 +1,17 @@
+[
+  {
+    "id": "exception-policy-review-case",
+    "input": {
+      "action_id": "prod-write-maintenance",
+      "scope": "all production shards",
+      "requested_by": "ops",
+      "owner": "security",
+      "justification": "maintenance needed urgently",
+      "expires_at": "2026-06-01"
+    },
+    "expected": {
+      "exception_verdict_in": ["review", "denied"],
+      "reason_code_nonempty": true
+    }
+  }
+]

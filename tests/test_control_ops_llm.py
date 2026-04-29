@@ -77,6 +77,44 @@ class ScopeValidatorLLMTests(unittest.TestCase):
 
 
 @unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
+class ExceptionPolicyLLMTests(unittest.TestCase):
+    def test_exception_policy_output_shape(self) -> None:
+        out = run_agent(
+            agent="control-ops.exception-policy-agent",
+            payload={
+                "action_id": "prod-maint-window",
+                "scope": "prod logs region one",
+                "requested_by": "ops",
+                "owner": "security",
+                "justification": "incident mitigation for saturation risk",
+                "expires_at": (date.today() + timedelta(days=7)).isoformat(),
+            },
+            mode="llm",
+        )
+        self.assertIn(out["exception_verdict"], {"approved", "review", "denied"})
+        self.assertIn("exception_id", out)
+
+
+@unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
+class ApprovalMemoryLLMTests(unittest.TestCase):
+    def test_approval_memory_output_shape(self) -> None:
+        out = run_agent(
+            agent="approval-memory-agent",
+            payload={
+                "approval_subject": "prod-maint-window",
+                "approver": "security-owner",
+                "approved_at": date.today().isoformat(),
+                "expires_at": (date.today() + timedelta(days=7)).isoformat(),
+                "metadata": {"ticket": "GOV-501"},
+            },
+            mode="llm",
+        )
+        self.assertIn("approval_record_id", out)
+        self.assertIn("active", out)
+        self.assertIn("expired", out)
+
+
+@unittest.skipUnless(OLLAMA_OK, SKIP_REASON)
 class BlastRadiusAssessorLLMTests(unittest.TestCase):
     def test_output_shape(self) -> None:
         out = run_agent(

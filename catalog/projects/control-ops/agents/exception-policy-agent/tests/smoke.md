@@ -1,0 +1,3 @@
+- Run deterministic example and verify verdict enum (`approved|review|denied`).
+- Verify approved outputs include owner and expiry.
+- Verify reason_code is present for all outcomes.
