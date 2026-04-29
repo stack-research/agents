@@ -1,0 +1,25 @@
+{
+  "workflow_id": "drill-supply-chain-2026-04-29",
+  "scenario": "supply-chain-compromise",
+  "incident_text": "Security found a compromised npm package in the release pipeline; incident team wants CI secrets rotated before the next deploy.",
+  "customer_tier": "enterprise",
+  "action_description": "Rotate all CI signing keys, revoke build agent tokens, and block artifact publish until clean rebuild completes",
+  "permissions_requested": ["secret-ci-rotate", "deploy-pipeline-write", "audit-log"],
+  "reversibility_plan": "Re-issue keys from offline HSM procedure, restore prior signing trust after quarantine, and rollback publish gate via feature flag",
+  "scope_boundary": "single release train, compromised package version only",
+  "service_name": "ci-release-orchestrator",
+  "dependencies": ["artifact-registry", "build-agents", "secrets-vault"],
+  "resource_limits": {
+    "rate_limit": "token revocation batches of 200",
+    "timeout_seconds": 600,
+    "budget_limit": "one coordinated rotation wave"
+  },
+  "kill_path_capabilities": {
+    "throttle": "build queue can be paused without losing queued jobs",
+    "degrade": "registry can reject new publishes while reads continue",
+    "isolate": "compromised build pool can be cordoned from prod signing",
+    "hard_stop": "signing service can be halted by incident workflow id"
+  },
+  "last_tested": "2026-04-27",
+  "rollback_plan": "Restore prior signing material from vault snapshot after quarantine, preserve audit trail, and notify release owner."
+}

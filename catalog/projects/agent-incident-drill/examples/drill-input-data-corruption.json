@@ -1,0 +1,25 @@
+{
+  "workflow_id": "drill-data-corruption-2026-04-29",
+  "scenario": "data-corruption-recovery",
+  "incident_text": "Support reports checksum mismatches on the ledger shard after replication lag; customer-facing incident for one region.",
+  "customer_tier": "enterprise",
+  "action_description": "Restore primary ledger shard-7 from last known good backup snapshot and replay WAL to current safe offset",
+  "permissions_requested": ["production-db-write", "backup-restore", "audit-log"],
+  "reversibility_plan": "Retain pre-restore snapshot, rollback via snapshot restore if validation fails, and verify checksums in canary read pool",
+  "scope_boundary": "ledger shard-7, incident window only, single region",
+  "service_name": "ledger-ingestion-service",
+  "dependencies": ["postgres-primary", "wal-archive", "backup-store"],
+  "resource_limits": {
+    "rate_limit": "replay capped at 500 rows per second",
+    "timeout_seconds": 900,
+    "budget_limit": "single shard restore job"
+  },
+  "kill_path_capabilities": {
+    "throttle": "replay worker concurrency can be reduced to zero",
+    "degrade": "shard can be marked read-only at the proxy layer",
+    "isolate": "shard-7 traffic can be drained to a standby only",
+    "hard_stop": "restore job can be cancelled by workflow id at the job runner"
+  },
+  "last_tested": "2026-04-27",
+  "rollback_plan": "Revert to pre-restore snapshot, preserve audit trail, and notify the incident owner before any second attempt."
+}

@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from scripts.run_agent_incident_drill import run_pipeline
+
+_EXAMPLES = Path(__file__).resolve().parents[1] / "catalog" / "projects" / "agent-incident-drill" / "examples"
+_SCORECARD_KEYS = frozenset({
+    "scope_validation",
+    "unsafe_action_executed",
+    "lineage_complete",
+    "kill_path_ready",
+    "rollback_ready",
+    "residual_exposure",
+})
 
 
 _MODE = "deterministic"
@@ -93,6 +105,35 @@ class AgentIncidentDrillTests(unittest.TestCase):
 
         self.assertEqual(out["pipeline_status"], "degraded")
         self.assertEqual(out["failure_stage"], "input")
+
+    def test_all_catalog_drill_input_fixtures(self) -> None:
+        paths = sorted(_EXAMPLES.glob("drill-input*.json"))
+        self.assertGreaterEqual(len(paths), 4, "expected default plus three alternate drill inputs")
+
+        required_out = (
+            "event_journal",
+            "governance",
+            "resilience",
+            "lineage_query",
+            "containment_timing",
+            "rollback_or_compensation",
+            "scorecard",
+            "pipeline_status",
+        )
+        for path in paths:
+            with self.subTest(path=path.name):
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                out = run_pipeline(payload, mode=_MODE, model=_MODEL, base_url=_BASE)
+
+                self.assertNotEqual(out["pipeline_status"], "degraded")
+                self.assertNotIn("failure_stage", out)
+                for key in required_out:
+                    self.assertIn(key, out)
+                sc = out["scorecard"]
+                self.assertEqual(_SCORECARD_KEYS, frozenset(sc.keys()))
+                self.assertIn(out["pipeline_status"], {"needs_review", "blocked", "ok"})
+                self.assertIn(out["governance"]["verdict"], {"pass", "review", "fail"})
+                self.assertFalse(sc["unsafe_action_executed"])
 
 
 if __name__ == "__main__":

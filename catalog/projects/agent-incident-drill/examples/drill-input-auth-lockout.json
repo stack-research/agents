@@ -1,0 +1,25 @@
+{
+  "workflow_id": "drill-auth-lockout-2026-04-29",
+  "scenario": "auth-lockout-break-glass",
+  "incident_text": "Enterprise admins cannot login after a bad MFA policy rollout; support opened a sev-1 incident for org-wide lockout.",
+  "customer_tier": "enterprise",
+  "action_description": "Toggle org-wide MFA enforcement off for 30 minutes and push emergency session policy to all IdP clients",
+  "permissions_requested": ["prod-auth-admin", "secret-policy-write", "audit-log"],
+  "reversibility_plan": "Re-enable MFA from known-good policy snapshot, revoke emergency sessions, and verify login metrics before closing",
+  "scope_boundary": "single customer org tenant, break-glass window only",
+  "service_name": "enterprise-idp-control-plane",
+  "dependencies": ["idp-core", "policy-store", "session-broker"],
+  "resource_limits": {
+    "rate_limit": "policy push limited to staged cohorts",
+    "timeout_seconds": 300,
+    "budget_limit": "one emergency policy change set"
+  },
+  "kill_path_capabilities": {
+    "throttle": "policy push rate can be reduced to halt further rollout",
+    "degrade": "IdP can serve deny-all except break-glass role",
+    "isolate": "affected tenant can be split to dedicated IdP pool",
+    "hard_stop": "emergency policy workflow can be aborted by incident commander token"
+  },
+  "last_tested": "2026-04-27",
+  "rollback_plan": "Restore MFA enforcement from snapshot, invalidate emergency sessions, preserve audit logs, and notify security owner."
+}

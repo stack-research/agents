@@ -22,7 +22,7 @@ Add or update the project selected. Then update the roadmap checklist when finis
   - Add `alert-tuner-agent` (suggests threshold tuning from noise patterns).
   - Tooling: shared incident signal schema consumable by pipelines.
 
-- [ ] `agent-incident-drill` (scenario project)
+- [x] `agent-incident-drill` (scenario project)
   - Add alternate drills (data corruption, auth lockout, supply-chain compromise).
   - Tooling: benchmark scorecard deltas across drill runs.
 

@@ -95,6 +95,8 @@ Repository-level runtime and tests:
 - `tests/test_code_ops.py` - deterministic code-ops behavior checks (code-reviewer/pr-summary).
 - `tests/test_observability_ops.py` - deterministic observability-ops behavior checks (log-analyzer/slo-reporter/change-correlation/alert-tuner).
 - `tests/test_observability_ops_llm.py` - observability-ops checks in LLM mode (change-correlation/alert-tuner).
+- `tests/test_agent_incident_drill.py` - agent incident drill pipeline and catalog fixture checks.
+- `tests/test_compare_agent_incident_drill_scorecards.py` - scorecard diff helper for drill benchmark outputs.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `local_agents/state.py` - Redis state store with graceful NoOp fallback for pipeline state persistence.
 - `docker-compose.yml` - local Ollama and Redis services for LLM testing and state persistence.
@@ -157,7 +159,7 @@ Repository-level runtime and tests:
  - `change-correlation-agent`: correlates metric/log shifts with deploy and config events.
  - `alert-tuner-agent`: suggests threshold tuning from alert noise patterns.
 - `agent-incident-drill`
-  - Scenario project that composes existing agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
+  - Scenario project that composes existing agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts. Example inputs include support-export, data-corruption, auth-lockout, and supply-chain scenarios; `scripts/compare_agent_incident_drill_scorecards.py` diffs scorecards across saved runs.
 
 ## Update Rule
 

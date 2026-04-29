@@ -127,6 +127,7 @@ catalog/
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_incident_pipeline.py --input examples/incident-pipeline-input.json --pretty`
 - `python3 scripts/run_agent_incident_drill.py --input catalog/projects/agent-incident-drill/examples/drill-input.json --pretty`
+- `make compare-agent-incident-drill-scorecards-example` (diff scorecards from two drill runs)
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `python3 scripts/run_security_scan.py --target-path /path/to/other/catalog --rules custom-rules.json --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`

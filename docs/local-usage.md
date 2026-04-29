@@ -386,6 +386,19 @@ python3 scripts/run_agent_incident_drill.py \
   --pretty
 ```
 
+Alternate drill inputs live under `catalog/projects/agent-incident-drill/examples/drill-input*.json`. Compare scorecards from two saved drill outputs:
+
+```bash
+python3 scripts/compare_agent_incident_drill_scorecards.py \
+  --baseline /path/to/run-a.json --current /path/to/run-b.json --pretty
+```
+
+Or run two drills and diff in one step:
+
+```bash
+make compare-agent-incident-drill-scorecards-example
+```
+
 Security scan example:
 
 ```bash
@@ -523,7 +536,8 @@ python3 -m unittest \
   tests/test_governance_pipeline.py \
   tests/test_resilience_pipeline.py \
   tests/test_incident_pipeline.py \
-  tests/test_agent_incident_drill.py
+  tests/test_agent_incident_drill.py \
+  tests/test_compare_agent_incident_drill_scorecards.py
 ```
 
 Or with Make targets:
@@ -593,6 +607,7 @@ make run-slo-reporter-llm
 make run-governance-pipeline-example
 make run-resilience-pipeline-example
 make run-agent-incident-drill-example
+make compare-agent-incident-drill-scorecards-example
 make run-governance-pipeline-llm
 make run-resilience-pipeline-llm
 make run-support-pipeline-llm
