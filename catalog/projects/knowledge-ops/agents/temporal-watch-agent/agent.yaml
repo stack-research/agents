@@ -1,0 +1,29 @@
+id: knowledge-ops.temporal-watch-agent
+name: temporal-watch-agent
+version: 0.1.0
+summary: |
+  Detects drift between current and prior snapshots and recommends follow-up actions.
+owners:
+  - platform-agents
+inputs:
+  - name: current_snapshot
+    type: object
+    required: true
+  - name: prior_snapshot
+    type: object
+    required: true
+  - name: window_label
+    type: string
+    required: false
+outputs:
+  - name: temporal_signals
+    type: string[]
+  - name: drift_level
+    type: enum[no_change,minor_shift,major_shift]
+  - name: recommended_actions
+    type: string[]
+rules:
+  - classify drift based on added, removed, and changed keys.
+  - provide concise follow-up actions tied to the drift level.
+constraints:
+  - drift_level values are no_change, minor_shift, major_shift.

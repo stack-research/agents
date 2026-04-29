@@ -1,0 +1,14 @@
+{
+  "current_snapshot": {
+    "pass_rate": 0.91,
+    "failure_rate": 0.09,
+    "flaky_tests": 2,
+    "deploy_gate": "strict"
+  },
+  "prior_snapshot": {
+    "pass_rate": 0.82,
+    "failure_rate": 0.18,
+    "flaky_tests": 5
+  },
+  "window_label": "last-24h"
+}

@@ -582,6 +582,196 @@ Input:
     return {"headline": safe_headline, "summary": safe_summary, "next_actions": safe_actions}
 
 
+def run_evidence_ranker_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_items = require(payload, "evidence_items")
+    max_evidence = payload.get("max_evidence", 5)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_items, list) or not evidence_items:
+        raise ValidationError("evidence_items must be a non-empty array")
+    if not isinstance(max_evidence, int) or max_evidence < 1 or max_evidence > 10:
+        raise ValidationError("max_evidence must be an integer between 1 and 10")
+
+    prompt = f"""
+You are evidence-ranker-agent.
+Return only JSON with keys ranked_evidence and overall_confidence.
+Rules:
+- ranked_evidence must be an array of 1..max_evidence objects.
+- each object must include evidence_id, score, source_kind, content.
+- score must be numeric in [0,1].
+- overall_confidence must be numeric in [0,1].
+Input:
+{{"assertions":{json.dumps(assertions)},"evidence_items":{json.dumps(evidence_items)},"max_evidence":{max_evidence}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    ranked_evidence = out.get("ranked_evidence")
+    overall_confidence = out.get("overall_confidence")
+    if not isinstance(ranked_evidence, list) or not (1 <= len(ranked_evidence) <= max_evidence):
+        raise ValidationError("LLM output ranked_evidence must be sized 1..max_evidence")
+    if not isinstance(overall_confidence, (int, float)) or not (0 <= float(overall_confidence) <= 1):
+        raise ValidationError("LLM output overall_confidence must be numeric in [0,1]")
+    cleaned = []
+    for idx, item in enumerate(ranked_evidence, start=1):
+        if not isinstance(item, dict):
+            continue
+        score = item.get("score")
+        if not isinstance(score, (int, float)):
+            continue
+        cleaned.append(
+            {
+                "evidence_id": str(item.get("evidence_id", f"ev-{idx}")),
+                "score": round(float(score), 2),
+                "source_kind": sanitize_untrusted_text(str(item.get("source_kind", "note"))),
+                "content": sanitize_untrusted_text(" ".join(str(item.get("content", "")).split()[:24])),
+            }
+        )
+    if not cleaned:
+        raise ValidationError("LLM output ranked_evidence must contain object entries with numeric scores")
+    return {"ranked_evidence": cleaned[:max_evidence], "overall_confidence": round(float(overall_confidence), 2)}
+
+
+def run_claim_trace_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_bundle = require(payload, "evidence_bundle")
+    min_support_score = payload.get("min_support_score", 0.55)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_bundle, list) or not evidence_bundle:
+        raise ValidationError("evidence_bundle must be a non-empty array")
+    if not isinstance(min_support_score, (int, float)) or not (0 <= float(min_support_score) <= 1):
+        raise ValidationError("min_support_score must be numeric in [0,1]")
+
+    prompt = f"""
+You are claim-trace-agent.
+Return only JSON with keys assertion_map and coverage_score.
+Rules:
+- assertion_map must be an array matching assertion count.
+- each item must include assertion, status (supported|weak|unsupported), evidence_refs.
+- coverage_score must be numeric in [0,1].
+Input:
+{{"assertions":{json.dumps(assertions)},"evidence_bundle":{json.dumps(evidence_bundle)},"min_support_score":{float(min_support_score)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    assertion_map = out.get("assertion_map")
+    coverage_score = out.get("coverage_score")
+    if not isinstance(assertion_map, list) or len(assertion_map) != len(assertions):
+        raise ValidationError("LLM output assertion_map must match assertion count")
+    if not isinstance(coverage_score, (int, float)) or not (0 <= float(coverage_score) <= 1):
+        raise ValidationError("LLM output coverage_score must be numeric in [0,1]")
+    normalized = []
+    for idx, item in enumerate(assertion_map):
+        if not isinstance(item, dict):
+            raise ValidationError("LLM output assertion_map items must be objects")
+        status = item.get("status")
+        if status not in {"supported", "weak", "unsupported"}:
+            raise ValidationError("LLM output status must be supported|weak|unsupported")
+        refs = item.get("evidence_refs")
+        if not isinstance(refs, list):
+            refs = []
+        normalized.append(
+            {
+                "assertion": sanitize_untrusted_text(" ".join(str(item.get("assertion", assertions[idx])).split()[:24])),
+                "status": status,
+                "evidence_refs": [sanitize_untrusted_text(str(ref)) for ref in refs[:3]],
+            }
+        )
+    return {"assertion_map": normalized, "coverage_score": round(float(coverage_score), 2)}
+
+
+def run_memory_curator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    run_id = require(payload, "run_id")
+    artifacts = require(payload, "artifacts")
+    memory_horizon_hours = payload.get("memory_horizon_hours", 24)
+
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    if not isinstance(artifacts, list) or not artifacts or not all(isinstance(item, str) for item in artifacts):
+        raise ValidationError("artifacts must be a non-empty string array")
+    if not isinstance(memory_horizon_hours, int) or memory_horizon_hours < 1 or memory_horizon_hours > 720:
+        raise ValidationError("memory_horizon_hours must be an integer between 1 and 720")
+
+    prompt = f"""
+You are memory-curator-agent.
+Return only JSON with keys memory_updates and expires_in_hours.
+Rules:
+- memory_updates must be 1..6 objects with memory_key, fact, confidence.
+- confidence must be numeric in [0,1].
+- expires_in_hours must be integer.
+Input:
+{{"run_id":{json.dumps(run_id)},"artifacts":{json.dumps(artifacts)},"memory_horizon_hours":{memory_horizon_hours}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    updates = out.get("memory_updates")
+    expires_in_hours = out.get("expires_in_hours")
+    if not isinstance(updates, list) or not (1 <= len(updates) <= 6):
+        raise ValidationError("LLM output memory_updates must contain 1..6 items")
+    if not isinstance(expires_in_hours, int):
+        raise ValidationError("LLM output expires_in_hours must be an integer")
+    normalized_updates = []
+    for idx, item in enumerate(updates, start=1):
+        if not isinstance(item, dict):
+            continue
+        confidence = item.get("confidence", 0.6)
+        if not isinstance(confidence, (int, float)):
+            confidence = 0.6
+        normalized_updates.append(
+            {
+                "memory_key": sanitize_untrusted_text(str(item.get("memory_key", f"{run_id}:fact:{idx}"))),
+                "fact": sanitize_untrusted_text(" ".join(str(item.get("fact", "")).split()[:20])),
+                "confidence": round(max(0.0, min(1.0, float(confidence))), 2),
+            }
+        )
+    if not normalized_updates:
+        raise ValidationError("LLM output memory_updates must contain object items")
+    return {"memory_updates": normalized_updates, "expires_in_hours": expires_in_hours}
+
+
+def run_temporal_watch_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    current_snapshot = require(payload, "current_snapshot")
+    prior_snapshot = require(payload, "prior_snapshot")
+    window_label = payload.get("window_label", "24h")
+
+    if not isinstance(current_snapshot, dict) or not current_snapshot:
+        raise ValidationError("current_snapshot must be a non-empty object")
+    if not isinstance(prior_snapshot, dict) or not prior_snapshot:
+        raise ValidationError("prior_snapshot must be a non-empty object")
+    if not isinstance(window_label, str) or not window_label.strip():
+        raise ValidationError("window_label must be a non-empty string")
+
+    prompt = f"""
+You are temporal-watch-agent.
+Return only JSON with keys temporal_signals, drift_level, recommended_actions.
+Rules:
+- temporal_signals must be 1..4 concise strings.
+- drift_level must be one of no_change, minor_shift, major_shift.
+- recommended_actions must be 1..3 concise strings.
+Input:
+{{"current_snapshot":{json.dumps(current_snapshot)},"prior_snapshot":{json.dumps(prior_snapshot)},"window_label":{json.dumps(window_label)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    temporal_signals = out.get("temporal_signals")
+    drift_level = out.get("drift_level")
+    recommended_actions = out.get("recommended_actions")
+    if not isinstance(temporal_signals, list) or not (1 <= len(temporal_signals) <= 4):
+        raise ValidationError("LLM output temporal_signals must contain 1..4 items")
+    if drift_level not in {"no_change", "minor_shift", "major_shift"}:
+        raise ValidationError("LLM output drift_level must be no_change|minor_shift|major_shift")
+    if not isinstance(recommended_actions, list) or not (1 <= len(recommended_actions) <= 3):
+        raise ValidationError("LLM output recommended_actions must contain 1..3 items")
+    safe_signals = [sanitize_untrusted_text(" ".join(str(item).split()[:16])) for item in temporal_signals]
+    safe_actions = [sanitize_untrusted_text(" ".join(str(item).split()[:16])) for item in recommended_actions]
+    return {"temporal_signals": safe_signals, "drift_level": drift_level, "recommended_actions": safe_actions}
+
+
 def run_test_case_generator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     feature = require(payload, "feature")
     acceptance_criteria = payload.get("acceptance_criteria", [])

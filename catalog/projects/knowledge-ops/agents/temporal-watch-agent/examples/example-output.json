@@ -1,0 +1,12 @@
+{
+  "temporal_signals": [
+    "Added keys: deploy_gate",
+    "Changed keys: pass_rate, failure_rate, flaky_tests"
+  ],
+  "drift_level": "major_shift",
+  "recommended_actions": [
+    "Escalate major drift for manual review before automation",
+    "Revalidate assertions for window last-24h",
+    "Record drift decision and checkpoint downstream workflows"
+  ]
+}

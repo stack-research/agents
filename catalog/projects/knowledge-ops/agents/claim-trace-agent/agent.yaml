@@ -1,0 +1,27 @@
+id: knowledge-ops.claim-trace-agent
+name: claim-trace-agent
+version: 0.1.0
+summary: |
+  Maps assertions to supporting evidence with explicit support status and coverage.
+owners:
+  - platform-agents
+inputs:
+  - name: assertions
+    type: string[]
+    required: true
+  - name: evidence_bundle
+    type: object[]
+    required: true
+  - name: min_support_score
+    type: number
+    required: false
+outputs:
+  - name: assertion_map
+    type: object[]
+  - name: coverage_score
+    type: number
+rules:
+  - include exactly one map entry per assertion.
+  - use support status from supported, weak, unsupported.
+constraints:
+  - min_support_score accepted range is 0..1.

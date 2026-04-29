@@ -1,0 +1,3 @@
+- Run deterministic example and verify scores are sorted descending.
+- Verify `overall_confidence` is numeric and in the range 0..1.
+- Verify empty evidence list is rejected.

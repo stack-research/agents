@@ -73,6 +73,8 @@ Repository-level runtime and tests:
 - `tests/test_planner_executor_llm.py` - planner/executor checks in LLM mode.
 - `tests/test_research_ops.py` - deterministic retrieval/synthesis behavior tests.
 - `tests/test_research_ops_llm.py` - retrieval/synthesis checks in LLM mode.
+- `tests/test_knowledge_ops.py` - deterministic evidence/traceability/memory/temporal behavior tests.
+- `tests/test_knowledge_ops_llm.py` - knowledge-ops checks in LLM mode.
 - `tests/test_qa_ops.py` - deterministic test-case generation and regression-triage checks.
 - `tests/test_qa_ops_llm.py` - QA-ops checks in LLM mode.
 - `tests/test_workflow_ops.py` - deterministic routing/checkpoint behavior tests.
@@ -120,6 +122,11 @@ Repository-level runtime and tests:
 - `research-ops`
   - `retrieval-agent`: extracts bounded notes from a query and optional sources.
   - `synthesis-agent`: turns research notes into audience-specific summary/actions.
+- `knowledge-ops`
+  - `evidence-ranker-agent`: scores evidence quality for downstream decisions.
+  - `claim-trace-agent`: maps assertions to support states and evidence references.
+  - `memory-curator-agent`: curates reusable memory facts with confidence and expiry horizon.
+  - `temporal-watch-agent`: compares snapshots over time and emits drift signals.
 - `qa-ops`
   - `test-case-generator-agent`: turns feature requirements into bounded QA test scenarios.
   - `regression-triage-agent`: maps failures to probable cause, severity, and next actions.

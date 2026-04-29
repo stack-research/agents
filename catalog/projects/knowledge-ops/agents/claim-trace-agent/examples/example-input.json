@@ -1,0 +1,21 @@
+{
+  "assertions": [
+    "Rollback stabilized CI pass rate",
+    "Dependency update introduced flaky tests"
+  ],
+  "evidence_bundle": [
+    {
+      "evidence_id": "ev-1",
+      "score": 0.87,
+      "source_kind": "measurement",
+      "content": "Pass rate recovered within one run after rollback"
+    },
+    {
+      "evidence_id": "ev-2",
+      "score": 0.62,
+      "source_kind": "log",
+      "content": "Flaky tests appeared immediately after dependency bump"
+    }
+  ],
+  "min_support_score": 0.6
+}

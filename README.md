@@ -46,27 +46,32 @@ catalog/
 5. `research-ops`
    - `retrieval-agent`: extracts bounded notes from query + source hints.
    - `synthesis-agent`: converts notes into audience-aware summary and actions.
-6. `qa-ops`
+6. `knowledge-ops`
+   - `evidence-ranker-agent`: scores and ranks candidate evidence for downstream use.
+   - `claim-trace-agent`: maps assertions to evidence references and support states.
+   - `memory-curator-agent`: distills run artifacts into reusable memory entries.
+   - `temporal-watch-agent`: compares snapshots over time and emits drift signals.
+7. `qa-ops`
    - `test-case-generator-agent`: generates bounded QA scenarios from feature requirements.
    - `regression-triage-agent`: classifies regression cause/severity and proposes follow-up actions.
-7. `workflow-ops`
+8. `workflow-ops`
    - `router-agent`: routes work items to the best-fit agent with a priority.
    - `checkpoint-agent`: records workflow stage/status checkpoints for traceability.
-8. `control-ops`
+9. `control-ops`
    - `lineage-recorder-agent`: structures decision events into append-only lineage records.
    - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
    - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
    - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
-9. `data-ops`
+10. `data-ops`
    - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
    - `data-validator-agent`: validates data records against rules and reports violations.
-10. `code-ops`
+11. `code-ops`
     - `code-reviewer-agent`: reviews code diffs for security, correctness, and style issues.
     - `pr-summary-agent`: summarizes PR changes for reviewers with risk assessment.
-11. `observability-ops`
+12. `observability-ops`
     - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
     - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
-12. `agent-incident-drill`
+13. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -82,6 +87,10 @@ catalog/
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent knowledge-ops.evidence-ranker-agent --input catalog/projects/knowledge-ops/agents/evidence-ranker-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent knowledge-ops.claim-trace-agent --input catalog/projects/knowledge-ops/agents/claim-trace-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent knowledge-ops.memory-curator-agent --input catalog/projects/knowledge-ops/agents/memory-curator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent knowledge-ops.temporal-watch-agent --input catalog/projects/knowledge-ops/agents/temporal-watch-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.test-case-generator-agent --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
@@ -360,6 +369,7 @@ The test suite currently includes:
 - data-ops deterministic behavior tests (schema-drift-detector/data-validator).
 - code-ops deterministic behavior tests (code-reviewer/pr-summary).
 - observability-ops deterministic behavior tests (log-analyzer/slo-reporter).
+- knowledge-ops deterministic and LLM behavior tests (evidence-ranker/claim-trace/memory-curator/temporal-watch).
 - control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/blast-radius-assessor/kill-path-auditor).
 - governance pipeline composition tests.
 - resilience pipeline composition tests.

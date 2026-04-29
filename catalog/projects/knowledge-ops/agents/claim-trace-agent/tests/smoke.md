@@ -1,0 +1,3 @@
+- Run deterministic example and verify map length equals assertion length.
+- Verify status values are from supported/weak/unsupported only.
+- Verify `coverage_score` is numeric and in the range 0..1.

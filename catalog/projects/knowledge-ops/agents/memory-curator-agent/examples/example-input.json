@@ -1,0 +1,9 @@
+{
+  "run_id": "ci-reliability-2026-04-29",
+  "artifacts": [
+    "Pass rate dropped after dependency upgrade from 94 percent to 61 percent",
+    "Rollback restored pass rate above 90 percent within one run",
+    "Two flaky tests remain in auth integration suite"
+  ],
+  "memory_horizon_hours": 72
+}

@@ -1,0 +1,21 @@
+{
+  "ranked_evidence": [
+    {
+      "evidence_id": "ev-1",
+      "score": 0.91,
+      "source_kind": "measurement",
+      "content": "CI dashboard shows pass rate dropped from 94 to 61 percent after upgrade",
+      "corroboration_count": 3,
+      "age_days": 1.0
+    },
+    {
+      "evidence_id": "ev-2",
+      "score": 0.56,
+      "source_kind": "note",
+      "content": "Team note suggests flaky tests might be unrelated",
+      "corroboration_count": 0,
+      "age_days": 6.0
+    }
+  ],
+  "overall_confidence": 0.74
+}

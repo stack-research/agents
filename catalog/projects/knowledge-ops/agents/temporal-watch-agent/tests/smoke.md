@@ -1,0 +1,3 @@
+- Run deterministic example and verify drift output is one of allowed enum values.
+- Verify at least one temporal signal is emitted.
+- Verify identical snapshots return `no_change`.

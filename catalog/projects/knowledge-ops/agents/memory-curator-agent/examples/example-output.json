@@ -1,0 +1,15 @@
+{
+  "memory_updates": [
+    {
+      "memory_key": "ci-reliability-2026-04-29:fact:1",
+      "fact": "Pass rate dropped after dependency upgrade from 94 percent to 61 percent",
+      "confidence": 0.8
+    },
+    {
+      "memory_key": "ci-reliability-2026-04-29:fact:2",
+      "fact": "Rollback restored pass rate above 90 percent within one run",
+      "confidence": 0.75
+    }
+  ],
+  "expires_in_hours": 72
+}

@@ -1,0 +1,23 @@
+{
+  "assertions": [
+    "Build failures increased after dependency upgrade",
+    "Rollback stabilized CI pass rate"
+  ],
+  "evidence_items": [
+    {
+      "content": "CI dashboard shows pass rate dropped from 94 to 61 percent after upgrade",
+      "source_kind": "measurement",
+      "corroboration_count": 3,
+      "age_days": 1,
+      "relevance_hint": 0.9
+    },
+    {
+      "content": "Team note suggests flaky tests might be unrelated",
+      "source_kind": "note",
+      "corroboration_count": 0,
+      "age_days": 6,
+      "relevance_hint": 0.6
+    }
+  ],
+  "max_evidence": 3
+}

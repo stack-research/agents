@@ -1,0 +1,15 @@
+{
+  "assertion_map": [
+    {
+      "assertion": "Rollback stabilized CI pass rate",
+      "status": "supported",
+      "evidence_refs": ["ev-1", "ev-2"]
+    },
+    {
+      "assertion": "Dependency update introduced flaky tests",
+      "status": "supported",
+      "evidence_refs": ["ev-1", "ev-2"]
+    }
+  ],
+  "coverage_score": 1.0
+}

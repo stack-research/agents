@@ -1,0 +1,27 @@
+id: knowledge-ops.evidence-ranker-agent
+name: evidence-ranker-agent
+version: 0.1.0
+summary: |
+  Ranks candidate evidence by source quality, freshness, corroboration, and relevance.
+owners:
+  - platform-agents
+inputs:
+  - name: assertions
+    type: string[]
+    required: true
+  - name: evidence_items
+    type: object[]
+    required: true
+  - name: max_evidence
+    type: integer
+    required: false
+outputs:
+  - name: ranked_evidence
+    type: object[]
+  - name: overall_confidence
+    type: number
+rules:
+  - return evidence sorted by descending score.
+  - use normalized score values in the range 0 to 1.
+constraints:
+  - max_evidence accepted range is 1..10.

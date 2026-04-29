@@ -1,0 +1,3 @@
+- Run deterministic example and verify memory keys are populated.
+- Verify each memory update includes `fact` and `confidence`.
+- Verify horizon bounds enforcement on invalid input.

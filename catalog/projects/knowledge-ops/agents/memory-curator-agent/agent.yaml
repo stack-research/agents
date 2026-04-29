@@ -1,0 +1,27 @@
+id: knowledge-ops.memory-curator-agent
+name: memory-curator-agent
+version: 0.1.0
+summary: |
+  Curates durable memory entries from run artifacts with confidence and expiry horizons.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: artifacts
+    type: string[]
+    required: true
+  - name: memory_horizon_hours
+    type: integer
+    required: false
+outputs:
+  - name: memory_updates
+    type: object[]
+  - name: expires_in_hours
+    type: integer
+rules:
+  - produce concise memory facts suitable for reuse.
+  - include a confidence score per memory entry.
+constraints:
+  - memory_horizon_hours accepted range is 1..720.

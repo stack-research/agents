@@ -534,6 +534,182 @@ def run_synthesis_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return {"headline": headline, "summary": summary, "next_actions": next_actions}
 
 
+def run_evidence_ranker_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_items = require(payload, "evidence_items")
+    max_evidence = payload.get("max_evidence", 5)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_items, list) or not evidence_items:
+        raise ValidationError("evidence_items must be a non-empty array")
+    if not isinstance(max_evidence, int) or max_evidence < 1 or max_evidence > 10:
+        raise ValidationError("max_evidence must be an integer between 1 and 10")
+
+    ranked: list[dict[str, Any]] = []
+    for idx, item in enumerate(evidence_items, start=1):
+        if not isinstance(item, dict):
+            raise ValidationError("each evidence item must be an object")
+        content = item.get("content", "")
+        source_kind = str(item.get("source_kind", "note")).lower()
+        corroboration_count = item.get("corroboration_count", 0)
+        age_days = item.get("age_days", 14)
+        relevance_hint = float(item.get("relevance_hint", 0.6))
+        if not isinstance(content, str) or not content.strip():
+            raise ValidationError("evidence item content must be a non-empty string")
+        if not isinstance(corroboration_count, int) or corroboration_count < 0:
+            raise ValidationError("evidence item corroboration_count must be a non-negative integer")
+        if not isinstance(age_days, (int, float)) or age_days < 0:
+            raise ValidationError("evidence item age_days must be a non-negative number")
+        if not isinstance(relevance_hint, (int, float)):
+            raise ValidationError("evidence item relevance_hint must be numeric")
+
+        source_score_map = {
+            "measurement": 0.95,
+            "log": 0.85,
+            "policy": 0.8,
+            "code": 0.8,
+            "report": 0.75,
+            "note": 0.65,
+        }
+        source_score = source_score_map.get(source_kind, 0.6)
+        freshness_score = max(0.2, 1.0 - (float(age_days) / 120.0))
+        corroboration_score = min(1.0, 0.45 + (0.12 * corroboration_count))
+        relevance_score = max(0.1, min(1.0, float(relevance_hint)))
+        score = round(
+            (source_score * 0.35) + (freshness_score * 0.2) + (corroboration_score * 0.25) + (relevance_score * 0.2),
+            2,
+        )
+        ranked.append(
+            {
+                "evidence_id": f"ev-{idx}",
+                "score": score,
+                "source_kind": source_kind,
+                "content": " ".join(sanitize_untrusted_text(content).split()[:24]),
+                "corroboration_count": corroboration_count,
+                "age_days": float(age_days),
+            }
+        )
+
+    ranked.sort(key=lambda item: (-item["score"], item["evidence_id"]))
+    selected = ranked[:max_evidence]
+    avg = sum(float(item["score"]) for item in selected) / len(selected)
+    return {"ranked_evidence": selected, "overall_confidence": round(avg, 2)}
+
+
+def run_claim_trace_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_bundle = require(payload, "evidence_bundle")
+    min_support_score = payload.get("min_support_score", 0.55)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_bundle, list) or not evidence_bundle:
+        raise ValidationError("evidence_bundle must be a non-empty array")
+    if not isinstance(min_support_score, (int, float)) or not (0 <= float(min_support_score) <= 1):
+        raise ValidationError("min_support_score must be numeric in [0,1]")
+
+    valid_evidence = [item for item in evidence_bundle if isinstance(item, dict) and isinstance(item.get("score"), (int, float))]
+    if not valid_evidence:
+        raise ValidationError("evidence_bundle must include scored evidence objects")
+
+    sorted_evidence = sorted(valid_evidence, key=lambda item: float(item["score"]), reverse=True)
+    trace: list[dict[str, Any]] = []
+    supported = 0
+    for assertion in assertions:
+        safe_assertion = " ".join(sanitize_untrusted_text(assertion).split()[:24])
+        refs = [str(item.get("evidence_id", "unknown")) for item in sorted_evidence[:2]]
+        top_score = float(sorted_evidence[0]["score"])
+        if top_score >= float(min_support_score) + 0.15:
+            status = "supported"
+            supported += 1
+        elif top_score >= float(min_support_score):
+            status = "weak"
+        else:
+            status = "unsupported"
+        trace.append({"assertion": safe_assertion, "status": status, "evidence_refs": refs})
+
+    coverage_score = round(supported / len(assertions), 2)
+    return {"assertion_map": trace, "coverage_score": coverage_score}
+
+
+def run_memory_curator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    run_id = require(payload, "run_id")
+    artifacts = require(payload, "artifacts")
+    memory_horizon_hours = payload.get("memory_horizon_hours", 24)
+
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    if not isinstance(artifacts, list) or not artifacts or not all(isinstance(item, str) for item in artifacts):
+        raise ValidationError("artifacts must be a non-empty string array")
+    if not isinstance(memory_horizon_hours, int) or memory_horizon_hours < 1 or memory_horizon_hours > 720:
+        raise ValidationError("memory_horizon_hours must be an integer between 1 and 720")
+
+    updates = []
+    for idx, artifact in enumerate(artifacts[:6], start=1):
+        cleaned = sanitize_untrusted_text(artifact.strip())
+        if not cleaned:
+            continue
+        updates.append(
+            {
+                "memory_key": f"{sanitize_untrusted_text(run_id.strip()).replace(' ', '-').lower()}:fact:{idx}",
+                "fact": " ".join(cleaned.split()[:20]),
+                "confidence": round(max(0.4, 0.8 - (0.05 * (idx - 1))), 2),
+            }
+        )
+
+    return {"memory_updates": updates, "expires_in_hours": memory_horizon_hours}
+
+
+def run_temporal_watch_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    current_snapshot = require(payload, "current_snapshot")
+    prior_snapshot = require(payload, "prior_snapshot")
+    window_label = payload.get("window_label", "24h")
+
+    if not isinstance(current_snapshot, dict) or not current_snapshot:
+        raise ValidationError("current_snapshot must be a non-empty object")
+    if not isinstance(prior_snapshot, dict) or not prior_snapshot:
+        raise ValidationError("prior_snapshot must be a non-empty object")
+    if not isinstance(window_label, str) or not window_label.strip():
+        raise ValidationError("window_label must be a non-empty string")
+
+    current_keys = set(current_snapshot.keys())
+    prior_keys = set(prior_snapshot.keys())
+    added = sorted(current_keys - prior_keys)
+    removed = sorted(prior_keys - current_keys)
+    changed = sorted(key for key in (current_keys & prior_keys) if str(current_snapshot[key]) != str(prior_snapshot[key]))
+
+    total_delta = len(added) + len(removed) + len(changed)
+    if total_delta == 0:
+        drift_level = "no_change"
+    elif total_delta <= 2:
+        drift_level = "minor_shift"
+    else:
+        drift_level = "major_shift"
+
+    signals = []
+    if added:
+        signals.append(f"Added keys: {', '.join(added[:3])}")
+    if removed:
+        signals.append(f"Removed keys: {', '.join(removed[:3])}")
+    if changed:
+        signals.append(f"Changed keys: {', '.join(changed[:3])}")
+    if not signals:
+        signals.append("No temporal drift detected in compared snapshots")
+
+    actions = [
+        f"Revalidate assertions for window {sanitize_untrusted_text(window_label.strip())}",
+        "Record drift decision and checkpoint downstream workflows",
+    ]
+    if drift_level == "major_shift":
+        actions.insert(0, "Escalate major drift for manual review before automation")
+    return {
+        "temporal_signals": signals[:4],
+        "drift_level": drift_level,
+        "recommended_actions": actions[:3],
+    }
+
+
 def run_test_case_generator_agent(payload: dict[str, Any]) -> dict[str, Any]:
     feature = require(payload, "feature")
     acceptance_criteria = payload.get("acceptance_criteria", [])
@@ -638,6 +814,18 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["research", "summarize", "findings", "source"]):
         target_agent = "research-ops.retrieval-agent"
         rationale = "Research intent detected; route to retrieval."
+    elif any(token in lowered for token in ["evidence rank", "evidence quality", "source quality"]):
+        target_agent = "knowledge-ops.evidence-ranker-agent"
+        rationale = "Evidence ranking intent detected; route to evidence ranker."
+    elif any(token in lowered for token in ["trace claim", "claim support", "assertion map"]):
+        target_agent = "knowledge-ops.claim-trace-agent"
+        rationale = "Assertion traceability intent detected; route to claim trace."
+    elif any(token in lowered for token in ["curate memory", "memory update", "knowledge memory"]):
+        target_agent = "knowledge-ops.memory-curator-agent"
+        rationale = "Memory curation intent detected; route to memory curator."
+    elif any(token in lowered for token in ["temporal drift", "snapshot drift", "time-window drift"]):
+        target_agent = "knowledge-ops.temporal-watch-agent"
+        rationale = "Temporal drift intent detected; route to temporal watch."
     elif any(token in lowered for token in ["security scan", "owasp", "scan repo", "controls"]):
         target_agent = "security-ops.agentic-security-scanner-agent"
         rationale = "Security scanning intent detected; route to scanner."
@@ -1159,13 +1347,17 @@ def run_agent(
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
+            run_claim_trace_agent_llm,
+            run_evidence_ranker_agent_llm,
             run_handoff_agent_llm,
+            run_memory_curator_agent_llm,
             run_schema_drift_detector_agent_llm,
             run_scope_validator_agent_llm,
             run_slo_reporter_agent_llm,
             run_summary_agent_llm,
             run_synthesis_agent_llm,
             run_test_case_generator_agent_llm,
+            run_temporal_watch_agent_llm,
             run_triage_agent_llm,
         )
 
@@ -1242,6 +1434,34 @@ def run_agent(
             return run_synthesis_agent(payload)
         if selected_mode == "llm":
             return run_synthesis_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"evidence-ranker-agent", "knowledge-ops.evidence-ranker-agent"}:
+        if selected_mode == "deterministic":
+            return run_evidence_ranker_agent(payload)
+        if selected_mode == "llm":
+            return run_evidence_ranker_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"claim-trace-agent", "knowledge-ops.claim-trace-agent"}:
+        if selected_mode == "deterministic":
+            return run_claim_trace_agent(payload)
+        if selected_mode == "llm":
+            return run_claim_trace_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"memory-curator-agent", "knowledge-ops.memory-curator-agent"}:
+        if selected_mode == "deterministic":
+            return run_memory_curator_agent(payload)
+        if selected_mode == "llm":
+            return run_memory_curator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"temporal-watch-agent", "knowledge-ops.temporal-watch-agent"}:
+        if selected_mode == "deterministic":
+            return run_temporal_watch_agent(payload)
+        if selected_mode == "llm":
+            return run_temporal_watch_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"test-case-generator-agent", "qa-ops.test-case-generator-agent"}:

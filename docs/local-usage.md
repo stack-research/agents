@@ -97,6 +97,42 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Evidence ranker example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent knowledge-ops.evidence-ranker-agent \
+  --input catalog/projects/knowledge-ops/agents/evidence-ranker-agent/examples/example-input.json \
+  --pretty
+```
+
+Claim trace example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent knowledge-ops.claim-trace-agent \
+  --input catalog/projects/knowledge-ops/agents/claim-trace-agent/examples/example-input.json \
+  --pretty
+```
+
+Memory curator example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent knowledge-ops.memory-curator-agent \
+  --input catalog/projects/knowledge-ops/agents/memory-curator-agent/examples/example-input.json \
+  --pretty
+```
+
+Temporal watch example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent knowledge-ops.temporal-watch-agent \
+  --input catalog/projects/knowledge-ops/agents/temporal-watch-agent/examples/example-input.json \
+  --pretty
+```
+
 Test-case generator example:
 
 ```bash
@@ -310,6 +346,10 @@ Accepted `--agent` values:
 - `planner-executor.executor-agent` or `executor-agent`
 - `research-ops.retrieval-agent` or `retrieval-agent`
 - `research-ops.synthesis-agent` or `synthesis-agent`
+- `knowledge-ops.evidence-ranker-agent` or `evidence-ranker-agent`
+- `knowledge-ops.claim-trace-agent` or `claim-trace-agent`
+- `knowledge-ops.memory-curator-agent` or `memory-curator-agent`
+- `knowledge-ops.temporal-watch-agent` or `temporal-watch-agent`
 - `qa-ops.test-case-generator-agent` or `test-case-generator-agent`
 - `qa-ops.regression-triage-agent` or `regression-triage-agent`
 - `workflow-ops.router-agent` or `router-agent`
