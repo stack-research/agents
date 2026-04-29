@@ -140,6 +140,8 @@ Repository-level runtime and tests:
 - `observability-ops`
   - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
   - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
+- `agent-incident-drill`
+  - Scenario project that composes existing agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Update Rule
 

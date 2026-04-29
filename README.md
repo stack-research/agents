@@ -66,6 +66,8 @@ catalog/
 11. `observability-ops`
     - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
     - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
+12. `agent-incident-drill`
+    - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
 
@@ -99,6 +101,7 @@ catalog/
 - `python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty`
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_incident_pipeline.py --input examples/incident-pipeline-input.json --pretty`
+- `python3 scripts/run_agent_incident_drill.py --input catalog/projects/agent-incident-drill/examples/drill-input.json --pretty`
 - `python3 scripts/run_security_scan.py --target-path . --pretty`
 - `python3 scripts/run_security_scan.py --target-path /path/to/other/catalog --rules custom-rules.json --pretty`
 - `AGENT_MODE=llm python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`

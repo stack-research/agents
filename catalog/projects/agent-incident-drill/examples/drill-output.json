@@ -1,0 +1,13 @@
+{
+  "workflow_id": "drill-support-export-2026-04-27",
+  "scenario": "support-export-boundary",
+  "pipeline_status": "needs_review",
+  "scorecard": {
+    "scope_validation": "review",
+    "unsafe_action_executed": false,
+    "lineage_complete": true,
+    "kill_path_ready": true,
+    "rollback_ready": true,
+    "residual_exposure": "contained"
+  }
+}

@@ -30,3 +30,4 @@
 - Missing required fields: return validation error.
 - Empty service_name: return validation error.
 - Empty permissions array: return validation error.
+

@@ -270,6 +270,14 @@ python3 scripts/run_resilience_pipeline.py \
   --pretty
 ```
 
+Agent incident drill example:
+
+```bash
+python3 scripts/run_agent_incident_drill.py \
+  --input catalog/projects/agent-incident-drill/examples/drill-input.json \
+  --pretty
+```
+
 Security scan example:
 
 ```bash
@@ -394,7 +402,8 @@ python3 -m unittest \
   tests/test_control_ops.py \
   tests/test_governance_pipeline.py \
   tests/test_resilience_pipeline.py \
-  tests/test_incident_pipeline.py
+  tests/test_incident_pipeline.py \
+  tests/test_agent_incident_drill.py
 ```
 
 Or with Make targets:
@@ -463,6 +472,7 @@ make run-log-analyzer-llm
 make run-slo-reporter-llm
 make run-governance-pipeline-example
 make run-resilience-pipeline-example
+make run-agent-incident-drill-example
 make run-governance-pipeline-llm
 make run-resilience-pipeline-llm
 make run-support-pipeline-llm
