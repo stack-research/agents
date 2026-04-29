@@ -32,6 +32,20 @@ class WorkflowOpsLLMTests(unittest.TestCase):
             return False
 
     def test_workflow_ops_llm_flow(self) -> None:
+        dep_route = run_agent(
+            agent="dependency-router-agent",
+            payload={
+                "task": "Customers cannot login after release; route for immediate triage",
+                "available_agents": ["support-ops.triage-agent", "qa-ops.regression-triage-agent"],
+                "prerequisites": ["incident_ticket_created"],
+                "completed_prerequisites": ["incident_ticket_created"],
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIn(dep_route.get("ready"), {True, False})
+
         routed = run_agent(
             agent="router-agent",
             payload={
@@ -58,6 +72,20 @@ class WorkflowOpsLLMTests(unittest.TestCase):
         )
         self.assertTrue(checkpoint.get("recorded"))
         self.assertIn("checkpoint_id", checkpoint)
+
+        retry = run_agent(
+            agent="retry-policy-agent",
+            payload={
+                "stage_name": "target",
+                "failure_signal": "timeout contacting downstream agent",
+                "attempt_count": 1,
+                "max_attempts": 3,
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIn(retry.get("decision"), {"retry", "backoff", "escalate", "stop"})
 
 
 if __name__ == "__main__":

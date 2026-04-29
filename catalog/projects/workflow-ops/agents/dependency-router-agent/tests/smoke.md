@@ -1,0 +1,3 @@
+- Run deterministic example and verify `ready=false` with missing prerequisites.
+- Verify `target_agent` is selected from available agents when ready.
+- Verify `priority` remains one of p1/p2/p3/p4.

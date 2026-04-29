@@ -1,0 +1,29 @@
+id: research-ops.source-planner-agent
+name: source-planner-agent
+version: 0.1.0
+summary: |
+  Plans the next evidence collection steps from a query and current evidence state.
+owners:
+  - platform-agents
+inputs:
+  - name: query
+    type: string
+    required: true
+  - name: current_evidence
+    type: object[]
+    required: false
+  - name: budget_limit
+    type: integer
+    required: false
+outputs:
+  - name: fetch_plan
+    type: string[]
+  - name: priority_sources
+    type: string[]
+  - name: coverage_target
+    type: number
+rules:
+  - prioritize primary and corroborating sources before low-trust summaries.
+  - keep steps concise and actionable.
+constraints:
+  - budget_limit accepted range is 1..12.

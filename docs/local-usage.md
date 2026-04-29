@@ -79,6 +79,15 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Source planner example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent research-ops.source-planner-agent \
+  --input catalog/projects/research-ops/agents/source-planner-agent/examples/example-input.json \
+  --pretty
+```
+
 Retrieval example:
 
 ```bash
@@ -94,6 +103,15 @@ Synthesis example:
 python3 scripts/run_agent.py \
   --agent research-ops.synthesis-agent \
   --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json \
+  --pretty
+```
+
+Gap detector example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent research-ops.gap-detector-agent \
+  --input catalog/projects/research-ops/agents/gap-detector-agent/examples/example-input.json \
   --pretty
 ```
 
@@ -157,6 +175,24 @@ Router example:
 python3 scripts/run_agent.py \
   --agent workflow-ops.router-agent \
   --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json \
+  --pretty
+```
+
+Dependency router example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent workflow-ops.dependency-router-agent \
+  --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json \
+  --pretty
+```
+
+Retry policy example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent workflow-ops.retry-policy-agent \
+  --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json \
   --pretty
 ```
 
@@ -344,7 +380,9 @@ Accepted `--agent` values:
 - `support-ops.handoff-agent` or `handoff-agent`
 - `planner-executor.planner-agent` or `planner-agent`
 - `planner-executor.executor-agent` or `executor-agent`
+- `research-ops.source-planner-agent` or `source-planner-agent`
 - `research-ops.retrieval-agent` or `retrieval-agent`
+- `research-ops.gap-detector-agent` or `gap-detector-agent`
 - `research-ops.synthesis-agent` or `synthesis-agent`
 - `knowledge-ops.evidence-ranker-agent` or `evidence-ranker-agent`
 - `knowledge-ops.claim-trace-agent` or `claim-trace-agent`
@@ -353,6 +391,8 @@ Accepted `--agent` values:
 - `qa-ops.test-case-generator-agent` or `test-case-generator-agent`
 - `qa-ops.regression-triage-agent` or `regression-triage-agent`
 - `workflow-ops.router-agent` or `router-agent`
+- `workflow-ops.dependency-router-agent` or `dependency-router-agent`
+- `workflow-ops.retry-policy-agent` or `retry-policy-agent`
 - `workflow-ops.checkpoint-agent` or `checkpoint-agent`
 - `security-ops.agentic-security-scanner-agent` or `agentic-security-scanner-agent`
 - `control-ops.lineage-recorder-agent` or `lineage-recorder-agent`

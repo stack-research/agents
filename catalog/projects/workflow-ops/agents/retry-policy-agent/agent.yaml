@@ -1,0 +1,37 @@
+id: workflow-ops.retry-policy-agent
+name: retry-policy-agent
+version: 0.1.0
+summary: |
+  Decides retry, backoff, escalation, or stop actions for failed workflow stages.
+owners:
+  - platform-agents
+inputs:
+  - name: stage_name
+    type: string
+    required: true
+  - name: failure_signal
+    type: string
+    required: true
+  - name: attempt_count
+    type: integer
+    required: true
+  - name: max_attempts
+    type: integer
+    required: true
+  - name: latency_ms
+    type: integer
+    required: false
+outputs:
+  - name: decision
+    type: enum[retry,backoff,escalate,stop]
+  - name: backoff_ms
+    type: integer
+  - name: reason_code
+    type: string
+  - name: next_step
+    type: string
+rules:
+  - choose decision from retry, backoff, escalate, stop.
+  - escalate when max attempts are exhausted or risk is high.
+constraints:
+  - attempt_count and max_attempts must be positive integers.

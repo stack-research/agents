@@ -1,0 +1,15 @@
+[
+  {
+    "id": "dependency-router-missing",
+    "input": {
+      "task": "Route checkout incident",
+      "available_agents": ["support-ops.triage-agent"],
+      "prerequisites": ["incident_ticket_created", "oncall_notified"],
+      "completed_prerequisites": ["incident_ticket_created"]
+    },
+    "expected": {
+      "ready": false,
+      "missing_prerequisites_contains": "oncall_notified"
+    }
+  }
+]

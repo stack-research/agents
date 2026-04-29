@@ -1,0 +1,29 @@
+id: research-ops.gap-detector-agent
+name: gap-detector-agent
+version: 0.1.0
+summary: |
+  Detects unsupported assertions from evidence bundles and recommends next collection actions.
+owners:
+  - platform-agents
+inputs:
+  - name: assertions
+    type: string[]
+    required: true
+  - name: evidence_bundle
+    type: object[]
+    required: true
+  - name: required_confidence
+    type: number
+    required: false
+outputs:
+  - name: gaps
+    type: object[]
+  - name: risk_level
+    type: enum[low,medium,high]
+  - name: next_collection_actions
+    type: string[]
+rules:
+  - identify unsupported or weakly supported assertions.
+  - provide concrete data collection actions for each detected gap.
+constraints:
+  - required_confidence accepted range is 0..1.

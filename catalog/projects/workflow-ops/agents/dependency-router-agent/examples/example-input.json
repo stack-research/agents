@@ -1,0 +1,14 @@
+{
+  "task": "Route incident triage for login outage",
+  "available_agents": [
+    "support-ops.triage-agent",
+    "qa-ops.regression-triage-agent"
+  ],
+  "prerequisites": [
+    "incident_ticket_created",
+    "oncall_notified"
+  ],
+  "completed_prerequisites": [
+    "incident_ticket_created"
+  ]
+}

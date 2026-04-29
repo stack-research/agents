@@ -24,6 +24,9 @@ class WorkflowPipelineTests(unittest.TestCase):
         self.assertIn("route", out)
         self.assertIn("target_output", out)
         self.assertIn("checkpoint", out)
+        self.assertIn("stage_timing", out)
+        self.assertIn("failure_taxonomy", out)
+        self.assertEqual(out["failure_taxonomy"]["failure_class"], "none")
 
     def test_pipeline_degrades_on_invalid_task(self) -> None:
         out = run_pipeline(
@@ -38,6 +41,9 @@ class WorkflowPipelineTests(unittest.TestCase):
         )
         self.assertEqual(out.get("pipeline_status"), "degraded")
         self.assertEqual(out.get("failure_stage"), "router")
+        self.assertIn("stage_timing", out)
+        self.assertIn("failure_taxonomy", out)
+        self.assertIn(out["failure_taxonomy"]["failure_class"], {"validation_error", "unknown"})
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+{
+  "fetch_plan": [
+    "Collect deployment and dependency change logs for the failure window",
+    "Pull CI trend metrics grouped by test suite before and after update",
+    "Sample failing test traces and correlate with dependency symbols",
+    "Cross-check findings with rollback window behavior"
+  ],
+  "priority_sources": [
+    "ci-metrics",
+    "deployment-log",
+    "test-traces"
+  ],
+  "coverage_target": 0.8
+}

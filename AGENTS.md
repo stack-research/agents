@@ -71,8 +71,8 @@ Repository-level runtime and tests:
 - `tests/test_security_scanner.py` - security scanner unit tests.
 - `tests/test_planner_executor.py` - deterministic planner/executor behavior tests.
 - `tests/test_planner_executor_llm.py` - planner/executor checks in LLM mode.
-- `tests/test_research_ops.py` - deterministic retrieval/synthesis behavior tests.
-- `tests/test_research_ops_llm.py` - retrieval/synthesis checks in LLM mode.
+- `tests/test_research_ops.py` - deterministic source-planning/retrieval/gap-detection/synthesis behavior tests.
+- `tests/test_research_ops_llm.py` - research-ops chain checks in LLM mode.
 - `tests/test_knowledge_ops.py` - deterministic evidence/traceability/memory/temporal behavior tests.
 - `tests/test_knowledge_ops_llm.py` - knowledge-ops checks in LLM mode.
 - `tests/test_qa_ops.py` - deterministic test-case generation and regression-triage checks.
@@ -120,7 +120,9 @@ Repository-level runtime and tests:
   - `planner-agent`: generates bounded execution steps and a risk level from a goal.
   - `executor-agent`: reports execution status and summary from planned steps.
 - `research-ops`
+  - `source-planner-agent`: plans what evidence to fetch next from query and current evidence.
   - `retrieval-agent`: extracts bounded notes from a query and optional sources.
+  - `gap-detector-agent`: finds unsupported assertions and recommends targeted evidence collection.
   - `synthesis-agent`: turns research notes into audience-specific summary/actions.
 - `knowledge-ops`
   - `evidence-ranker-agent`: scores evidence quality for downstream decisions.
@@ -132,6 +134,8 @@ Repository-level runtime and tests:
   - `regression-triage-agent`: maps failures to probable cause, severity, and next actions.
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
+  - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.
+  - `retry-policy-agent`: decides retry, backoff, escalation, or stop on failed stages.
   - `checkpoint-agent`: records workflow progress with structured checkpoint summaries.
 - `control-ops`
   - `lineage-recorder-agent`: structures decision events into append-only lineage records.

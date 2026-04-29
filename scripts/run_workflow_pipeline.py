@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,6 +36,18 @@ def _default_target_payload(target_agent: str, task: object) -> dict[str, object
 
 
 def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, object]:
+    reason_lower = reason.lower()
+    failure_code = "unknown"
+    if "must be" in reason_lower or "validation" in reason_lower:
+        failure_code = "validation_error"
+    elif "missing prerequisite" in reason_lower:
+        failure_code = "dependency_missing"
+    elif "timeout" in reason_lower or "latency" in reason_lower:
+        failure_code = "timeout"
+    elif "policy" in reason_lower:
+        failure_code = "policy_block"
+    elif "unsupported routed target agent" in reason_lower:
+        failure_code = "upstream_failure"
     return {
         "route": {
             "target_agent": "workflow-ops.checkpoint-agent",
@@ -53,6 +66,12 @@ def _degraded_output(stage: str, reason: str, workflow_id: str) -> dict[str, obj
         "pipeline_status": "degraded",
         "failure_stage": stage,
         "failure_reason": reason,
+        "stage_timing": {},
+        "failure_taxonomy": {
+            "failure_class": failure_code,
+            "stage": stage,
+            "reason": reason,
+        },
     }
 
 
@@ -73,7 +92,9 @@ def run_pipeline(
         workflow_id = datetime.now(timezone.utc).strftime("wf-%Y%m%d-%H%M%S")
     if not isinstance(agent_payloads, dict):
         agent_payloads = {}
+    stage_timing: dict[str, int] = {}
 
+    stage_start = time.perf_counter()
     try:
         route = run_agent(
             agent="workflow-ops.router-agent",
@@ -84,6 +105,7 @@ def run_pipeline(
         )
     except ValidationError as exc:
         return _degraded_output("router", str(exc), workflow_id)
+    stage_timing["router_ms"] = int((time.perf_counter() - stage_start) * 1000)
 
     if store and run_id:
         save_stage(store, run_id, "router", route)
@@ -96,8 +118,11 @@ def run_pipeline(
         try:
             target_payload = _default_target_payload(target_agent, task)
         except ValidationError as exc:
-            return _degraded_output("route-resolution", str(exc), workflow_id)
+            out = _degraded_output("route-resolution", str(exc), workflow_id)
+            out["stage_timing"] = stage_timing
+            return out
 
+    stage_start = time.perf_counter()
     try:
         target_output = run_agent(
             agent=target_agent,
@@ -107,12 +132,17 @@ def run_pipeline(
             base_url=base_url,
         )
     except ValidationError as exc:
-        return _degraded_output("target", str(exc), workflow_id)
+        out = _degraded_output("target", str(exc), workflow_id)
+        stage_timing["target_ms"] = int((time.perf_counter() - stage_start) * 1000)
+        out["stage_timing"] = stage_timing
+        return out
+    stage_timing["target_ms"] = int((time.perf_counter() - stage_start) * 1000)
 
     if store and run_id:
         save_stage(store, run_id, "target", target_output)
 
     checkpoint_notes = f"Routed to {target_agent} with priority {route['priority']}"
+    stage_start = time.perf_counter()
     try:
         checkpoint = run_agent(
             agent="workflow-ops.checkpoint-agent",
@@ -130,7 +160,10 @@ def run_pipeline(
         out = _degraded_output("checkpoint", str(exc), workflow_id)
         out["route"] = route
         out["target_output"] = target_output
+        stage_timing["checkpoint_ms"] = int((time.perf_counter() - stage_start) * 1000)
+        out["stage_timing"] = stage_timing
         return out
+    stage_timing["checkpoint_ms"] = int((time.perf_counter() - stage_start) * 1000)
 
     if store and run_id:
         save_stage(store, run_id, "checkpoint", checkpoint)
@@ -141,6 +174,12 @@ def run_pipeline(
         "target_output": target_output,
         "checkpoint": checkpoint,
         "pipeline_status": "ok",
+        "stage_timing": stage_timing,
+        "failure_taxonomy": {
+            "failure_class": "none",
+            "stage": "",
+            "reason": "",
+        },
     }
     if store and run_id:
         save_result(store, run_id, result)

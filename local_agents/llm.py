@@ -538,6 +538,131 @@ Input:
     return {"notes": safe_notes, "confidence": round(float(confidence), 2)}
 
 
+def _normalize_evidence_contract_llm(evidence_items: list[Any]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for idx, item in enumerate(evidence_items, start=1):
+        if isinstance(item, dict):
+            content = sanitize_untrusted_text(str(item.get("content", "")).strip())
+            if not content:
+                continue
+            source_kind = sanitize_untrusted_text(str(item.get("source_kind", "note")).lower())
+            score_value = item.get("score", item.get("confidence", 0.5))
+            if not isinstance(score_value, (int, float)):
+                score_value = 0.5
+            normalized.append(
+                {
+                    "evidence_id": sanitize_untrusted_text(str(item.get("evidence_id", f"ev-{idx}"))),
+                    "source_kind": source_kind,
+                    "content": " ".join(content.split()[:24]),
+                    "score": round(max(0.0, min(1.0, float(score_value))), 2),
+                }
+            )
+        elif isinstance(item, str) and item.strip():
+            normalized.append(
+                {
+                    "evidence_id": f"ev-{idx}",
+                    "source_kind": "note",
+                    "content": " ".join(sanitize_untrusted_text(item.strip()).split()[:24]),
+                    "score": 0.5,
+                }
+            )
+    return normalized
+
+
+def run_source_planner_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    query = require(payload, "query")
+    current_evidence = payload.get("current_evidence", [])
+    budget_limit = payload.get("budget_limit", 4)
+
+    if not isinstance(query, str) or not query.strip():
+        raise ValidationError("query must be a non-empty string")
+    if current_evidence is None:
+        current_evidence = []
+    if not isinstance(current_evidence, list):
+        raise ValidationError("current_evidence must be an array when provided")
+    if not isinstance(budget_limit, int) or not (1 <= budget_limit <= 12):
+        raise ValidationError("budget_limit must be an integer between 1 and 12")
+
+    normalized_evidence = _normalize_evidence_contract_llm(current_evidence)
+    prompt = f"""
+You are source-planner-agent.
+Return only JSON with keys fetch_plan, priority_sources, coverage_target.
+Rules:
+- fetch_plan must be 1..budget_limit concise strings.
+- priority_sources must be 1..3 concise strings.
+- coverage_target must be numeric in [0,1].
+Input:
+{{"query":{json.dumps(query)},"current_evidence":{json.dumps(normalized_evidence)},"budget_limit":{budget_limit}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    fetch_plan = out.get("fetch_plan")
+    priority_sources = out.get("priority_sources")
+    coverage_target = out.get("coverage_target")
+    if not isinstance(fetch_plan, list) or not (1 <= len(fetch_plan) <= budget_limit):
+        raise ValidationError("LLM output fetch_plan must contain 1..budget_limit items")
+    if not isinstance(priority_sources, list) or not (1 <= len(priority_sources) <= 3):
+        raise ValidationError("LLM output priority_sources must contain 1..3 items")
+    if not isinstance(coverage_target, (int, float)) or not (0 <= float(coverage_target) <= 1):
+        raise ValidationError("LLM output coverage_target must be numeric in [0,1]")
+    safe_plan = [sanitize_untrusted_text(" ".join(str(item).split()[:16])) for item in fetch_plan]
+    safe_sources = [sanitize_untrusted_text(" ".join(str(item).split()[:4])) for item in priority_sources]
+    return {"fetch_plan": safe_plan, "priority_sources": safe_sources, "coverage_target": round(float(coverage_target), 2)}
+
+
+def run_gap_detector_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_bundle = require(payload, "evidence_bundle")
+    required_confidence = payload.get("required_confidence", 0.7)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_bundle, list) or not evidence_bundle:
+        raise ValidationError("evidence_bundle must be a non-empty array")
+    if not isinstance(required_confidence, (int, float)) or not (0 <= float(required_confidence) <= 1):
+        raise ValidationError("required_confidence must be numeric in [0,1]")
+
+    normalized_evidence = _normalize_evidence_contract_llm(evidence_bundle)
+    prompt = f"""
+You are gap-detector-agent.
+Return only JSON with keys gaps, risk_level, next_collection_actions.
+Rules:
+- gaps must be an array of objects with assertion, support_status, confidence, missing_evidence.
+- risk_level must be one of low, medium, high.
+- next_collection_actions must be an array of 0..3 concise strings.
+Input:
+{{"assertions":{json.dumps(assertions)},"evidence_bundle":{json.dumps(normalized_evidence)},"required_confidence":{float(required_confidence)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    gaps = out.get("gaps")
+    risk_level = out.get("risk_level")
+    actions = out.get("next_collection_actions")
+    if not isinstance(gaps, list):
+        raise ValidationError("LLM output gaps must be an array")
+    if risk_level not in {"low", "medium", "high"}:
+        raise ValidationError("LLM output risk_level must be low|medium|high")
+    if not isinstance(actions, list) or len(actions) > 3:
+        raise ValidationError("LLM output next_collection_actions must contain 0..3 items")
+    safe_gaps = []
+    for item in gaps[:10]:
+        if not isinstance(item, dict):
+            continue
+        confidence = item.get("confidence", 0.0)
+        if not isinstance(confidence, (int, float)):
+            confidence = 0.0
+        safe_gaps.append(
+            {
+                "assertion": sanitize_untrusted_text(" ".join(str(item.get("assertion", "")).split()[:20])),
+                "support_status": sanitize_untrusted_text(str(item.get("support_status", "gap"))),
+                "confidence": round(max(0.0, min(1.0, float(confidence))), 2),
+                "missing_evidence": sanitize_untrusted_text(" ".join(str(item.get("missing_evidence", "")).split()[:16])),
+            }
+        )
+    safe_actions = [sanitize_untrusted_text(" ".join(str(item).split()[:16])) for item in actions]
+    return {"gaps": safe_gaps, "risk_level": risk_level, "next_collection_actions": safe_actions}
+
+
 def run_synthesis_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     notes = require(payload, "notes")
     audience = payload.get("audience", "engineering")
@@ -912,6 +1037,125 @@ Input:
         safe_target = available_agents[0]
         safe_rationale = "Preferred route unavailable; selected first available agent."
     return {"target_agent": safe_target, "priority": priority, "rationale": safe_rationale}
+
+
+def run_dependency_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    task = require(payload, "task")
+    available_agents = payload.get("available_agents", [])
+    prerequisites = payload.get("prerequisites", [])
+    completed_prerequisites = payload.get("completed_prerequisites", [])
+
+    if not isinstance(task, str) or not task.strip():
+        raise ValidationError("task must be a non-empty string")
+    if available_agents is None:
+        available_agents = []
+    if prerequisites is None:
+        prerequisites = []
+    if completed_prerequisites is None:
+        completed_prerequisites = []
+    if not isinstance(available_agents, list) or not all(isinstance(item, str) for item in available_agents):
+        raise ValidationError("available_agents must be an array of strings")
+    if not isinstance(prerequisites, list) or not all(isinstance(item, str) for item in prerequisites):
+        raise ValidationError("prerequisites must be an array of strings")
+    if not isinstance(completed_prerequisites, list) or not all(isinstance(item, str) for item in completed_prerequisites):
+        raise ValidationError("completed_prerequisites must be an array of strings")
+
+    prompt = f"""
+You are dependency-router-agent.
+Return only JSON with keys target_agent, ready, missing_prerequisites, priority, rationale.
+Rules:
+- ready must be boolean.
+- missing_prerequisites must be string array.
+- priority must be one of p1,p2,p3,p4.
+- rationale under 24 words.
+Input:
+{{"task":{json.dumps(task)},"available_agents":{json.dumps(available_agents)},"prerequisites":{json.dumps(prerequisites)},"completed_prerequisites":{json.dumps(completed_prerequisites)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    target_agent = out.get("target_agent")
+    ready = out.get("ready")
+    missing = out.get("missing_prerequisites")
+    priority = out.get("priority")
+    rationale = out.get("rationale")
+
+    if not isinstance(target_agent, str) or not target_agent.strip():
+        raise ValidationError("LLM output target_agent must be a non-empty string")
+    if not isinstance(ready, bool):
+        raise ValidationError("LLM output ready must be a boolean")
+    if not isinstance(missing, list) or not all(isinstance(item, str) for item in missing):
+        raise ValidationError("LLM output missing_prerequisites must be an array of strings")
+    if priority not in {"p1", "p2", "p3", "p4"}:
+        raise ValidationError("LLM output priority must be one of p1,p2,p3,p4")
+    if not isinstance(rationale, str) or not rationale.strip():
+        raise ValidationError("LLM output rationale must be a non-empty string")
+
+    safe_target = sanitize_untrusted_text(" ".join(target_agent.strip().split()[:6]))
+    safe_rationale = sanitize_untrusted_text(" ".join(rationale.strip().split()[:24]))
+    safe_missing = [sanitize_untrusted_text(" ".join(item.strip().split()[:4])) for item in missing if item.strip()]
+    if available_agents and ready and safe_target not in available_agents:
+        safe_target = available_agents[0]
+        safe_rationale = "Preferred route unavailable; selected first available agent."
+    if not ready:
+        safe_target = "workflow-ops.checkpoint-agent"
+    return {
+        "target_agent": safe_target,
+        "ready": ready,
+        "missing_prerequisites": safe_missing[:6],
+        "priority": priority,
+        "rationale": safe_rationale,
+    }
+
+
+def run_retry_policy_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    stage_name = require(payload, "stage_name")
+    failure_signal = require(payload, "failure_signal")
+    attempt_count = require(payload, "attempt_count")
+    max_attempts = require(payload, "max_attempts")
+    latency_ms = payload.get("latency_ms", 0)
+
+    if not isinstance(stage_name, str) or not stage_name.strip():
+        raise ValidationError("stage_name must be a non-empty string")
+    if not isinstance(failure_signal, str) or not failure_signal.strip():
+        raise ValidationError("failure_signal must be a non-empty string")
+    if not isinstance(attempt_count, int) or attempt_count < 1:
+        raise ValidationError("attempt_count must be a positive integer")
+    if not isinstance(max_attempts, int) or max_attempts < 1:
+        raise ValidationError("max_attempts must be a positive integer")
+    if not isinstance(latency_ms, (int, float)) or latency_ms < 0:
+        raise ValidationError("latency_ms must be a non-negative number when provided")
+
+    prompt = f"""
+You are retry-policy-agent.
+Return only JSON with keys decision, backoff_ms, reason_code, next_step.
+Rules:
+- decision must be one of retry,backoff,escalate,stop.
+- backoff_ms must be non-negative integer.
+- reason_code must be short snake_case string.
+- next_step under 18 words.
+Input:
+{{"stage_name":{json.dumps(stage_name)},"failure_signal":{json.dumps(failure_signal)},"attempt_count":{attempt_count},"max_attempts":{max_attempts},"latency_ms":{int(latency_ms)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    decision = out.get("decision")
+    backoff_ms = out.get("backoff_ms")
+    reason_code = out.get("reason_code")
+    next_step = out.get("next_step")
+    if decision not in {"retry", "backoff", "escalate", "stop"}:
+        raise ValidationError("LLM output decision must be retry|backoff|escalate|stop")
+    if not isinstance(backoff_ms, int) or backoff_ms < 0:
+        raise ValidationError("LLM output backoff_ms must be a non-negative integer")
+    if not isinstance(reason_code, str) or not reason_code.strip():
+        raise ValidationError("LLM output reason_code must be a non-empty string")
+    if not isinstance(next_step, str) or not next_step.strip():
+        raise ValidationError("LLM output next_step must be a non-empty string")
+    return {
+        "decision": decision,
+        "backoff_ms": backoff_ms,
+        "reason_code": sanitize_untrusted_text(" ".join(reason_code.strip().split()[:4])),
+        "next_step": sanitize_untrusted_text(" ".join(next_step.strip().split()[:18])),
+    }
 
 
 def run_lineage_recorder_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:

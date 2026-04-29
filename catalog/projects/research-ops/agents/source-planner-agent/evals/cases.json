@@ -1,0 +1,14 @@
+[
+  {
+    "id": "source-planner-basic",
+    "input": {
+      "query": "Investigate post-release error spike",
+      "current_evidence": [],
+      "budget_limit": 3
+    },
+    "expected": {
+      "coverage_target_min": 0.6,
+      "min_fetch_plan_items": 2
+    }
+  }
+]

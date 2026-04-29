@@ -1,0 +1,9 @@
+{
+  "target_agent": "workflow-ops.checkpoint-agent",
+  "ready": false,
+  "missing_prerequisites": [
+    "oncall_notified"
+  ],
+  "priority": "p2",
+  "rationale": "Missing prerequisites block target routing until dependencies are complete"
+}

@@ -1,0 +1,15 @@
+{
+  "gaps": [
+    {
+      "assertion": "Dependency update caused flaky tests",
+      "support_status": "gap",
+      "confidence": 0.48,
+      "missing_evidence": "Needs corroborated test-trace evidence"
+    }
+  ],
+  "risk_level": "medium",
+  "next_collection_actions": [
+    "Collect failure traces tied to dependency symbols",
+    "Compare flaky test frequency before and after dependency update"
+  ]
+}

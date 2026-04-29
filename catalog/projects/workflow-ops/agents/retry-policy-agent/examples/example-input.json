@@ -1,0 +1,7 @@
+{
+  "stage_name": "target",
+  "failure_signal": "timeout while calling downstream agent",
+  "attempt_count": 1,
+  "max_attempts": 3,
+  "latency_ms": 3200
+}

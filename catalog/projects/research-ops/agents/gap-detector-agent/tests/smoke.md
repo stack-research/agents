@@ -1,0 +1,3 @@
+- Run deterministic example and verify `gaps` is emitted when evidence is weak.
+- Verify `risk_level` is one of low/medium/high.
+- Verify `next_collection_actions` is non-empty when gaps exist.

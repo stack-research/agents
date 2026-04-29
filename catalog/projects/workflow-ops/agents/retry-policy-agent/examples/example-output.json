@@ -1,0 +1,6 @@
+{
+  "decision": "backoff",
+  "backoff_ms": 2000,
+  "reason_code": "retryable_timeout",
+  "next_step": "Retry stage after backoff and monitor latency trend"
+}

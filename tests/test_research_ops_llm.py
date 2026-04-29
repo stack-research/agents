@@ -31,7 +31,20 @@ class ResearchOpsLLMTests(unittest.TestCase):
         except urllib.error.URLError:
             return False
 
-    def test_retrieval_and_synthesis_llm(self) -> None:
+    def test_research_ops_chain_llm(self) -> None:
+        planner = run_agent(
+            agent="research-ops.source-planner-agent",
+            payload={
+                "query": "Summarize evidence collection for CI instability",
+                "current_evidence": [{"content": "Pass rate dropped after dependency update", "source_kind": "measurement"}],
+                "budget_limit": 3,
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertGreaterEqual(len(planner.get("fetch_plan", [])), 1)
+
         retrieval = run_agent(
             agent="retrieval-agent",
             payload={
@@ -60,6 +73,19 @@ class ResearchOpsLLMTests(unittest.TestCase):
         self.assertIn("headline", synthesis)
         self.assertIn("summary", synthesis)
         self.assertTrue(2 <= len(synthesis.get("next_actions", [])) <= 4)
+
+        gaps = run_agent(
+            agent="gap-detector-agent",
+            payload={
+                "assertions": ["Dependency update introduced flaky tests"],
+                "evidence_bundle": [{"content": "Anecdotal flaky behavior report", "source_kind": "note", "score": 0.45}],
+                "required_confidence": 0.7,
+            },
+            mode="llm",
+            model=self.model,
+            base_url=self.base_url,
+        )
+        self.assertIn(gaps.get("risk_level"), {"low", "medium", "high"})
 
 
 if __name__ == "__main__":

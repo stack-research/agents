@@ -1,0 +1,12 @@
+{
+  "query": "Assess whether recent CI instability is caused by dependency upgrades",
+  "current_evidence": [
+    {
+      "evidence_id": "ev-1",
+      "source_kind": "measurement",
+      "content": "Pass rate dropped after dependency update",
+      "score": 0.82
+    }
+  ],
+  "budget_limit": 4
+}

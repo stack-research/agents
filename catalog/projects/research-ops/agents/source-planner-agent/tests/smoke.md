@@ -1,0 +1,3 @@
+- Run deterministic example and verify fetch plan length respects `budget_limit`.
+- Verify `priority_sources` contains at least one source.
+- Verify `coverage_target` is numeric and in range 0..1.

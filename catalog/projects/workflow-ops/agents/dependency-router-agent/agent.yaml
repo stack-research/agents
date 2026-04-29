@@ -1,0 +1,36 @@
+id: workflow-ops.dependency-router-agent
+name: dependency-router-agent
+version: 0.1.0
+summary: |
+  Routes tasks only when prerequisites are satisfied and reports missing dependencies.
+owners:
+  - platform-agents
+inputs:
+  - name: task
+    type: string
+    required: true
+  - name: available_agents
+    type: array[string]
+    required: false
+  - name: prerequisites
+    type: string[]
+    required: false
+  - name: completed_prerequisites
+    type: string[]
+    required: false
+outputs:
+  - name: target_agent
+    type: string
+  - name: ready
+    type: boolean
+  - name: missing_prerequisites
+    type: string[]
+  - name: priority
+    type: enum[p1,p2,p3,p4]
+  - name: rationale
+    type: string
+rules:
+  - route only when dependency prerequisites are satisfied.
+  - report missing prerequisites explicitly when not ready.
+constraints:
+  - rationale under 24 words.

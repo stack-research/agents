@@ -1,0 +1,16 @@
+[
+  {
+    "id": "retry-policy-timeout",
+    "input": {
+      "stage_name": "target",
+      "failure_signal": "timeout contacting routed agent",
+      "attempt_count": 1,
+      "max_attempts": 3,
+      "latency_ms": 3000
+    },
+    "expected": {
+      "decision_in": ["retry", "backoff"],
+      "reason_code_contains": "timeout"
+    }
+  }
+]

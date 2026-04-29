@@ -49,6 +49,8 @@ class WorkflowPipelineLLMTests(unittest.TestCase):
         self.assertIn("route", out)
         self.assertIn("target_output", out)
         self.assertIn("checkpoint", out)
+        self.assertIn("stage_timing", out)
+        self.assertIn("failure_taxonomy", out)
 
 
 if __name__ == "__main__":

@@ -44,7 +44,9 @@ catalog/
    - `planner-agent`: converts a goal and constraints into a bounded execution plan.
    - `executor-agent`: summarizes progress and completion state from plan steps.
 5. `research-ops`
+   - `source-planner-agent`: plans what evidence to collect next from a research question.
    - `retrieval-agent`: extracts bounded notes from query + source hints.
+   - `gap-detector-agent`: detects unsupported assertions and collection gaps.
    - `synthesis-agent`: converts notes into audience-aware summary and actions.
 6. `knowledge-ops`
    - `evidence-ranker-agent`: scores and ranks candidate evidence for downstream use.
@@ -56,6 +58,8 @@ catalog/
    - `regression-triage-agent`: classifies regression cause/severity and proposes follow-up actions.
 8. `workflow-ops`
    - `router-agent`: routes work items to the best-fit agent with a priority.
+   - `dependency-router-agent`: routes work only when prerequisites are satisfied.
+   - `retry-policy-agent`: decides retry/backoff/escalation policy for failed stages.
    - `checkpoint-agent`: records workflow stage/status checkpoints for traceability.
 9. `control-ops`
    - `lineage-recorder-agent`: structures decision events into append-only lineage records.
@@ -85,7 +89,9 @@ catalog/
 - `python3 scripts/run_support_pipeline.py --input catalog/projects/support-ops/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.planner-agent --input catalog/projects/planner-executor/agents/planner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent planner-executor.executor-agent --input catalog/projects/planner-executor/agents/executor-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent research-ops.source-planner-agent --input catalog/projects/research-ops/agents/source-planner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.retrieval-agent --input catalog/projects/research-ops/agents/retrieval-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent research-ops.gap-detector-agent --input catalog/projects/research-ops/agents/gap-detector-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent research-ops.synthesis-agent --input catalog/projects/research-ops/agents/synthesis-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent knowledge-ops.evidence-ranker-agent --input catalog/projects/knowledge-ops/agents/evidence-ranker-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent knowledge-ops.claim-trace-agent --input catalog/projects/knowledge-ops/agents/claim-trace-agent/examples/example-input.json --pretty`
@@ -94,6 +100,8 @@ catalog/
 - `python3 scripts/run_agent.py --agent qa-ops.test-case-generator-agent --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.checkpoint-agent --input catalog/projects/workflow-ops/agents/checkpoint-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_planner_executor_pipeline.py --input catalog/projects/planner-executor/examples/pipeline-input.json --pretty`
 - `python3 scripts/run_workflow_pipeline.py --input catalog/projects/workflow-ops/examples/pipeline-input.json --pretty`

@@ -1,0 +1,21 @@
+{
+  "assertions": [
+    "Dependency update caused flaky tests",
+    "Rollback restored CI stability"
+  ],
+  "evidence_bundle": [
+    {
+      "evidence_id": "ev-1",
+      "source_kind": "measurement",
+      "content": "Pass rate recovered after rollback",
+      "score": 0.84
+    },
+    {
+      "evidence_id": "ev-2",
+      "source_kind": "note",
+      "content": "Anecdotal report mentions flaky behavior",
+      "score": 0.48
+    }
+  ],
+  "required_confidence": 0.7
+}

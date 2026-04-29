@@ -1,0 +1,3 @@
+- Run deterministic example and verify decision is in retry/backoff/escalate/stop.
+- Verify backoff is non-negative and bounded.
+- Verify exhausted attempts produce escalate or stop.

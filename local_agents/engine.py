@@ -509,6 +509,136 @@ def run_retrieval_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return {"notes": clipped, "confidence": round(confidence, 2)}
 
 
+def _normalize_evidence_contract(evidence_items: list[Any]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for idx, item in enumerate(evidence_items, start=1):
+        if isinstance(item, dict):
+            content = sanitize_untrusted_text(str(item.get("content", "")).strip())
+            if not content:
+                continue
+            source_kind = sanitize_untrusted_text(str(item.get("source_kind", "note")).lower())
+            score_value = item.get("score", item.get("confidence", 0.5))
+            if not isinstance(score_value, (int, float)):
+                score_value = 0.5
+            normalized.append(
+                {
+                    "evidence_id": sanitize_untrusted_text(str(item.get("evidence_id", f"ev-{idx}"))),
+                    "source_kind": source_kind,
+                    "content": " ".join(content.split()[:24]),
+                    "score": round(max(0.0, min(1.0, float(score_value))), 2),
+                }
+            )
+        elif isinstance(item, str) and item.strip():
+            normalized.append(
+                {
+                    "evidence_id": f"ev-{idx}",
+                    "source_kind": "note",
+                    "content": " ".join(sanitize_untrusted_text(item.strip()).split()[:24]),
+                    "score": 0.5,
+                }
+            )
+    return normalized
+
+
+def run_source_planner_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    query = require(payload, "query")
+    current_evidence = payload.get("current_evidence", [])
+    budget_limit = payload.get("budget_limit", 4)
+
+    if not isinstance(query, str) or not query.strip():
+        raise ValidationError("query must be a non-empty string")
+    if current_evidence is None:
+        current_evidence = []
+    if not isinstance(current_evidence, list):
+        raise ValidationError("current_evidence must be an array when provided")
+    if not isinstance(budget_limit, int) or not (1 <= budget_limit <= 12):
+        raise ValidationError("budget_limit must be an integer between 1 and 12")
+
+    normalized = _normalize_evidence_contract(current_evidence)
+    source_kinds = {item["source_kind"] for item in normalized}
+    missing_primary = "measurement" not in source_kinds and "log" not in source_kinds
+    missing_corroboration = len(normalized) < 2
+
+    safe_query = " ".join(sanitize_untrusted_text(query.strip()).split()[:20])
+    steps = [f"Clarify evidence goal for query: {safe_query}"]
+    if missing_primary:
+        steps.append("Collect primary telemetry or logs for the target window")
+    if missing_corroboration:
+        steps.append("Gather independent corroborating source for key assertion")
+    steps.extend(
+        [
+            "Extract structured evidence objects with confidence scores",
+            "Validate evidence consistency across source types",
+            "Escalate unresolved gaps to targeted follow-up collection",
+        ]
+    )
+    plan = [" ".join(step.split()[:16]) for step in steps[:budget_limit]]
+
+    priorities = ["measurement", "log", "code", "policy", "report"]
+    priority_sources = [item for item in priorities if item not in source_kinds][:3]
+    if not priority_sources:
+        priority_sources = ["measurement", "log"]
+
+    coverage_target = 0.8 if missing_primary or missing_corroboration else 0.9
+    return {
+        "fetch_plan": plan,
+        "priority_sources": priority_sources,
+        "coverage_target": round(coverage_target, 2),
+    }
+
+
+def run_gap_detector_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    assertions = require(payload, "assertions")
+    evidence_bundle = require(payload, "evidence_bundle")
+    required_confidence = payload.get("required_confidence", 0.7)
+
+    if not isinstance(assertions, list) or not assertions or not all(isinstance(item, str) for item in assertions):
+        raise ValidationError("assertions must be a non-empty string array")
+    if not isinstance(evidence_bundle, list) or not evidence_bundle:
+        raise ValidationError("evidence_bundle must be a non-empty array")
+    if not isinstance(required_confidence, (int, float)) or not (0 <= float(required_confidence) <= 1):
+        raise ValidationError("required_confidence must be numeric in [0,1]")
+
+    normalized = _normalize_evidence_contract(evidence_bundle)
+    if not normalized:
+        raise ValidationError("evidence_bundle did not contain valid evidence items")
+    top_score = max(item["score"] for item in normalized)
+
+    gaps = []
+    for assertion in assertions:
+        safe_assertion = " ".join(sanitize_untrusted_text(assertion).split()[:20])
+        if top_score < float(required_confidence):
+            gaps.append(
+                {
+                    "assertion": safe_assertion,
+                    "support_status": "gap",
+                    "confidence": round(top_score, 2),
+                    "missing_evidence": "Need stronger corroborated evidence for this assertion",
+                }
+            )
+
+    gap_ratio = len(gaps) / len(assertions)
+    if gap_ratio == 0:
+        risk_level = "low"
+    elif gap_ratio < 0.5:
+        risk_level = "medium"
+    else:
+        risk_level = "high"
+
+    actions = []
+    if gaps:
+        actions = [
+            "Collect primary telemetry tied to the weakest assertions",
+            "Add at least one independent corroborating source per gap",
+            "Re-score evidence bundle after data collection",
+        ]
+    return {
+        "gaps": gaps,
+        "risk_level": risk_level,
+        "next_collection_actions": actions,
+    }
+
+
 def run_synthesis_agent(payload: dict[str, Any]) -> dict[str, Any]:
     notes = require(payload, "notes")
     audience = payload.get("audience", "engineering")
@@ -814,6 +944,12 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["research", "summarize", "findings", "source"]):
         target_agent = "research-ops.retrieval-agent"
         rationale = "Research intent detected; route to retrieval."
+    elif any(token in lowered for token in ["source plan", "plan sources", "collection plan"]):
+        target_agent = "research-ops.source-planner-agent"
+        rationale = "Research source planning intent detected; route to source planner."
+    elif any(token in lowered for token in ["evidence gap", "missing proof", "support gap"]):
+        target_agent = "research-ops.gap-detector-agent"
+        rationale = "Evidence gap intent detected; route to gap detector."
     elif any(token in lowered for token in ["evidence rank", "evidence quality", "source quality"]):
         target_agent = "knowledge-ops.evidence-ranker-agent"
         rationale = "Evidence ranking intent detected; route to evidence ranker."
@@ -873,6 +1009,100 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
         "target_agent": target_agent,
         "priority": priority,
         "rationale": " ".join(rationale.split()[:24]),
+    }
+
+
+def run_dependency_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    task = require(payload, "task")
+    available_agents = payload.get("available_agents", [])
+    prerequisites = payload.get("prerequisites", [])
+    completed_prerequisites = payload.get("completed_prerequisites", [])
+
+    if not isinstance(task, str) or not task.strip():
+        raise ValidationError("task must be a non-empty string")
+    if available_agents is None:
+        available_agents = []
+    if prerequisites is None:
+        prerequisites = []
+    if completed_prerequisites is None:
+        completed_prerequisites = []
+    if not isinstance(available_agents, list) or not all(isinstance(item, str) for item in available_agents):
+        raise ValidationError("available_agents must be an array of strings")
+    if not isinstance(prerequisites, list) or not all(isinstance(item, str) for item in prerequisites):
+        raise ValidationError("prerequisites must be an array of strings")
+    if not isinstance(completed_prerequisites, list) or not all(isinstance(item, str) for item in completed_prerequisites):
+        raise ValidationError("completed_prerequisites must be an array of strings")
+
+    required = [sanitize_untrusted_text(item.strip()) for item in prerequisites if item.strip()]
+    completed = {sanitize_untrusted_text(item.strip()) for item in completed_prerequisites if item.strip()}
+    missing = [item for item in required if item not in completed]
+    route = run_router_agent({"task": task, "available_agents": available_agents})
+
+    if missing:
+        return {
+            "target_agent": "workflow-ops.checkpoint-agent",
+            "ready": False,
+            "missing_prerequisites": missing[:6],
+            "priority": route["priority"],
+            "rationale": "Missing prerequisites block target routing until dependencies are complete",
+        }
+
+    return {
+        "target_agent": route["target_agent"],
+        "ready": True,
+        "missing_prerequisites": [],
+        "priority": route["priority"],
+        "rationale": route["rationale"],
+    }
+
+
+def run_retry_policy_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    stage_name = require(payload, "stage_name")
+    failure_signal = require(payload, "failure_signal")
+    attempt_count = require(payload, "attempt_count")
+    max_attempts = require(payload, "max_attempts")
+    latency_ms = payload.get("latency_ms", 0)
+
+    if not isinstance(stage_name, str) or not stage_name.strip():
+        raise ValidationError("stage_name must be a non-empty string")
+    if not isinstance(failure_signal, str) or not failure_signal.strip():
+        raise ValidationError("failure_signal must be a non-empty string")
+    if not isinstance(attempt_count, int) or attempt_count < 1:
+        raise ValidationError("attempt_count must be a positive integer")
+    if not isinstance(max_attempts, int) or max_attempts < 1:
+        raise ValidationError("max_attempts must be a positive integer")
+    if not isinstance(latency_ms, (int, float)) or latency_ms < 0:
+        raise ValidationError("latency_ms must be a non-negative number when provided")
+
+    safe_signal = sanitize_untrusted_text(failure_signal.strip()).lower()
+    timeout_like = any(token in safe_signal for token in ["timeout", "latency", "temporarily unavailable"])
+    blocked_like = any(token in safe_signal for token in ["unauthorized", "forbidden", "policy", "invalid"])
+    attempts_exhausted = attempt_count >= max_attempts
+
+    decision = "retry"
+    reason_code = "retryable_failure"
+    backoff_ms = 0
+    next_step = "Retry stage and capture fresh telemetry"
+
+    if blocked_like:
+        decision = "stop"
+        reason_code = "non_retryable_failure"
+        next_step = "Stop automated retries and request manual intervention"
+    elif attempts_exhausted:
+        decision = "escalate"
+        reason_code = "attempts_exhausted"
+        next_step = "Escalate to on-call owner with failure context"
+    elif timeout_like or float(latency_ms) > 2000:
+        decision = "backoff"
+        reason_code = "retryable_timeout"
+        backoff_ms = min(15000, 1000 * (2 ** max(0, attempt_count - 1)))
+        next_step = "Retry after backoff and monitor latency trend"
+
+    return {
+        "decision": decision,
+        "backoff_ms": int(backoff_ms),
+        "reason_code": reason_code,
+        "next_step": " ".join(next_step.split()[:18]),
     }
 
 
@@ -1347,10 +1577,14 @@ def run_agent(
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
+            run_dependency_router_agent_llm,
             run_claim_trace_agent_llm,
             run_evidence_ranker_agent_llm,
             run_handoff_agent_llm,
+            run_gap_detector_agent_llm,
             run_memory_curator_agent_llm,
+            run_retry_policy_agent_llm,
+            run_source_planner_agent_llm,
             run_schema_drift_detector_agent_llm,
             run_scope_validator_agent_llm,
             run_slo_reporter_agent_llm,
@@ -1429,6 +1663,20 @@ def run_agent(
             return run_retrieval_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
+    if canonical in {"source-planner-agent", "research-ops.source-planner-agent"}:
+        if selected_mode == "deterministic":
+            return run_source_planner_agent(payload)
+        if selected_mode == "llm":
+            return run_source_planner_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"gap-detector-agent", "research-ops.gap-detector-agent"}:
+        if selected_mode == "deterministic":
+            return run_gap_detector_agent(payload)
+        if selected_mode == "llm":
+            return run_gap_detector_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
     if canonical in {"synthesis-agent", "research-ops.synthesis-agent"}:
         if selected_mode == "deterministic":
             return run_synthesis_agent(payload)
@@ -1483,6 +1731,20 @@ def run_agent(
             return run_router_agent(payload)
         if selected_mode == "llm":
             return run_router_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"dependency-router-agent", "workflow-ops.dependency-router-agent"}:
+        if selected_mode == "deterministic":
+            return run_dependency_router_agent(payload)
+        if selected_mode == "llm":
+            return run_dependency_router_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"retry-policy-agent", "workflow-ops.retry-policy-agent"}:
+        if selected_mode == "deterministic":
+            return run_retry_policy_agent(payload)
+        if selected_mode == "llm":
+            return run_retry_policy_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"checkpoint-agent", "workflow-ops.checkpoint-agent"}:
