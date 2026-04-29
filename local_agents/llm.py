@@ -1478,6 +1478,115 @@ Input:
     return {"patterns": safe_patterns, "anomalies": safe_anomalies, "severity": severity}
 
 
+def run_change_correlation_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    incident_signals = require(payload, "incident_signals")
+    deploy_events = payload.get("deploy_events", [])
+    config_events = payload.get("config_events", [])
+    window_minutes = payload.get("window_minutes", 90)
+
+    if not isinstance(incident_signals, list) or not incident_signals or not all(isinstance(item, dict) for item in incident_signals):
+        raise ValidationError("incident_signals must be a non-empty array of objects")
+    if deploy_events is None:
+        deploy_events = []
+    if config_events is None:
+        config_events = []
+    if not isinstance(deploy_events, list) or not all(isinstance(item, dict) for item in deploy_events):
+        raise ValidationError("deploy_events must be an array of objects")
+    if not isinstance(config_events, list) or not all(isinstance(item, dict) for item in config_events):
+        raise ValidationError("config_events must be an array of objects")
+    if not isinstance(window_minutes, int) or not (5 <= window_minutes <= 720):
+        raise ValidationError("window_minutes must be an integer between 5 and 720")
+
+    prompt = f"""
+You are change-correlation-agent.
+Return only JSON with keys correlated_events, incident_signals, confidence, summary.
+Rules:
+- correlated_events must be an array of 0-5 objects.
+- incident_signals must be an array of 1-5 objects.
+- confidence must be numeric in [0,1].
+- summary must be non-empty and under 18 words.
+Input:
+{{"incident_signals":{json.dumps(incident_signals)},"deploy_events":{json.dumps(deploy_events)},"config_events":{json.dumps(config_events)},"window_minutes":{window_minutes}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    correlated_events = out.get("correlated_events")
+    normalized_signals = out.get("incident_signals")
+    confidence = out.get("confidence")
+    summary = out.get("summary")
+
+    if not isinstance(correlated_events, list) or len(correlated_events) > 5:
+        raise ValidationError("LLM output correlated_events must contain 0-5 items")
+    if not isinstance(normalized_signals, list) or not (1 <= len(normalized_signals) <= 5):
+        raise ValidationError("LLM output incident_signals must contain 1-5 items")
+    if not isinstance(confidence, (int, float)) or not (0 <= float(confidence) <= 1):
+        raise ValidationError("LLM output confidence must be numeric in [0,1]")
+    if not isinstance(summary, str) or not summary.strip():
+        raise ValidationError("LLM output summary must be a non-empty string")
+
+    safe_events = [item for item in correlated_events if isinstance(item, dict)][:5]
+    safe_signals = [item for item in normalized_signals if isinstance(item, dict)][:5]
+    return {
+        "correlated_events": safe_events,
+        "incident_signals": safe_signals,
+        "confidence": round(float(confidence), 2),
+        "summary": sanitize_untrusted_text(" ".join(summary.strip().split()[:18])),
+    }
+
+
+def run_alert_tuner_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    alert_history = require(payload, "alert_history")
+    incident_labels = payload.get("incident_labels", [])
+    target_precision = payload.get("target_precision", 0.6)
+
+    if not isinstance(alert_history, list) or not alert_history or not all(isinstance(item, dict) for item in alert_history):
+        raise ValidationError("alert_history must be a non-empty array of objects")
+    if incident_labels is None:
+        incident_labels = []
+    if not isinstance(incident_labels, list) or not all(isinstance(item, dict) for item in incident_labels):
+        raise ValidationError("incident_labels must be an array of objects")
+    if not isinstance(target_precision, (int, float)) or not (0 <= float(target_precision) <= 1):
+        raise ValidationError("target_precision must be numeric in [0,1]")
+
+    prompt = f"""
+You are alert-tuner-agent.
+Return only JSON with keys tuning_recommendations, incident_signals, noise_score, rationale.
+Rules:
+- tuning_recommendations must be an array of 0-5 objects with metric and thresholds.
+- incident_signals must be an array of 0-5 objects.
+- noise_score must be numeric in [0,1].
+- rationale must be non-empty and under 18 words.
+Input:
+{{"alert_history":{json.dumps(alert_history)},"incident_labels":{json.dumps(incident_labels)},"target_precision":{float(target_precision)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    tuning_recommendations = out.get("tuning_recommendations")
+    normalized_signals = out.get("incident_signals")
+    noise_score = out.get("noise_score")
+    rationale = out.get("rationale")
+
+    if not isinstance(tuning_recommendations, list) or len(tuning_recommendations) > 5:
+        raise ValidationError("LLM output tuning_recommendations must contain 0-5 items")
+    if not isinstance(normalized_signals, list) or len(normalized_signals) > 5:
+        raise ValidationError("LLM output incident_signals must contain 0-5 items")
+    if not isinstance(noise_score, (int, float)) or not (0 <= float(noise_score) <= 1):
+        raise ValidationError("LLM output noise_score must be numeric in [0,1]")
+    if not isinstance(rationale, str) or not rationale.strip():
+        raise ValidationError("LLM output rationale must be a non-empty string")
+
+    safe_recs = [item for item in tuning_recommendations if isinstance(item, dict)][:5]
+    safe_signals = [item for item in normalized_signals if isinstance(item, dict)][:5]
+    return {
+        "tuning_recommendations": safe_recs,
+        "incident_signals": safe_signals,
+        "noise_score": round(float(noise_score), 2),
+        "rationale": sanitize_untrusted_text(" ".join(rationale.strip().split()[:18])),
+    }
+
+
 def run_slo_reporter_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     service_name = require(payload, "service_name")
     metrics = require(payload, "metrics")

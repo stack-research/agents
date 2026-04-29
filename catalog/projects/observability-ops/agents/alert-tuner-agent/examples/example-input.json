@@ -1,0 +1,25 @@
+{
+  "alert_history": [
+    {
+      "metric": "latency_p99_ms",
+      "threshold": 400,
+      "trigger_count": 42,
+      "actionable_count": 8,
+      "window": "7d"
+    },
+    {
+      "metric": "error_rate_percent",
+      "threshold": 1.0,
+      "trigger_count": 30,
+      "actionable_count": 18,
+      "window": "7d"
+    }
+  ],
+  "incident_labels": [
+    {
+      "metric": "latency_p99_ms",
+      "missed_incidents": 1
+    }
+  ],
+  "target_precision": 0.55
+}

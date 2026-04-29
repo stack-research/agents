@@ -17,7 +17,7 @@ Add or update the project selected. Then update the roadmap checklist when finis
   - Add `approval-memory-agent` (tracks what was approved, by whom, and when it expires).
   - Tooling: stronger “why blocked” structured output for downstream automation.
 
-- [ ] `observability-ops`
+- [x] `observability-ops`
   - Add `change-correlation-agent` (maps metric/log shifts to deploy/config events).
   - Add `alert-tuner-agent` (suggests threshold tuning from noise patterns).
   - Tooling: shared incident signal schema consumable by pipelines.

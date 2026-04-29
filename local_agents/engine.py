@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from typing import Any
 
 from .control_ops import (
@@ -991,6 +992,12 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["log analysis", "analyze logs", "log entries", "anomaly detection"]):
         target_agent = "observability-ops.log-analyzer-agent"
         rationale = "Log analysis intent detected; route to log analyzer."
+    elif any(token in lowered for token in ["change correlation", "correlate deploy", "config drift cause", "incident correlation"]):
+        target_agent = "observability-ops.change-correlation-agent"
+        rationale = "Change correlation intent detected; route to change correlation."
+    elif any(token in lowered for token in ["alert tuning", "tune alert", "threshold tuning", "alert fatigue"]):
+        target_agent = "observability-ops.alert-tuner-agent"
+        rationale = "Alert tuning intent detected; route to alert tuner."
     elif any(token in lowered for token in ["slo", "sla", "compliance", "uptime report", "availability report"]):
         target_agent = "observability-ops.slo-reporter-agent"
         rationale = "SLO/compliance intent detected; route to SLO reporter."
@@ -1573,6 +1580,229 @@ def run_slo_reporter_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _parse_rfc3339(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _signal_level(value: str) -> int:
+    mapping = {"normal": 1, "elevated": 2, "critical": 3}
+    return mapping.get(str(value).lower(), 1)
+
+
+def run_change_correlation_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    incident_signals = require(payload, "incident_signals")
+    deploy_events = payload.get("deploy_events", [])
+    config_events = payload.get("config_events", [])
+    window_minutes = payload.get("window_minutes", 90)
+
+    if not isinstance(incident_signals, list) or not incident_signals or not all(isinstance(item, dict) for item in incident_signals):
+        raise ValidationError("incident_signals must be a non-empty array of objects")
+    if deploy_events is None:
+        deploy_events = []
+    if config_events is None:
+        config_events = []
+    if not isinstance(deploy_events, list) or not all(isinstance(item, dict) for item in deploy_events):
+        raise ValidationError("deploy_events must be an array of objects")
+    if not isinstance(config_events, list) or not all(isinstance(item, dict) for item in config_events):
+        raise ValidationError("config_events must be an array of objects")
+    if not isinstance(window_minutes, int) or not (5 <= window_minutes <= 720):
+        raise ValidationError("window_minutes must be an integer between 5 and 720")
+
+    candidates: list[dict[str, Any]] = []
+    critical_count = 0
+    for signal in incident_signals:
+        signal_ts = _parse_rfc3339(str(signal.get("timestamp", "")))
+        if signal_ts is None:
+            continue
+        service = str(signal.get("service", "")).strip().lower()
+        severity = str(signal.get("severity", "normal")).lower()
+        if _signal_level(severity) >= 3:
+            critical_count += 1
+        metric = sanitize_untrusted_text(str(signal.get("metric", "metric")))
+        for event in deploy_events + config_events:
+            event_ts = _parse_rfc3339(str(event.get("timestamp", "")))
+            if event_ts is None:
+                continue
+            event_service = str(event.get("service", "")).strip().lower()
+            if service and event_service and service != event_service:
+                continue
+            distance = int(abs((signal_ts - event_ts).total_seconds()) / 60)
+            if distance > window_minutes:
+                continue
+            event_type = str(event.get("event", "change")).strip().lower() or "change"
+            impact_hint = "high" if distance <= 15 or _signal_level(severity) >= 3 else "medium"
+            candidates.append(
+                {
+                    "event_type": event_type,
+                    "service": sanitize_untrusted_text(str(event.get("service", signal.get("service", "unknown-service")))),
+                    "timestamp": sanitize_untrusted_text(str(event.get("timestamp", ""))),
+                    "distance_minutes": distance,
+                    "impact_hint": impact_hint,
+                    "evidence": f"{metric} shifted near {event_type} event ({distance}m distance)",
+                }
+            )
+
+    candidates.sort(key=lambda item: (item["distance_minutes"], 0 if item["impact_hint"] == "high" else 1))
+    correlated_events = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in candidates:
+        key = (item["event_type"], item["service"], item["timestamp"])
+        if key in seen:
+            continue
+        seen.add(key)
+        correlated_events.append(item)
+        if len(correlated_events) >= 5:
+            break
+
+    normalized_signals = []
+    for signal in incident_signals[:5]:
+        baseline = signal.get("baseline")
+        observed = signal.get("observed")
+        delta_percent = None
+        if isinstance(baseline, (int, float)) and isinstance(observed, (int, float)) and float(baseline) != 0:
+            delta_percent = round(((float(observed) - float(baseline)) / float(baseline)) * 100, 2)
+        metric = sanitize_untrusted_text(str(signal.get("metric", "unknown_metric")))
+        service = sanitize_untrusted_text(str(signal.get("service", "unknown-service")))
+        timestamp = sanitize_untrusted_text(str(signal.get("timestamp", ""))) or "1970-01-01T00:00:00Z"
+        severity = str(signal.get("severity", "elevated")).lower()
+        if severity not in {"normal", "elevated", "critical"}:
+            severity = "elevated"
+        normalized_signals.append(
+            {
+                "signal_id": f"sig-{service.replace(' ', '-').lower()}-{metric.replace(' ', '-').lower()}",
+                "timestamp": timestamp,
+                "service": service,
+                "signal_type": "metric_shift",
+                "metric": metric,
+                "baseline": float(baseline) if isinstance(baseline, (int, float)) else None,
+                "observed": float(observed) if isinstance(observed, (int, float)) else None,
+                "delta_percent": delta_percent,
+                "severity": severity,
+                "summary": "Incident signal aligned to nearby deploy/config events",
+                "source_refs": [f"{item['event_type']}:{item['timestamp']}" for item in correlated_events[:3]],
+            }
+        )
+
+    confidence = 0.35 + (0.12 * len(correlated_events)) + (0.08 * critical_count)
+    confidence = round(max(0.0, min(0.95, confidence)), 2)
+    summary = "No strong change correlation found in selected window."
+    if correlated_events:
+        summary = (
+            f"Found {len(correlated_events)} likely correlated change events across "
+            f"{len(normalized_signals)} incident signals."
+        )
+    return {
+        "correlated_events": correlated_events,
+        "incident_signals": normalized_signals,
+        "confidence": confidence,
+        "summary": " ".join(summary.split()[:18]),
+    }
+
+
+def run_alert_tuner_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    alert_history = require(payload, "alert_history")
+    incident_labels = payload.get("incident_labels", [])
+    target_precision = payload.get("target_precision", 0.6)
+
+    if not isinstance(alert_history, list) or not alert_history or not all(isinstance(item, dict) for item in alert_history):
+        raise ValidationError("alert_history must be a non-empty array of objects")
+    if incident_labels is None:
+        incident_labels = []
+    if not isinstance(incident_labels, list) or not all(isinstance(item, dict) for item in incident_labels):
+        raise ValidationError("incident_labels must be an array of objects")
+    if not isinstance(target_precision, (int, float)) or not (0 <= float(target_precision) <= 1):
+        raise ValidationError("target_precision must be numeric in [0,1]")
+
+    missed_by_metric: dict[str, int] = {}
+    for label in incident_labels:
+        metric = str(label.get("metric", "")).strip()
+        missed = label.get("missed_incidents", 0)
+        if metric and isinstance(missed, int) and missed > 0:
+            missed_by_metric[metric] = missed
+
+    recommendations: list[dict[str, Any]] = []
+    noise_values: list[float] = []
+    for row in alert_history:
+        metric = sanitize_untrusted_text(str(row.get("metric", "")))
+        threshold = row.get("threshold")
+        trigger_count = row.get("trigger_count", 0)
+        actionable_count = row.get("actionable_count", 0)
+        if not metric or not isinstance(threshold, (int, float)):
+            continue
+        if not isinstance(trigger_count, int) or trigger_count <= 0:
+            continue
+        if not isinstance(actionable_count, int) or actionable_count < 0:
+            actionable_count = 0
+
+        actionable_ratio = min(1.0, max(0.0, actionable_count / trigger_count))
+        noise_ratio = round(1.0 - actionable_ratio, 2)
+        noise_values.append(noise_ratio)
+
+        change_type = None
+        proposed_threshold = float(threshold)
+        effect = ""
+        if noise_ratio > (1.0 - float(target_precision)):
+            change_type = "raise"
+            proposed_threshold = round(float(threshold) * (1.0 + min(0.3, noise_ratio / 2)), 2)
+            effect = "reduce noise with slight recall risk"
+        elif missed_by_metric.get(metric, 0) > 0:
+            change_type = "lower"
+            proposed_threshold = round(float(threshold) * 0.9, 2)
+            effect = "improve recall at acceptable noise increase"
+
+        if change_type:
+            recommendations.append(
+                {
+                    "metric": metric,
+                    "current_threshold": float(threshold),
+                    "proposed_threshold": proposed_threshold,
+                    "change_type": change_type,
+                    "expected_effect": effect,
+                }
+            )
+        if len(recommendations) >= 5:
+            break
+
+    noise_score = round(sum(noise_values) / len(noise_values), 2) if noise_values else 0.0
+    incident_signals = []
+    for rec in recommendations[:5]:
+        incident_signals.append(
+            {
+                "signal_id": f"sig-alert-{rec['metric'].replace(' ', '-').lower()}",
+                "timestamp": "1970-01-01T00:00:00Z",
+                "service": "observability-control-plane",
+                "signal_type": "alert_tuning",
+                "metric": rec["metric"],
+                "baseline": rec["current_threshold"],
+                "observed": rec["proposed_threshold"],
+                "delta_percent": round(
+                    ((rec["proposed_threshold"] - rec["current_threshold"]) / rec["current_threshold"]) * 100,
+                    2,
+                )
+                if rec["current_threshold"]
+                else None,
+                "severity": "elevated" if noise_score >= 0.5 else "normal",
+                "summary": f"Alert threshold {rec['change_type']} recommendation for {rec['metric']}",
+                "source_refs": ["alert_history", f"target_precision:{float(target_precision):.2f}"],
+            }
+        )
+
+    rationale = "Alert thresholds are stable; no immediate tuning required."
+    if recommendations:
+        rationale = (
+            f"Generated {len(recommendations)} tuning recommendations from historical noise score {noise_score}."
+        )
+    return {
+        "tuning_recommendations": recommendations,
+        "incident_signals": incident_signals,
+        "noise_score": noise_score,
+        "rationale": " ".join(rationale.split()[:18]),
+    }
+
+
 def run_agent(
     agent: str,
     payload: dict[str, Any],
@@ -1598,6 +1828,8 @@ def run_agent(
             run_kill_path_auditor_agent_llm,
             run_lineage_recorder_agent_llm,
             run_log_analyzer_agent_llm,
+            run_change_correlation_agent_llm,
+            run_alert_tuner_agent_llm,
             run_planner_agent_llm,
             run_pr_summary_agent_llm,
             run_regression_triage_agent_llm,
@@ -1857,6 +2089,20 @@ def run_agent(
             return run_log_analyzer_agent(payload)
         if selected_mode == "llm":
             return run_log_analyzer_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"change-correlation-agent", "observability-ops.change-correlation-agent"}:
+        if selected_mode == "deterministic":
+            return run_change_correlation_agent(payload)
+        if selected_mode == "llm":
+            return run_change_correlation_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"alert-tuner-agent", "observability-ops.alert-tuner-agent"}:
+        if selected_mode == "deterministic":
+            return run_alert_tuner_agent(payload)
+        if selected_mode == "llm":
+            return run_alert_tuner_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"slo-reporter-agent", "observability-ops.slo-reporter-agent"}:

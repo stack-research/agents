@@ -1,0 +1,37 @@
+{
+  "correlated_events": [
+    {
+      "event_type": "deploy",
+      "service": "checkout-api",
+      "timestamp": "2026-04-02T13:58:00Z",
+      "distance_minutes": 7,
+      "impact_hint": "high",
+      "evidence": "Error-rate spike begins shortly after deploy for same service"
+    },
+    {
+      "event_type": "config_change",
+      "service": "checkout-api",
+      "timestamp": "2026-04-02T13:55:00Z",
+      "distance_minutes": 10,
+      "impact_hint": "medium",
+      "evidence": "Timeout reduction may increase upstream call failures"
+    }
+  ],
+  "incident_signals": [
+    {
+      "signal_id": "sig-checkout-api-error-rate-percent",
+      "timestamp": "2026-04-02T14:05:00Z",
+      "service": "checkout-api",
+      "signal_type": "metric_shift",
+      "metric": "error_rate_percent",
+      "baseline": 0.4,
+      "observed": 2.7,
+      "delta_percent": 575.0,
+      "severity": "critical",
+      "summary": "Error rate increased sharply after a deploy/config window",
+      "source_refs": ["deploy:2026.04.02.3", "config:payment_provider_timeout_ms"]
+    }
+  ],
+  "confidence": 0.84,
+  "summary": "Checkout-api incident signals align with a recent deploy and timeout config change."
+}

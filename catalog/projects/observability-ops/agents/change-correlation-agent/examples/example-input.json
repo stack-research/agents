@@ -1,0 +1,31 @@
+{
+  "incident_signals": [
+    {
+      "timestamp": "2026-04-02T14:05:00Z",
+      "service": "checkout-api",
+      "metric": "error_rate_percent",
+      "baseline": 0.4,
+      "observed": 2.7,
+      "severity": "critical"
+    }
+  ],
+  "deploy_events": [
+    {
+      "timestamp": "2026-04-02T13:58:00Z",
+      "service": "checkout-api",
+      "event": "deploy",
+      "version": "2026.04.02.3"
+    }
+  ],
+  "config_events": [
+    {
+      "timestamp": "2026-04-02T13:55:00Z",
+      "service": "checkout-api",
+      "event": "config_change",
+      "key": "payment_provider_timeout_ms",
+      "old": "3000",
+      "new": "800"
+    }
+  ],
+  "window_minutes": 90
+}

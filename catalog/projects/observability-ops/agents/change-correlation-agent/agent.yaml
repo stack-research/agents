@@ -1,0 +1,37 @@
+id: observability-ops.change-correlation-agent
+name: change-correlation-agent
+version: 0.1.0
+summary: |
+  Correlates incident signal shifts against deploy and configuration events to identify likely causes.
+owners:
+  - platform-agents
+inputs:
+  - name: incident_signals
+    type: object[]
+    required: true
+  - name: deploy_events
+    type: object[]
+    required: false
+  - name: config_events
+    type: object[]
+    required: false
+  - name: window_minutes
+    type: integer
+    required: false
+outputs:
+  - name: correlated_events
+    type: object[]
+  - name: incident_signals
+    type: object[]
+  - name: confidence
+    type: number
+  - name: summary
+    type: string
+rules:
+  - Correlate only events that overlap the incident signal time window.
+  - Rank correlated events by likely impact and temporal proximity.
+  - Return concise evidence notes for each correlated event.
+constraints:
+  - correlated_events must contain at most 5 entries.
+  - incident_signals must follow schemas/incident-signal.json.
+  - confidence must be numeric in [0,1].

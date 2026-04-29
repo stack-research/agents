@@ -21,6 +21,8 @@ from .engine import (
     run_kill_path_auditor_agent,
     run_lineage_recorder_agent,
     run_log_analyzer_agent,
+    run_change_correlation_agent,
+    run_alert_tuner_agent,
     run_memory_curator_agent,
     run_planner_agent,
     run_pr_summary_agent,
@@ -78,6 +80,8 @@ __all__ = [
     "run_code_reviewer_agent",
     "run_pr_summary_agent",
     "run_log_analyzer_agent",
+    "run_change_correlation_agent",
+    "run_alert_tuner_agent",
     "run_slo_reporter_agent",
     "state",
 ]

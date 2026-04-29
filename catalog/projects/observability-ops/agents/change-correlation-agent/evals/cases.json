@@ -1,0 +1,39 @@
+{
+  "agent_id": "observability-ops.change-correlation-agent",
+  "cases": [
+    {
+      "id": "deploy-and-config-match",
+      "tags": ["happy-path"],
+      "input": {
+        "incident_signals": [
+          {
+            "timestamp": "2026-04-02T14:05:00Z",
+            "service": "checkout-api",
+            "metric": "error_rate_percent",
+            "baseline": 0.4,
+            "observed": 2.7,
+            "severity": "critical"
+          }
+        ],
+        "deploy_events": [
+          {
+            "timestamp": "2026-04-02T13:58:00Z",
+            "service": "checkout-api",
+            "event": "deploy"
+          }
+        ],
+        "config_events": [
+          {
+            "timestamp": "2026-04-02T13:55:00Z",
+            "service": "checkout-api",
+            "event": "config_change"
+          }
+        ]
+      },
+      "assertions": [
+        {"field": "correlated_events", "op": "min_length", "value": 1},
+        {"field": "confidence", "op": "gte", "value": 0.5}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "incident-signal.json",
+  "title": "Incident Signal Schema",
+  "description": "Shared incident signal object for cross-agent and pipeline observability workflows.",
+  "type": "object",
+  "required": [
+    "signal_id",
+    "timestamp",
+    "service",
+    "signal_type",
+    "metric",
+    "severity",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "UTC RFC3339 timestamp."
+    },
+    "service": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signal_type": {
+      "type": "string",
+      "enum": ["metric_shift", "log_shift", "deploy_change", "config_change", "alert_tuning"]
+    },
+    "metric": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baseline": {
+      "type": ["number", "null"]
+    },
+    "observed": {
+      "type": ["number", "null"]
+    },
+    "delta_percent": {
+      "type": ["number", "null"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["normal", "elevated", "critical"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5
+    }
+  }
+}

@@ -77,6 +77,8 @@ catalog/
 12. `observability-ops`
     - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
     - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
+    - `change-correlation-agent`: correlates incident signal shifts with nearby deploy/config events.
+    - `alert-tuner-agent`: suggests alert threshold tuning from historical noise patterns.
 13. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
@@ -119,6 +121,8 @@ catalog/
 - `python3 scripts/run_agent.py --agent code-ops.pr-summary-agent --input catalog/projects/code-ops/agents/pr-summary-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent observability-ops.log-analyzer-agent --input catalog/projects/observability-ops/agents/log-analyzer-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent observability-ops.slo-reporter-agent --input catalog/projects/observability-ops/agents/slo-reporter-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent observability-ops.change-correlation-agent --input catalog/projects/observability-ops/agents/change-correlation-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent observability-ops.alert-tuner-agent --input catalog/projects/observability-ops/agents/alert-tuner-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_governance_pipeline.py --input catalog/projects/control-ops/examples/governance-pipeline-input.json --pretty`
 - `python3 scripts/run_resilience_pipeline.py --input catalog/projects/control-ops/examples/resilience-pipeline-input.json --pretty`
 - `python3 scripts/run_incident_pipeline.py --input examples/incident-pipeline-input.json --pretty`
@@ -380,7 +384,7 @@ The test suite currently includes:
 
 - data-ops deterministic behavior tests (schema-drift-detector/data-validator).
 - code-ops deterministic behavior tests (code-reviewer/pr-summary).
-- observability-ops deterministic behavior tests (log-analyzer/slo-reporter).
+- observability-ops deterministic and LLM behavior tests (log-analyzer/slo-reporter/change-correlation/alert-tuner).
 - knowledge-ops deterministic and LLM behavior tests (evidence-ranker/claim-trace/memory-curator/temporal-watch).
 - control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/exception-policy/approval-memory/blast-radius-assessor/kill-path-auditor).
 - governance pipeline composition tests.

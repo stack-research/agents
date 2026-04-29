@@ -1,0 +1,28 @@
+{
+  "tuning_recommendations": [
+    {
+      "metric": "latency_p99_ms",
+      "current_threshold": 400,
+      "proposed_threshold": 480,
+      "change_type": "raise",
+      "expected_effect": "reduce noise with slight recall risk"
+    }
+  ],
+  "incident_signals": [
+    {
+      "signal_id": "sig-alert-latency-p99-ms",
+      "timestamp": "2026-04-09T00:00:00Z",
+      "service": "observability-control-plane",
+      "signal_type": "alert_tuning",
+      "metric": "latency_p99_ms",
+      "baseline": 400,
+      "observed": 480,
+      "delta_percent": 20.0,
+      "severity": "elevated",
+      "summary": "Latency alert threshold raised to reduce non-actionable pages",
+      "source_refs": ["history:7d", "target_precision:0.55"]
+    }
+  ],
+  "noise_score": 0.68,
+  "rationale": "Latency alerts are mostly non-actionable; a moderate threshold increase should improve precision."
+}

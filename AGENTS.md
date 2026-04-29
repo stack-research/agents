@@ -93,7 +93,8 @@ Repository-level runtime and tests:
 - `tests/test_state.py` - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
 - `tests/test_data_ops.py` - deterministic data-ops behavior checks (schema-drift-detector/data-validator).
 - `tests/test_code_ops.py` - deterministic code-ops behavior checks (code-reviewer/pr-summary).
-- `tests/test_observability_ops.py` - deterministic observability-ops behavior checks (log-analyzer/slo-reporter).
+- `tests/test_observability_ops.py` - deterministic observability-ops behavior checks (log-analyzer/slo-reporter/change-correlation/alert-tuner).
+- `tests/test_observability_ops_llm.py` - observability-ops checks in LLM mode (change-correlation/alert-tuner).
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `local_agents/state.py` - Redis state store with graceful NoOp fallback for pipeline state persistence.
 - `docker-compose.yml` - local Ollama and Redis services for LLM testing and state persistence.
@@ -153,6 +154,8 @@ Repository-level runtime and tests:
 - `observability-ops`
   - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
   - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
+ - `change-correlation-agent`: correlates metric/log shifts with deploy and config events.
+ - `alert-tuner-agent`: suggests threshold tuning from alert noise patterns.
 - `agent-incident-drill`
   - Scenario project that composes existing agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 

@@ -1,0 +1,34 @@
+id: observability-ops.alert-tuner-agent
+name: alert-tuner-agent
+version: 0.1.0
+summary: |
+  Tunes alert thresholds from noise and miss patterns to reduce fatigue while preserving detection quality.
+owners:
+  - platform-agents
+inputs:
+  - name: alert_history
+    type: object[]
+    required: true
+  - name: incident_labels
+    type: object[]
+    required: false
+  - name: target_precision
+    type: number
+    required: false
+outputs:
+  - name: tuning_recommendations
+    type: object[]
+  - name: incident_signals
+    type: object[]
+  - name: noise_score
+    type: number
+  - name: rationale
+    type: string
+rules:
+  - Recommend threshold changes only when historical evidence is sufficient.
+  - Include expected precision or recall impact hint per recommendation.
+  - Keep recommendations reversible and bounded.
+constraints:
+  - tuning_recommendations must contain at most 5 entries.
+  - incident_signals must follow schemas/incident-signal.json.
+  - noise_score must be numeric in [0,1].

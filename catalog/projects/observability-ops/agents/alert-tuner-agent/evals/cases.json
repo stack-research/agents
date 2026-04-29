@@ -1,0 +1,25 @@
+{
+  "agent_id": "observability-ops.alert-tuner-agent",
+  "cases": [
+    {
+      "id": "high-noise-latency",
+      "tags": ["happy-path"],
+      "input": {
+        "alert_history": [
+          {
+            "metric": "latency_p99_ms",
+            "threshold": 400,
+            "trigger_count": 42,
+            "actionable_count": 8,
+            "window": "7d"
+          }
+        ],
+        "target_precision": 0.6
+      },
+      "assertions": [
+        {"field": "tuning_recommendations", "op": "min_length", "value": 1},
+        {"field": "noise_score", "op": "gte", "value": 0.5}
+      ]
+    }
+  ]
+}

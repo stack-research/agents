@@ -313,6 +313,24 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Change correlation example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent observability-ops.change-correlation-agent \
+  --input catalog/projects/observability-ops/agents/change-correlation-agent/examples/example-input.json \
+  --pretty
+```
+
+Alert tuner example:
+
+```bash
+python3 scripts/run_agent.py \
+  --agent observability-ops.alert-tuner-agent \
+  --input catalog/projects/observability-ops/agents/alert-tuner-agent/examples/example-input.json \
+  --pretty
+```
+
 Support pipeline example:
 
 ```bash
@@ -425,6 +443,8 @@ Accepted `--agent` values:
 - `code-ops.pr-summary-agent` or `pr-summary-agent`
 - `observability-ops.log-analyzer-agent` or `log-analyzer-agent`
 - `observability-ops.slo-reporter-agent` or `slo-reporter-agent`
+- `observability-ops.change-correlation-agent` or `change-correlation-agent`
+- `observability-ops.alert-tuner-agent` or `alert-tuner-agent`
 
 ## Pipeline State Persistence (Redis)
 
