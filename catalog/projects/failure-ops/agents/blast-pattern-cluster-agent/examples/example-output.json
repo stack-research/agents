@@ -1,0 +1,20 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "clusters": [
+    {
+      "cluster_id": "cluster-1a81a84dfad4",
+      "blast_pattern": "cross-system",
+      "failure_mode_ids": [
+        "fm-auth-api-9f8fa8dfba4c",
+        "fm-session-store-9d6f1131c7db"
+      ],
+      "services": [
+        "auth-api",
+        "session-store"
+      ],
+      "rationale": "Shared dependency path and elevated impact indicate cross-system blast behavior.",
+      "confidence": "high"
+    }
+  ],
+  "clustering_notes": "Clustered failure modes using service overlap, impact level, and dependency hints."
+}

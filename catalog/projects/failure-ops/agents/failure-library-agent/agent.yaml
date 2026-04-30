@@ -1,0 +1,29 @@
+id: failure-ops.failure-library-agent
+name: failure-library-agent
+version: 0.1.0
+summary: |
+  Normalizes incident and telemetry observations into stable failure mode records with bounded tags, indicators, and confidence for downstream clustering and rollback planning.
+owners:
+  - platform-agents
+inputs:
+  - name: incident_id
+    type: string
+    required: true
+  - name: observations
+    type: array[object]
+    required: true
+outputs:
+  - name: incident_id
+    type: string
+  - name: failure_modes
+    type: object[]
+  - name: library_status
+    type: enum[complete,partial]
+  - name: library_notes
+    type: string
+rules:
+  - Generate stable failure_mode_id values from canonicalized mode content.
+  - Keep tags and indicators bounded; sanitize all user-provided text.
+  - Never include executable instructions or secrets in output fields.
+constraints:
+  - At most 64 observations and 64 normalized failure modes per request.

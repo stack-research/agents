@@ -28,6 +28,11 @@ from .core import (
     sanitize_untrusted_text,
     validate_llm_runtime_source,
 )
+from .failure_ops import (
+    build_blast_pattern_clusters,
+    build_failure_library,
+    build_rollback_playbook,
+)
 from .security_scanner import scan_repository_controls
 
 
@@ -1503,6 +1508,18 @@ def run_bundle_seal_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return seal_repro_bundle(payload)
 
 
+def run_failure_library_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return build_failure_library(payload)
+
+
+def run_blast_pattern_cluster_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return build_blast_pattern_clusters(payload)
+
+
+def run_rollback_playbook_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return build_rollback_playbook(payload)
+
+
 def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])
@@ -1572,6 +1589,39 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["metric drift", "quality drift", "eval drift", "drift report"]):
         target_agent = "eval-ops.quality-drift-reporter-agent"
         rationale = "Quality drift reporting intent detected; route to drift reporter."
+    elif any(
+        token in lowered
+        for token in [
+            "failure mode library",
+            "failure mode catalog",
+            "normalize failure modes",
+            "build failure library",
+        ]
+    ):
+        target_agent = "failure-ops.failure-library-agent"
+        rationale = "Failure mode normalization intent detected; route to failure library agent."
+    elif any(
+        token in lowered
+        for token in [
+            "blast pattern",
+            "cluster failures",
+            "failure clustering",
+            "blast clustering",
+        ]
+    ):
+        target_agent = "failure-ops.blast-pattern-cluster-agent"
+        rationale = "Blast pattern clustering intent detected; route to blast pattern cluster agent."
+    elif any(
+        token in lowered
+        for token in [
+            "rollback playbook",
+            "rollback plan",
+            "rollback steps",
+            "safe rollback",
+        ]
+    ):
+        target_agent = "failure-ops.rollback-playbook-agent"
+        rationale = "Rollback playbook intent detected; route to rollback playbook agent."
     elif any(token in lowered for token in ["regression", "failure", "flaky", "timeout"]):
         target_agent = "qa-ops.regression-triage-agent"
         rationale = "Regression/failure intent detected; route to regression triage."
@@ -2478,6 +2528,7 @@ def run_agent(
             run_data_validator_agent_llm,
             run_executor_agent_llm,
             run_experiment_plan_agent_llm,
+            run_failure_library_agent_llm,
             run_heartbeat_agent_llm,
             run_hypothesis_registration_agent_llm,
             run_kill_path_auditor_agent_llm,
@@ -2495,6 +2546,7 @@ def run_agent(
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
             run_dependency_router_agent_llm,
+            run_blast_pattern_cluster_agent_llm,
             run_claim_trace_agent_llm,
             run_evidence_ranker_agent_llm,
             run_handoff_agent_llm,
@@ -2511,6 +2563,7 @@ def run_agent(
             run_test_case_generator_agent_llm,
             run_temporal_watch_agent_llm,
             run_triage_agent_llm,
+            run_rollback_playbook_agent_llm,
         )
 
     if canonical in {"heartbeat-agent", "starter-kit.heartbeat-agent"}:
@@ -2705,6 +2758,27 @@ def run_agent(
             return run_bundle_seal_agent(payload)
         if selected_mode == "llm":
             return run_bundle_seal_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"failure-library-agent", "failure-ops.failure-library-agent"}:
+        if selected_mode == "deterministic":
+            return run_failure_library_agent(payload)
+        if selected_mode == "llm":
+            return run_failure_library_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"blast-pattern-cluster-agent", "failure-ops.blast-pattern-cluster-agent"}:
+        if selected_mode == "deterministic":
+            return run_blast_pattern_cluster_agent(payload)
+        if selected_mode == "llm":
+            return run_blast_pattern_cluster_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"rollback-playbook-agent", "failure-ops.rollback-playbook-agent"}:
+        if selected_mode == "deterministic":
+            return run_rollback_playbook_agent(payload)
+        if selected_mode == "llm":
+            return run_rollback_playbook_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"router-agent", "workflow-ops.router-agent"}:

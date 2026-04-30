@@ -1576,6 +1576,204 @@ Input:
     }
 
 
+def run_failure_library_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_failure_library_agent
+
+    incident_id = require(payload, "incident_id")
+    observations = require(payload, "observations")
+    if not isinstance(incident_id, str) or not incident_id.strip():
+        raise ValidationError("incident_id must be a non-empty string")
+    if not isinstance(observations, list) or not observations:
+        raise ValidationError("observations must be a non-empty array")
+
+    prompt = f"""
+You are failure-library-agent.
+Return only JSON with keys incident_id, failure_modes, library_status, library_notes.
+Rules:
+- failure_modes is a non-empty array of objects with keys failure_mode_id, service, symptom, trigger, impact, environment, preconditions, indicators, tags, confidence.
+- impact must be one of low, medium, high.
+- confidence must be one of low, medium, high.
+- library_status must be complete or partial.
+Input:
+{{"incident_id":{json.dumps(incident_id)},"observations":{json.dumps(observations)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    if not isinstance(out.get("incident_id"), str) or not str(out["incident_id"]).strip():
+        return run_failure_library_agent(payload)
+    if out.get("library_status") not in {"complete", "partial"}:
+        return run_failure_library_agent(payload)
+    modes = out.get("failure_modes")
+    notes = out.get("library_notes")
+    if not isinstance(modes, list) or not modes:
+        return run_failure_library_agent(payload)
+    if not isinstance(notes, str) or not notes.strip():
+        return run_failure_library_agent(payload)
+
+    safe_modes: list[dict[str, Any]] = []
+    for row in modes[:64]:
+        if not isinstance(row, dict):
+            return run_failure_library_agent(payload)
+        required = ["failure_mode_id", "service", "symptom", "trigger", "impact", "environment", "preconditions", "indicators", "tags", "confidence"]
+        if any(k not in row for k in required):
+            return run_failure_library_agent(payload)
+        if row.get("impact") not in {"low", "medium", "high"}:
+            return run_failure_library_agent(payload)
+        if row.get("confidence") not in {"low", "medium", "high"}:
+            return run_failure_library_agent(payload)
+        if not isinstance(row.get("preconditions"), list) or not isinstance(row.get("indicators"), list) or not isinstance(row.get("tags"), list):
+            return run_failure_library_agent(payload)
+        safe_modes.append(
+            {
+                "failure_mode_id": sanitize_untrusted_text(str(row["failure_mode_id"]).strip())[:120],
+                "service": sanitize_untrusted_text(str(row["service"]).strip())[:80],
+                "symptom": sanitize_untrusted_text(" ".join(str(row["symptom"]).split()[:18]))[:220],
+                "trigger": sanitize_untrusted_text(" ".join(str(row["trigger"]).split()[:12]))[:140],
+                "impact": row["impact"],
+                "environment": sanitize_untrusted_text(str(row["environment"]).strip())[:32],
+                "preconditions": [sanitize_untrusted_text(" ".join(str(x).split()[:10])) for x in row["preconditions"] if str(x).strip()][:3],
+                "indicators": [sanitize_untrusted_text(" ".join(str(x).split()[:10])) for x in row["indicators"] if str(x).strip()][:3],
+                "tags": [sanitize_untrusted_text(str(x).strip().lower())[:24] for x in row["tags"] if str(x).strip()][:4],
+                "confidence": row["confidence"],
+            }
+        )
+    if not safe_modes:
+        return run_failure_library_agent(payload)
+    return {
+        "incident_id": sanitize_untrusted_text(" ".join(str(out["incident_id"]).split()[:12]))[:120],
+        "failure_modes": safe_modes,
+        "library_status": out["library_status"],
+        "library_notes": sanitize_untrusted_text(" ".join(notes.strip().split()[:24])),
+    }
+
+
+def run_blast_pattern_cluster_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_blast_pattern_cluster_agent
+
+    incident_id = require(payload, "incident_id")
+    modes = require(payload, "failure_modes")
+    dep = payload.get("dependency_hints", [])
+    if not isinstance(incident_id, str) or not incident_id.strip():
+        raise ValidationError("incident_id must be a non-empty string")
+    if not isinstance(modes, list) or not modes:
+        raise ValidationError("failure_modes must be a non-empty array")
+    if dep is not None and (not isinstance(dep, list) or not all(isinstance(item, str) for item in dep)):
+        raise ValidationError("dependency_hints must be an array of strings when provided")
+
+    prompt = f"""
+You are blast-pattern-cluster-agent.
+Return only JSON with keys incident_id, clusters, clustering_notes.
+Rules:
+- clusters is a non-empty array of objects with keys cluster_id, blast_pattern, failure_mode_ids, services, rationale, confidence.
+- blast_pattern must be one of localized, tier, cross-system, global.
+- confidence must be one of low, medium, high.
+Input:
+{{"incident_id":{json.dumps(incident_id)},"failure_modes":{json.dumps(modes)},"dependency_hints":{json.dumps(dep)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    if not isinstance(out.get("incident_id"), str) or not str(out["incident_id"]).strip():
+        return run_blast_pattern_cluster_agent(payload)
+    clusters = out.get("clusters")
+    notes = out.get("clustering_notes")
+    if not isinstance(clusters, list) or not clusters:
+        return run_blast_pattern_cluster_agent(payload)
+    if not isinstance(notes, str) or not notes.strip():
+        return run_blast_pattern_cluster_agent(payload)
+
+    safe_clusters: list[dict[str, Any]] = []
+    for row in clusters[:16]:
+        if not isinstance(row, dict):
+            return run_blast_pattern_cluster_agent(payload)
+        if row.get("blast_pattern") not in {"localized", "tier", "cross-system", "global"}:
+            return run_blast_pattern_cluster_agent(payload)
+        if row.get("confidence") not in {"low", "medium", "high"}:
+            return run_blast_pattern_cluster_agent(payload)
+        for k in ("cluster_id", "rationale"):
+            if not isinstance(row.get(k), str) or not str(row[k]).strip():
+                return run_blast_pattern_cluster_agent(payload)
+        if not isinstance(row.get("failure_mode_ids"), list) or not isinstance(row.get("services"), list):
+            return run_blast_pattern_cluster_agent(payload)
+        safe_clusters.append(
+            {
+                "cluster_id": sanitize_untrusted_text(str(row["cluster_id"]).strip())[:120],
+                "blast_pattern": row["blast_pattern"],
+                "failure_mode_ids": [sanitize_untrusted_text(str(x).strip())[:120] for x in row["failure_mode_ids"] if str(x).strip()][:32],
+                "services": [sanitize_untrusted_text(str(x).strip())[:80] for x in row["services"] if str(x).strip()][:16],
+                "rationale": sanitize_untrusted_text(" ".join(str(row["rationale"]).split()[:18])),
+                "confidence": row["confidence"],
+            }
+        )
+    if not safe_clusters:
+        return run_blast_pattern_cluster_agent(payload)
+    return {
+        "incident_id": sanitize_untrusted_text(" ".join(str(out["incident_id"]).split()[:12]))[:120],
+        "clusters": safe_clusters,
+        "clustering_notes": sanitize_untrusted_text(" ".join(notes.strip().split()[:24])),
+    }
+
+
+def run_rollback_playbook_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_rollback_playbook_agent
+
+    incident_id = require(payload, "incident_id")
+    clusters = require(payload, "clusters")
+    if not isinstance(incident_id, str) or not incident_id.strip():
+        raise ValidationError("incident_id must be a non-empty string")
+    if not isinstance(clusters, list) or not clusters:
+        raise ValidationError("clusters must be a non-empty array")
+
+    prompt = f"""
+You are rollback-playbook-agent.
+Return only JSON with keys incident_id, playbook_id, rollback_class, steps, prerequisites, abort_conditions, verification_checks, escalation_points, playbook_notes.
+Rules:
+- rollback_class must be one of standard, elevated, critical.
+- steps is a non-empty array of objects with step_id, action, owner, success_criteria.
+- prerequisites, abort_conditions, verification_checks, escalation_points must all be non-empty arrays.
+Input:
+{{"incident_id":{json.dumps(incident_id)},"clusters":{json.dumps(clusters)},"current_state":{json.dumps(payload.get("current_state"))},"rollback_constraints":{json.dumps(payload.get("rollback_constraints"))}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    required_text = ["incident_id", "playbook_id", "playbook_notes"]
+    if any(not isinstance(out.get(k), str) or not str(out[k]).strip() for k in required_text):
+        return run_rollback_playbook_agent(payload)
+    if out.get("rollback_class") not in {"standard", "elevated", "critical"}:
+        return run_rollback_playbook_agent(payload)
+    for k in ("steps", "prerequisites", "abort_conditions", "verification_checks", "escalation_points"):
+        if not isinstance(out.get(k), list) or not out[k]:
+            return run_rollback_playbook_agent(payload)
+
+    safe_steps: list[dict[str, Any]] = []
+    for row in out["steps"][:12]:
+        if not isinstance(row, dict):
+            return run_rollback_playbook_agent(payload)
+        for k in ("step_id", "action", "owner", "success_criteria"):
+            if not isinstance(row.get(k), str) or not str(row[k]).strip():
+                return run_rollback_playbook_agent(payload)
+        safe_steps.append(
+            {
+                "step_id": sanitize_untrusted_text(str(row["step_id"]).strip())[:40],
+                "action": sanitize_untrusted_text(" ".join(str(row["action"]).split()[:14])),
+                "owner": sanitize_untrusted_text(str(row["owner"]).strip())[:40],
+                "success_criteria": sanitize_untrusted_text(" ".join(str(row["success_criteria"]).split()[:14])),
+            }
+        )
+    if not safe_steps:
+        return run_rollback_playbook_agent(payload)
+    return {
+        "incident_id": sanitize_untrusted_text(" ".join(str(out["incident_id"]).split()[:12]))[:120],
+        "playbook_id": sanitize_untrusted_text(str(out["playbook_id"]).strip())[:160],
+        "rollback_class": out["rollback_class"],
+        "steps": safe_steps,
+        "prerequisites": [sanitize_untrusted_text(" ".join(str(x).split()[:12])) for x in out["prerequisites"] if str(x).strip()][:6],
+        "abort_conditions": [sanitize_untrusted_text(" ".join(str(x).split()[:12])) for x in out["abort_conditions"] if str(x).strip()][:6],
+        "verification_checks": [sanitize_untrusted_text(" ".join(str(x).split()[:12])) for x in out["verification_checks"] if str(x).strip()][:6],
+        "escalation_points": [sanitize_untrusted_text(" ".join(str(x).split()[:12])) for x in out["escalation_points"] if str(x).strip()][:6],
+        "playbook_notes": sanitize_untrusted_text(" ".join(str(out["playbook_notes"]).split()[:24])),
+    }
+
+
 def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])

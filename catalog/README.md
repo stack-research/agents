@@ -44,6 +44,10 @@ Each project lives in `catalog/projects/<project>/` with agents in `agents/<agen
   - `artifact-inventory-agent`: normalizes run artifacts with roles and digests for reproducible bundles.
   - `bundle-manifest-agent`: emits canonical manifest entries and aggregate `bundle_root_sha256`.
   - `bundle-seal-agent`: seals bundle metadata with lineage attachment and verification checklist.
+- `failure-ops`
+  - `failure-library-agent`: normalizes incident observations into stable failure mode records.
+  - `blast-pattern-cluster-agent`: clusters failure modes into bounded blast-pattern groups.
+  - `rollback-playbook-agent`: generates guarded rollback playbooks with verification and abort checks.
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
   - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.

@@ -1,0 +1,45 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "failure_modes": [
+    {
+      "failure_mode_id": "fm-auth-api-9f8fa8dfba4c",
+      "service": "auth-api",
+      "symptom": "Login calls return 503 after deploy",
+      "trigger": "new session cache release",
+      "impact": "high",
+      "environment": "prod",
+      "preconditions": [
+        "production deploy in progress"
+      ],
+      "indicators": [
+        "5xx spike on /login"
+      ],
+      "tags": [
+        "auth",
+        "availability"
+      ],
+      "confidence": "high"
+    },
+    {
+      "failure_mode_id": "fm-session-store-9d6f1131c7db",
+      "service": "session-store",
+      "symptom": "Connection pool saturated",
+      "trigger": "traffic surge",
+      "impact": "medium",
+      "environment": "prod",
+      "preconditions": [
+        "elevated request load"
+      ],
+      "indicators": [
+        "pool usage above threshold"
+      ],
+      "tags": [
+        "capacity",
+        "latency"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "library_status": "complete",
+  "library_notes": "Failure mode library normalized from incident observations."
+}

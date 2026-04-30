@@ -220,6 +220,23 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Failure-ops (failure library, blast clustering, rollback playbook):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent failure-ops.failure-library-agent \
+  --input catalog/projects/failure-ops/agents/failure-library-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent failure-ops.blast-pattern-cluster-agent \
+  --input catalog/projects/failure-ops/agents/blast-pattern-cluster-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent failure-ops.rollback-playbook-agent \
+  --input catalog/projects/failure-ops/agents/rollback-playbook-agent/examples/example-input.json \
+  --pretty
+```
+
 Router example:
 
 ```bash
@@ -499,6 +516,9 @@ Accepted `--agent` values:
 - `artifact-ops.artifact-inventory-agent` or `artifact-inventory-agent`
 - `artifact-ops.bundle-manifest-agent` or `bundle-manifest-agent`
 - `artifact-ops.bundle-seal-agent` or `bundle-seal-agent`
+- `failure-ops.failure-library-agent` or `failure-library-agent`
+- `failure-ops.blast-pattern-cluster-agent` or `blast-pattern-cluster-agent`
+- `failure-ops.rollback-playbook-agent` or `rollback-playbook-agent`
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.dependency-router-agent` or `dependency-router-agent`
 - `workflow-ops.retry-policy-agent` or `retry-policy-agent`
@@ -613,6 +633,13 @@ Artifact-ops LLM smoke (requires Ollama and `AGENT_MODE=llm`):
 
 ```bash
 AGENT_MODE=llm python3 -m unittest tests.test_artifact_ops_llm -v
+```
+
+Failure-ops deterministic + LLM smoke:
+
+```bash
+python3 -m unittest tests.test_failure_ops -v
+AGENT_MODE=llm python3 -m unittest tests.test_failure_ops_llm -v
 ```
 
 Or with Make targets:

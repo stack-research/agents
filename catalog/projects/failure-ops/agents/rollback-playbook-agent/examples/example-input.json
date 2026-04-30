@@ -1,0 +1,27 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "clusters": [
+    {
+      "cluster_id": "cluster-1a81a84dfad4",
+      "blast_pattern": "cross-system",
+      "failure_mode_ids": [
+        "fm-auth-api-9f8fa8dfba4c",
+        "fm-session-store-9d6f1131c7db"
+      ],
+      "services": [
+        "auth-api",
+        "session-store"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "current_state": {
+    "active_release": "auth-release-2026-04-30.2",
+    "error_budget_remaining": 4
+  },
+  "rollback_constraints": {
+    "requires_approval": true,
+    "backup_confirmed": true,
+    "max_minutes": 20
+  }
+}

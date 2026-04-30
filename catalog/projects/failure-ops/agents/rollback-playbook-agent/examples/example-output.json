@@ -1,0 +1,35 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "playbook_id": "rb-inc-2026-04-30-auth-8f8f081f1fe4",
+  "rollback_class": "critical",
+  "steps": [
+    {
+      "step_id": "step-1",
+      "action": "Freeze new deploys for affected services.",
+      "owner": "release-manager",
+      "success_criteria": "No new rollout events observed for 5 minutes."
+    },
+    {
+      "step_id": "step-2",
+      "action": "Rollback auth-api and session-store to previous stable release.",
+      "owner": "oncall-sre",
+      "success_criteria": "Login 5xx rate drops below 1% for 10 minutes."
+    }
+  ],
+  "prerequisites": [
+    "Incident commander assigned",
+    "Rollback approval recorded",
+    "Recovery backup verified"
+  ],
+  "abort_conditions": [
+    "Data integrity checks fail after rollback step execution"
+  ],
+  "verification_checks": [
+    "Synthetic login passes from two regions",
+    "Session-store timeout rate returns to baseline"
+  ],
+  "escalation_points": [
+    "Escalate to database on-call if timeout rate remains elevated after step-2"
+  ],
+  "playbook_notes": "Generated from clustered cross-system failures with high confidence."
+}

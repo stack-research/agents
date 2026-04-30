@@ -1,0 +1,20 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "observations": [
+    {
+      "service": "auth-api",
+      "symptom": "Login calls return 503 after deploy",
+      "trigger": "new session cache release",
+      "impact": "High login failure rate for all regions",
+      "environment": "prod",
+      "timeline_hint": "starts 2 minutes after rollout"
+    },
+    {
+      "service": "session-store",
+      "symptom": "Connection pool saturated",
+      "trigger": "traffic surge",
+      "impact": "Timeouts on token validation",
+      "environment": "prod"
+    }
+  ]
+}

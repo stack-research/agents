@@ -92,7 +92,11 @@ catalog/
     - `artifact-inventory-agent`: normalizes run artifacts with roles and content digests for bundles.
     - `bundle-manifest-agent`: builds ordered manifest entries and an aggregate bundle root hash.
     - `bundle-seal-agent`: emits bundle id, seal status, lineage attachment, and verification steps.
-16. `agent-incident-drill`
+16. `failure-ops`
+    - `failure-library-agent`: normalizes incident observations into bounded failure mode records.
+    - `blast-pattern-cluster-agent`: clusters failure modes into blast-pattern groups.
+    - `rollback-playbook-agent`: generates rollback playbooks with prerequisites, abort conditions, and verification checks.
+17. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -125,6 +129,9 @@ catalog/
 - `python3 scripts/run_agent.py --agent artifact-ops.artifact-inventory-agent --input catalog/projects/artifact-ops/agents/artifact-inventory-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent artifact-ops.bundle-manifest-agent --input catalog/projects/artifact-ops/agents/bundle-manifest-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent artifact-ops.bundle-seal-agent --input catalog/projects/artifact-ops/agents/bundle-seal-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent failure-ops.failure-library-agent --input catalog/projects/failure-ops/agents/failure-library-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent failure-ops.blast-pattern-cluster-agent --input catalog/projects/failure-ops/agents/blast-pattern-cluster-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent failure-ops.rollback-playbook-agent --input catalog/projects/failure-ops/agents/rollback-playbook-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`

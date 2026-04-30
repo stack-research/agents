@@ -1,0 +1,21 @@
+{
+  "agent_id": "failure-ops.failure-library-agent",
+  "cases": [
+    {
+      "id": "library-basic-shape",
+      "input": {
+        "incident_id": "inc-eval-1",
+        "observations": [
+          {
+            "service": "payments-api",
+            "symptom": "5xx spikes on charge",
+            "trigger": "deploy",
+            "impact": "checkout errors",
+            "environment": "prod"
+          }
+        ]
+      },
+      "expect_keys": ["incident_id", "failure_modes", "library_status", "library_notes"]
+    }
+  ]
+}

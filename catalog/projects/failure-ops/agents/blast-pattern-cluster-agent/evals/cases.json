@@ -1,0 +1,22 @@
+{
+  "agent_id": "failure-ops.blast-pattern-cluster-agent",
+  "cases": [
+    {
+      "id": "cluster-basic-shape",
+      "input": {
+        "incident_id": "inc-eval-2",
+        "failure_modes": [
+          {
+            "failure_mode_id": "fm-a",
+            "service": "api",
+            "symptom": "timeout",
+            "impact": "high",
+            "environment": "prod",
+            "confidence": "high"
+          }
+        ]
+      },
+      "expect_keys": ["incident_id", "clusters", "clustering_notes"]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+id: failure-ops.blast-pattern-cluster-agent
+name: blast-pattern-cluster-agent
+version: 0.1.0
+summary: |
+  Clusters normalized failure modes into blast patterns with bounded rationale, confidence, and cluster-level impact scope.
+owners:
+  - platform-agents
+inputs:
+  - name: incident_id
+    type: string
+    required: true
+  - name: failure_modes
+    type: array[object]
+    required: true
+  - name: dependency_hints
+    type: array[string]
+    required: false
+outputs:
+  - name: incident_id
+    type: string
+  - name: clusters
+    type: object[]
+  - name: clustering_notes
+    type: string
+rules:
+  - blast_pattern must be one of localized, tier, cross-system, global.
+  - Cluster rationale should cite impact and dependency hints when provided.
+constraints:
+  - At most 64 failure modes and 16 output clusters per request.

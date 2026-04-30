@@ -1,0 +1,44 @@
+id: failure-ops.rollback-playbook-agent
+name: rollback-playbook-agent
+version: 0.1.0
+summary: |
+  Generates rollback playbooks from clustered failures and system constraints, with ordered actions, safety abort conditions, and verification checks.
+owners:
+  - platform-agents
+inputs:
+  - name: incident_id
+    type: string
+    required: true
+  - name: clusters
+    type: array[object]
+    required: true
+  - name: current_state
+    type: object
+    required: false
+  - name: rollback_constraints
+    type: object
+    required: false
+outputs:
+  - name: incident_id
+    type: string
+  - name: playbook_id
+    type: string
+  - name: rollback_class
+    type: enum[standard,elevated,critical]
+  - name: steps
+    type: object[]
+  - name: prerequisites
+    type: array[string]
+  - name: abort_conditions
+    type: array[string]
+  - name: verification_checks
+    type: array[string]
+  - name: escalation_points
+    type: array[string]
+  - name: playbook_notes
+    type: string
+rules:
+  - Refuse unsafe rollback when required approvals or backups are explicitly missing.
+  - Include at least one verification check and one abort condition.
+constraints:
+  - At most 12 rollback steps, each bounded to concise imperative text.

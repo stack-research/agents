@@ -1,0 +1,31 @@
+{
+  "agent_id": "failure-ops.rollback-playbook-agent",
+  "cases": [
+    {
+      "id": "rollback-basic-shape",
+      "input": {
+        "incident_id": "inc-eval-3",
+        "clusters": [
+          {
+            "cluster_id": "cluster-a",
+            "blast_pattern": "tier",
+            "failure_mode_ids": ["fm-a"],
+            "services": ["api"],
+            "confidence": "medium"
+          }
+        ]
+      },
+      "expect_keys": [
+        "incident_id",
+        "playbook_id",
+        "rollback_class",
+        "steps",
+        "prerequisites",
+        "abort_conditions",
+        "verification_checks",
+        "escalation_points",
+        "playbook_notes"
+      ]
+    }
+  ]
+}

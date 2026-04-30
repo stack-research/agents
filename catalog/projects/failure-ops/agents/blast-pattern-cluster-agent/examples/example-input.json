@@ -1,0 +1,24 @@
+{
+  "incident_id": "inc-2026-04-30-auth",
+  "failure_modes": [
+    {
+      "failure_mode_id": "fm-auth-api-9f8fa8dfba4c",
+      "service": "auth-api",
+      "symptom": "Login calls return 503 after deploy",
+      "impact": "high",
+      "environment": "prod",
+      "confidence": "high"
+    },
+    {
+      "failure_mode_id": "fm-session-store-9d6f1131c7db",
+      "service": "session-store",
+      "symptom": "Connection pool saturated",
+      "impact": "medium",
+      "environment": "prod",
+      "confidence": "medium"
+    }
+  ],
+  "dependency_hints": [
+    "auth-api depends on session-store"
+  ]
+}
