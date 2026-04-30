@@ -1,0 +1,27 @@
+id: cost-ops.pipeline-optimizer-agent
+name: pipeline-optimizer-agent
+version: 0.1.0
+summary: |
+  Generates ranked optimization suggestions from cost attribution and guardrail outputs with estimated savings and risk.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: attribution
+    type: object
+    required: true
+  - name: guardrails
+    type: object
+    required: true
+  - name: pipeline_metadata
+    type: object
+    required: false
+outputs:
+  - name: run_id
+    type: string
+  - name: optimization_suggestions
+    type: object[]
+  - name: optimizer_notes
+    type: string

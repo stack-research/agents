@@ -21,6 +21,7 @@ from .control_ops import (
     assess_scope_validation,
     build_lineage_record,
 )
+from .cost_ops import run_budget_guardrail, run_cost_attribution, run_pipeline_optimizer
 from .core import (
     DEFAULT_LABELS,
     ValidationError,
@@ -33,6 +34,7 @@ from .failure_ops import (
     build_failure_library,
     build_rollback_playbook,
 )
+from .inter_ops import validate_schema_compat
 from .security_scanner import scan_repository_controls
 
 
@@ -1520,6 +1522,22 @@ def run_rollback_playbook_agent(payload: dict[str, Any]) -> dict[str, Any]:
     return build_rollback_playbook(payload)
 
 
+def run_schema_compat_validator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return validate_schema_compat(payload)
+
+
+def run_cost_attribution_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return run_cost_attribution(payload)
+
+
+def run_budget_guardrail_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return run_budget_guardrail(payload)
+
+
+def run_pipeline_optimizer_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return run_pipeline_optimizer(payload)
+
+
 def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])
@@ -1611,6 +1629,37 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     ):
         target_agent = "failure-ops.blast-pattern-cluster-agent"
         rationale = "Blast pattern clustering intent detected; route to blast pattern cluster agent."
+    elif any(
+        token in lowered
+        for token in [
+            "cost attribution",
+            "token cost",
+            "runtime cost",
+            "cost breakdown",
+        ]
+    ):
+        target_agent = "cost-ops.cost-attribution-agent"
+        rationale = "Cost attribution intent detected; route to cost attribution agent."
+    elif any(token in lowered for token in ["budget guardrail", "budget breach", "cost guardrail", "budget status"]):
+        target_agent = "cost-ops.budget-guardrail-agent"
+        rationale = "Budget guardrail intent detected; route to budget guardrail agent."
+    elif any(
+        token in lowered
+        for token in ["cost optimization", "pipeline optimization", "reduce spend", "cost savings suggestions"]
+    ):
+        target_agent = "cost-ops.pipeline-optimizer-agent"
+        rationale = "Cost optimization intent detected; route to pipeline optimizer agent."
+    elif any(
+        token in lowered
+        for token in [
+            "schema compatibility",
+            "contract compatibility",
+            "producer consumer schema",
+            "api contract check",
+        ]
+    ):
+        target_agent = "inter-ops.schema-compat-validator-agent"
+        rationale = "Schema compatibility intent detected; route to schema compat validator agent."
     elif any(
         token in lowered
         for token in [
@@ -2531,6 +2580,10 @@ def run_agent(
             run_failure_library_agent_llm,
             run_heartbeat_agent_llm,
             run_hypothesis_registration_agent_llm,
+            run_cost_attribution_agent_llm,
+            run_budget_guardrail_agent_llm,
+            run_pipeline_optimizer_agent_llm,
+            run_schema_compat_validator_agent_llm,
             run_kill_path_auditor_agent_llm,
             run_lineage_recorder_agent_llm,
             run_log_analyzer_agent_llm,
@@ -2779,6 +2832,34 @@ def run_agent(
             return run_rollback_playbook_agent(payload)
         if selected_mode == "llm":
             return run_rollback_playbook_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"schema-compat-validator-agent", "inter-ops.schema-compat-validator-agent"}:
+        if selected_mode == "deterministic":
+            return run_schema_compat_validator_agent(payload)
+        if selected_mode == "llm":
+            return run_schema_compat_validator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"cost-attribution-agent", "cost-ops.cost-attribution-agent"}:
+        if selected_mode == "deterministic":
+            return run_cost_attribution_agent(payload)
+        if selected_mode == "llm":
+            return run_cost_attribution_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"budget-guardrail-agent", "cost-ops.budget-guardrail-agent"}:
+        if selected_mode == "deterministic":
+            return run_budget_guardrail_agent(payload)
+        if selected_mode == "llm":
+            return run_budget_guardrail_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"pipeline-optimizer-agent", "cost-ops.pipeline-optimizer-agent"}:
+        if selected_mode == "deterministic":
+            return run_pipeline_optimizer_agent(payload)
+        if selected_mode == "llm":
+            return run_pipeline_optimizer_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"router-agent", "workflow-ops.router-agent"}:

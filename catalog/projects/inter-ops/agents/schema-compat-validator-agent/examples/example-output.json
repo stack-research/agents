@@ -1,0 +1,13 @@
+{
+  "contract_name": "user-profile.v1",
+  "compatibility_status": "compatible_with_warnings",
+  "breaking_changes": [],
+  "non_breaking_changes": [
+    "consumer optional field added: timezone"
+  ],
+  "recommended_actions": [
+    "Document optional field timezone for downstream consumers.",
+    "Add contract test fixture covering timezone absence and presence."
+  ],
+  "validation_notes": "Compared required sets and primitive types using payload-only schema snapshots."
+}

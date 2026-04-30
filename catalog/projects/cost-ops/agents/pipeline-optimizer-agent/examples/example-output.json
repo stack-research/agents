@@ -1,0 +1,16 @@
+{
+  "run_id": "run-cost-001",
+  "optimization_suggestions": [
+    {
+      "suggestion": "Cap synthesis max output tokens by 20 percent.",
+      "estimated_savings_usd": 0.0018,
+      "risk_tier": "low"
+    },
+    {
+      "suggestion": "Route low-priority requests to smaller model tier.",
+      "estimated_savings_usd": 0.0025,
+      "risk_tier": "medium"
+    }
+  ],
+  "optimizer_notes": "Suggestions ranked by estimated savings and guardrail pressure."
+}

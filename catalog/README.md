@@ -48,6 +48,12 @@ Each project lives in `catalog/projects/<project>/` with agents in `agents/<agen
   - `failure-library-agent`: normalizes incident observations into stable failure mode records.
   - `blast-pattern-cluster-agent`: clusters failure modes into bounded blast-pattern groups.
   - `rollback-playbook-agent`: generates guarded rollback playbooks with verification and abort checks.
+- `inter-ops`
+  - `schema-compat-validator-agent`: validates producer/consumer schema compatibility from payload snapshots.
+- `cost-ops`
+  - `cost-attribution-agent`: attributes token/runtime spend by stage with fallback pricing.
+  - `budget-guardrail-agent`: enforces run/stage spend guardrails with mitigations.
+  - `pipeline-optimizer-agent`: suggests ranked pipeline cost optimizations with risk tiers.
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
   - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.

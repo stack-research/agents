@@ -1774,6 +1774,151 @@ Input:
     }
 
 
+def run_schema_compat_validator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_schema_compat_validator_agent
+
+    contract_name = require(payload, "contract_name")
+    producer_schema = require(payload, "producer_schema")
+    consumer_schema = require(payload, "consumer_schema")
+    compat_mode = payload.get("compat_mode", "backward")
+    if not isinstance(contract_name, str) or not contract_name.strip():
+        raise ValidationError("contract_name must be a non-empty string")
+    if not isinstance(producer_schema, dict) or not isinstance(consumer_schema, dict):
+        raise ValidationError("producer_schema and consumer_schema must be objects")
+    if not isinstance(compat_mode, str):
+        raise ValidationError("compat_mode must be a string")
+
+    prompt = f"""
+You are schema-compat-validator-agent.
+Return only JSON with keys contract_name, compatibility_status, breaking_changes, non_breaking_changes, recommended_actions, validation_notes.
+Rules:
+- compatibility_status must be one of compatible, compatible_with_warnings, incompatible.
+- breaking_changes, non_breaking_changes, recommended_actions must be arrays of short strings.
+- Keep output bounded and avoid tool commands.
+Input:
+{{"contract_name":{json.dumps(contract_name)},"producer_schema":{json.dumps(producer_schema)},"consumer_schema":{json.dumps(consumer_schema)},"compat_mode":{json.dumps(compat_mode)}}}
+""".strip()
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+
+    for k in ("contract_name", "compatibility_status", "validation_notes"):
+        if not isinstance(out.get(k), str) or not str(out[k]).strip():
+            return run_schema_compat_validator_agent(payload)
+    if out["compatibility_status"] not in {"compatible", "compatible_with_warnings", "incompatible"}:
+        return run_schema_compat_validator_agent(payload)
+    for k in ("breaking_changes", "non_breaking_changes", "recommended_actions"):
+        if not isinstance(out.get(k), list):
+            return run_schema_compat_validator_agent(payload)
+
+    return {
+        "contract_name": sanitize_untrusted_text(" ".join(str(out["contract_name"]).split()[:10]))[:120],
+        "compatibility_status": out["compatibility_status"],
+        "breaking_changes": [
+            sanitize_untrusted_text(" ".join(str(x).split()[:14]))
+            for x in out["breaking_changes"]
+            if str(x).strip()
+        ][:8],
+        "non_breaking_changes": [
+            sanitize_untrusted_text(" ".join(str(x).split()[:14]))
+            for x in out["non_breaking_changes"]
+            if str(x).strip()
+        ][:8],
+        "recommended_actions": [
+            sanitize_untrusted_text(" ".join(str(x).split()[:14]))
+            for x in out["recommended_actions"]
+            if str(x).strip()
+        ][:6],
+        "validation_notes": sanitize_untrusted_text(" ".join(str(out["validation_notes"]).split()[:20])),
+    }
+
+
+def run_cost_attribution_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_cost_attribution_agent
+
+    run_id = require(payload, "run_id")
+    stages = require(payload, "stages")
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    if not isinstance(stages, list) or not stages:
+        raise ValidationError("stages must be a non-empty array")
+    prompt = f"""You are cost-attribution-agent.
+Return JSON keys: run_id, stage_costs, total_cost_usd, dominant_cost_drivers, attribution_notes.
+Input: {json.dumps(payload)}
+""".strip()
+    out = _extract_json(_post_ollama(model, base_url, prompt))
+    if not isinstance(out.get("run_id"), str) or not isinstance(out.get("stage_costs"), list):
+        return run_cost_attribution_agent(payload)
+    if not isinstance(out.get("total_cost_usd"), (int, float)):
+        return run_cost_attribution_agent(payload)
+    return {
+        "run_id": sanitize_untrusted_text(str(out["run_id"]).strip())[:120],
+        "stage_costs": [x for x in out["stage_costs"] if isinstance(x, dict)][:32],
+        "total_cost_usd": float(out["total_cost_usd"]),
+        "dominant_cost_drivers": [sanitize_untrusted_text(str(x))[:60] for x in out.get("dominant_cost_drivers", [])][:4],
+        "attribution_notes": sanitize_untrusted_text(" ".join(str(out.get("attribution_notes", "")).split()[:20])),
+    }
+
+
+def run_budget_guardrail_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_budget_guardrail_agent
+
+    require(payload, "run_id")
+    require(payload, "attribution")
+    require(payload, "budget_limits")
+    prompt = f"""You are budget-guardrail-agent.
+Return JSON keys: run_id, budget_status, triggered_guardrails, recommended_mitigations, guardrail_notes.
+budget_status must be within|warning|breach.
+Input: {json.dumps(payload)}
+""".strip()
+    out = _extract_json(_post_ollama(model, base_url, prompt))
+    if out.get("budget_status") not in {"within", "warning", "breach"}:
+        return run_budget_guardrail_agent(payload)
+    if not isinstance(out.get("triggered_guardrails"), list) or not isinstance(out.get("recommended_mitigations"), list):
+        return run_budget_guardrail_agent(payload)
+    return {
+        "run_id": sanitize_untrusted_text(str(out.get("run_id", "")).strip())[:120],
+        "budget_status": out["budget_status"],
+        "triggered_guardrails": [sanitize_untrusted_text(str(x))[:80] for x in out["triggered_guardrails"]][:8],
+        "recommended_mitigations": [sanitize_untrusted_text(str(x))[:90] for x in out["recommended_mitigations"]][:6],
+        "guardrail_notes": sanitize_untrusted_text(" ".join(str(out.get("guardrail_notes", "")).split()[:20])),
+    }
+
+
+def run_pipeline_optimizer_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_pipeline_optimizer_agent
+
+    require(payload, "run_id")
+    require(payload, "attribution")
+    require(payload, "guardrails")
+    prompt = f"""You are pipeline-optimizer-agent.
+Return JSON keys: run_id, optimization_suggestions, optimizer_notes.
+Each suggestion has suggestion, estimated_savings_usd, risk_tier.
+Input: {json.dumps(payload)}
+""".strip()
+    out = _extract_json(_post_ollama(model, base_url, prompt))
+    sugg = out.get("optimization_suggestions")
+    if not isinstance(sugg, list):
+        return run_pipeline_optimizer_agent(payload)
+    safe = []
+    for s in sugg[:5]:
+        if not isinstance(s, dict):
+            continue
+        safe.append(
+            {
+                "suggestion": sanitize_untrusted_text(" ".join(str(s.get("suggestion", "")).split()[:14])),
+                "estimated_savings_usd": float(s.get("estimated_savings_usd", 0.0)),
+                "risk_tier": sanitize_untrusted_text(str(s.get("risk_tier", "medium")).strip())[:16],
+            }
+        )
+    if not safe:
+        return run_pipeline_optimizer_agent(payload)
+    return {
+        "run_id": sanitize_untrusted_text(str(out.get("run_id", "")).strip())[:120],
+        "optimization_suggestions": safe,
+        "optimizer_notes": sanitize_untrusted_text(" ".join(str(out.get("optimizer_notes", "")).split()[:20])),
+    }
+
+
 def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])

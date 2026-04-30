@@ -1,0 +1,7 @@
+{
+  "run_id": "run-cost-001",
+  "budget_status": "breach",
+  "triggered_guardrails": ["run_limit_exceeded", "stage_limit_exceeded:synthesis"],
+  "recommended_mitigations": ["Reduce synthesis token budget", "Add guardrail to stop on run budget breach"],
+  "guardrail_notes": "Total and synthesis stage spend exceeded configured limits."
+}

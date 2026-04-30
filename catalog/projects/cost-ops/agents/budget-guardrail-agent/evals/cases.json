@@ -1,0 +1,14 @@
+{
+  "agent_id": "cost-ops.budget-guardrail-agent",
+  "cases": [
+    {
+      "id": "budget-guardrail-shape",
+      "input": {
+        "run_id": "eval-budget-1",
+        "attribution": {"total_cost_usd": 1.2, "stage_costs": [{"stage_name": "a", "cost_usd": 1.2}]},
+        "budget_limits": {"run_limit_usd": 1.0, "warning_ratio": 0.8, "stage_limit_usd": 0.9}
+      },
+      "expect_keys": ["run_id", "budget_status", "triggered_guardrails", "recommended_mitigations", "guardrail_notes"]
+    }
+  ]
+}

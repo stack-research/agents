@@ -96,7 +96,13 @@ catalog/
     - `failure-library-agent`: normalizes incident observations into bounded failure mode records.
     - `blast-pattern-cluster-agent`: clusters failure modes into blast-pattern groups.
     - `rollback-playbook-agent`: generates rollback playbooks with prerequisites, abort conditions, and verification checks.
-17. `agent-incident-drill`
+17. `inter-ops`
+    - `schema-compat-validator-agent`: validates producer/consumer schema compatibility from payload snapshots.
+18. `cost-ops`
+    - `cost-attribution-agent`: attributes token/runtime spend by stage.
+    - `budget-guardrail-agent`: evaluates attributed spend against budget limits.
+    - `pipeline-optimizer-agent`: emits ranked optimization actions for pipeline cost.
+19. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -132,6 +138,10 @@ catalog/
 - `python3 scripts/run_agent.py --agent failure-ops.failure-library-agent --input catalog/projects/failure-ops/agents/failure-library-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent failure-ops.blast-pattern-cluster-agent --input catalog/projects/failure-ops/agents/blast-pattern-cluster-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent failure-ops.rollback-playbook-agent --input catalog/projects/failure-ops/agents/rollback-playbook-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent inter-ops.schema-compat-validator-agent --input catalog/projects/inter-ops/agents/schema-compat-validator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent cost-ops.cost-attribution-agent --input catalog/projects/cost-ops/agents/cost-attribution-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent cost-ops.budget-guardrail-agent --input catalog/projects/cost-ops/agents/budget-guardrail-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent cost-ops.pipeline-optimizer-agent --input catalog/projects/cost-ops/agents/pipeline-optimizer-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`

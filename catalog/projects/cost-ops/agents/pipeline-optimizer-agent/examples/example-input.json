@@ -1,0 +1,17 @@
+{
+  "run_id": "run-cost-001",
+  "attribution": {
+    "total_cost_usd": 0.0142,
+    "stage_costs": [
+      {"stage_name": "retrieval", "cost_usd": 0.0048},
+      {"stage_name": "synthesis", "cost_usd": 0.0094}
+    ]
+  },
+  "guardrails": {
+    "budget_status": "breach",
+    "triggered_guardrails": ["run_limit_exceeded", "stage_limit_exceeded:synthesis"]
+  },
+  "pipeline_metadata": {
+    "pipeline_name": "support-incident-flow"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "contract_name": "user-profile.v1",
+  "compat_mode": "backward",
+  "producer_schema": {
+    "required": ["user_id", "email"],
+    "properties": {
+      "user_id": {"type": "string"},
+      "email": {"type": "string"},
+      "display_name": {"type": "string"}
+    }
+  },
+  "consumer_schema": {
+    "required": ["user_id", "email"],
+    "properties": {
+      "user_id": {"type": "string"},
+      "email": {"type": "string"},
+      "display_name": {"type": "string"},
+      "timezone": {"type": "string"}
+    }
+  }
+}

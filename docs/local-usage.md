@@ -237,6 +237,32 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Inter-ops (schema compatibility validation):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent inter-ops.schema-compat-validator-agent \
+  --input catalog/projects/inter-ops/agents/schema-compat-validator-agent/examples/example-input.json \
+  --pretty
+```
+
+Cost-ops (attribution, guardrails, optimization):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent cost-ops.cost-attribution-agent \
+  --input catalog/projects/cost-ops/agents/cost-attribution-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent cost-ops.budget-guardrail-agent \
+  --input catalog/projects/cost-ops/agents/budget-guardrail-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent cost-ops.pipeline-optimizer-agent \
+  --input catalog/projects/cost-ops/agents/pipeline-optimizer-agent/examples/example-input.json \
+  --pretty
+```
+
 Router example:
 
 ```bash
@@ -519,6 +545,10 @@ Accepted `--agent` values:
 - `failure-ops.failure-library-agent` or `failure-library-agent`
 - `failure-ops.blast-pattern-cluster-agent` or `blast-pattern-cluster-agent`
 - `failure-ops.rollback-playbook-agent` or `rollback-playbook-agent`
+- `inter-ops.schema-compat-validator-agent` or `schema-compat-validator-agent`
+- `cost-ops.cost-attribution-agent` or `cost-attribution-agent`
+- `cost-ops.budget-guardrail-agent` or `budget-guardrail-agent`
+- `cost-ops.pipeline-optimizer-agent` or `pipeline-optimizer-agent`
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.dependency-router-agent` or `dependency-router-agent`
 - `workflow-ops.retry-policy-agent` or `retry-policy-agent`
@@ -640,6 +670,20 @@ Failure-ops deterministic + LLM smoke:
 ```bash
 python3 -m unittest tests.test_failure_ops -v
 AGENT_MODE=llm python3 -m unittest tests.test_failure_ops_llm -v
+```
+
+Inter-ops deterministic + LLM smoke:
+
+```bash
+python3 -m unittest tests.test_inter_ops -v
+AGENT_MODE=llm python3 -m unittest tests.test_inter_ops_llm -v
+```
+
+Cost-ops deterministic + LLM smoke:
+
+```bash
+python3 -m unittest tests.test_cost_ops -v
+AGENT_MODE=llm python3 -m unittest tests.test_cost_ops_llm -v
 ```
 
 Or with Make targets:

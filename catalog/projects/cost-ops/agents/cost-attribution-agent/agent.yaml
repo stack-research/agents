@@ -1,0 +1,31 @@
+id: cost-ops.cost-attribution-agent
+name: cost-attribution-agent
+version: 0.1.0
+summary: |
+  Attributes token and runtime spend per stage from payload metrics using observed pricing with optional fallback price tables.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: stages
+    type: object[]
+    required: true
+  - name: price_table
+    type: object
+    required: false
+outputs:
+  - name: run_id
+    type: string
+  - name: stage_costs
+    type: object[]
+  - name: total_cost_usd
+    type: number
+  - name: dominant_cost_drivers
+    type: string[]
+  - name: attribution_notes
+    type: string
+rules:
+  - Reject negative token/runtime values.
+  - Keep monetary values deterministic and bounded.

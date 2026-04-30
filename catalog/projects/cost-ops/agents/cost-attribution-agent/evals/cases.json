@@ -1,0 +1,15 @@
+{
+  "agent_id": "cost-ops.cost-attribution-agent",
+  "cases": [
+    {
+      "id": "cost-attribution-shape",
+      "input": {
+        "run_id": "eval-cost-1",
+        "stages": [
+          {"stage_name": "a", "tokens_in": 100, "tokens_out": 50, "runtime_ms": 1000}
+        ]
+      },
+      "expect_keys": ["run_id", "stage_costs", "total_cost_usd", "dominant_cost_drivers", "attribution_notes"]
+    }
+  ]
+}

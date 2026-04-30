@@ -1,0 +1,14 @@
+{
+  "agent_id": "cost-ops.pipeline-optimizer-agent",
+  "cases": [
+    {
+      "id": "pipeline-optimizer-shape",
+      "input": {
+        "run_id": "eval-opt-1",
+        "attribution": {"total_cost_usd": 1.2, "stage_costs": [{"stage_name": "gen", "cost_usd": 1.0}]},
+        "guardrails": {"budget_status": "breach", "triggered_guardrails": ["run_limit_exceeded"]}
+      },
+      "expect_keys": ["run_id", "optimization_suggestions", "optimizer_notes"]
+    }
+  ]
+}

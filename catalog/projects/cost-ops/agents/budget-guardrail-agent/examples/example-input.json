@@ -1,0 +1,15 @@
+{
+  "run_id": "run-cost-001",
+  "attribution": {
+    "total_cost_usd": 0.0142,
+    "stage_costs": [
+      {"stage_name": "retrieval", "cost_usd": 0.0048},
+      {"stage_name": "synthesis", "cost_usd": 0.0094}
+    ]
+  },
+  "budget_limits": {
+    "run_limit_usd": 0.01,
+    "warning_ratio": 0.8,
+    "stage_limit_usd": 0.008
+  }
+}

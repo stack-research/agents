@@ -1,0 +1,10 @@
+{
+  "run_id": "run-cost-001",
+  "stage_costs": [
+    {"stage_name": "retrieval", "cost_usd": 0.0048},
+    {"stage_name": "synthesis", "cost_usd": 0.0094}
+  ],
+  "total_cost_usd": 0.0142,
+  "dominant_cost_drivers": ["synthesis tokens", "runtime"],
+  "attribution_notes": "Computed costs from stage metrics with fallback price table."
+}

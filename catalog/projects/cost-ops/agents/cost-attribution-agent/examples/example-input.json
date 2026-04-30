@@ -1,0 +1,24 @@
+{
+  "run_id": "run-cost-001",
+  "stages": [
+    {
+      "stage_name": "retrieval",
+      "tokens_in": 1200,
+      "tokens_out": 400,
+      "runtime_ms": 3200,
+      "provider": "local",
+      "model": "llama3.2:3b"
+    },
+    {
+      "stage_name": "synthesis",
+      "tokens_in": 2400,
+      "tokens_out": 900,
+      "runtime_ms": 5800
+    }
+  ],
+  "price_table": {
+    "token_in_per_1k_usd": 0.001,
+    "token_out_per_1k_usd": 0.002,
+    "runtime_per_second_usd": 0.0005
+  }
+}

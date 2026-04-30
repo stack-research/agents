@@ -1,0 +1,35 @@
+{
+  "agent_id": "inter-ops.schema-compat-validator-agent",
+  "cases": [
+    {
+      "id": "interop-compatible-warning",
+      "input": {
+        "contract_name": "order.v2",
+        "compat_mode": "backward",
+        "producer_schema": {
+          "required": ["order_id"],
+          "properties": {
+            "order_id": {"type": "string"},
+            "currency": {"type": "string"}
+          }
+        },
+        "consumer_schema": {
+          "required": ["order_id"],
+          "properties": {
+            "order_id": {"type": "string"},
+            "currency": {"type": "string"},
+            "channel": {"type": "string"}
+          }
+        }
+      },
+      "expect_keys": [
+        "contract_name",
+        "compatibility_status",
+        "breaking_changes",
+        "non_breaking_changes",
+        "recommended_actions",
+        "validation_notes"
+      ]
+    }
+  ]
+}

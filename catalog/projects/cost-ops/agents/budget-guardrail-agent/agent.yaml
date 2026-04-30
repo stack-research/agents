@@ -1,0 +1,28 @@
+id: cost-ops.budget-guardrail-agent
+name: budget-guardrail-agent
+version: 0.1.0
+summary: |
+  Applies run/stage/daily budgets to attributed cost and emits guardrail status and mitigation actions.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: attribution
+    type: object
+    required: true
+  - name: budget_limits
+    type: object
+    required: true
+outputs:
+  - name: run_id
+    type: string
+  - name: budget_status
+    type: enum[within,warning,breach]
+  - name: triggered_guardrails
+    type: string[]
+  - name: recommended_mitigations
+    type: string[]
+  - name: guardrail_notes
+    type: string
