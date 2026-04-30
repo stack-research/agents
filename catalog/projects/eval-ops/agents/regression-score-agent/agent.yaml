@@ -1,0 +1,32 @@
+id: eval-ops.regression-score-agent
+name: regression-score-agent
+version: 0.1.0
+summary: |
+  Compares baseline and current evaluation scores per metric to detect regressions and emit a verdict.
+owners:
+  - platform-agents
+inputs:
+  - name: baseline_scores
+    type: object
+    required: true
+  - name: current_scores
+    type: object
+    required: true
+  - name: regression_threshold_percent
+    type: number
+    required: false
+outputs:
+  - name: regression_flag
+    type: boolean
+  - name: verdict
+    type: enum[pass,warn,fail]
+  - name: metric_deltas
+    type: array[string]
+  - name: findings
+    type: array[string]
+rules:
+  - Only compare numeric metric values present in both maps.
+  - verdict must align with regression_flag and worst metric delta.
+constraints:
+  - findings length should stay between 2 and 4.
+  - metric_deltas length should not exceed 12 entries.

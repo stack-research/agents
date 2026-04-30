@@ -30,7 +30,7 @@ Add or update the project selected. Then update the roadmap checklist when finis
 
 ## New Catalog Project Ideas
 
-- [ ] `eval-ops`
+- [x] `eval-ops`
   - Agents for benchmark curation, regression scoring, and drift-over-time quality reports.
 
 - [ ] `experiment-ops`

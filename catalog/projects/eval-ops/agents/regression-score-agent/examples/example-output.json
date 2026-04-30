@@ -1,0 +1,14 @@
+{
+  "regression_flag": true,
+  "verdict": "fail",
+  "metric_deltas": [
+    "accuracy: 0.91 -> 0.86 (-5.5%)",
+    "latency_p95_ms: 120.0 -> 118.0 (-1.7%)",
+    "task_success: 0.88 -> 0.87 (-1.1%)"
+  ],
+  "findings": [
+    "Regression beyond threshold on: accuracy",
+    "Tighten change review or roll back if these metrics gate release",
+    "Compare prompts, tools, and data slices between baseline and current eval harnesses"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "curated_suite_id": "tool-use-v1-1df9691364",
+  "included_cases": [
+    "t1: Happy path tool invocation",
+    "t2: Invalid schema rejection",
+    "t3: Timeout handling",
+    "t4: Rate limit backoff",
+    "t5: Adversarial prompt in tool args"
+  ],
+  "excluded_duplicates": ["t1"],
+  "coverage_gaps": [
+    "Schedule periodic review against live incident taxonomy",
+    "Add negative-path cases for permission denial if not already covered"
+  ],
+  "curation_verdict": "ready"
+}

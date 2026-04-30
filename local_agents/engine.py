@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from datetime import datetime
 from typing import Any
@@ -916,6 +917,264 @@ def run_regression_triage_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_benchmark_curator_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    benchmark_name = require(payload, "benchmark_name")
+    target_capability = payload.get("target_capability", "")
+    candidate_cases = payload.get("candidate_cases")
+
+    if not isinstance(benchmark_name, str) or not benchmark_name.strip():
+        raise ValidationError("benchmark_name must be a non-empty string")
+    if target_capability is not None and not isinstance(target_capability, str):
+        raise ValidationError("target_capability must be a string when provided")
+    if not isinstance(candidate_cases, list) or not candidate_cases:
+        raise ValidationError("candidate_cases must be a non-empty array")
+
+    safe_name = sanitize_untrusted_text(benchmark_name.strip())
+    _ = target_capability  # reserved for future weighting; deterministic path ignores
+
+    seen_ids: set[str] = set()
+    excluded_duplicates: list[str] = []
+    included: list[tuple[str, str]] = []
+
+    for idx, item in enumerate(candidate_cases):
+        if not isinstance(item, dict):
+            raise ValidationError("each candidate_cases item must be an object")
+        case_id = item.get("case_id")
+        title = item.get("title")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValidationError(f"candidate_cases[{idx}].case_id must be a non-empty string")
+        if not isinstance(title, str) or not title.strip():
+            raise ValidationError(f"candidate_cases[{idx}].title must be a non-empty string")
+        raw_id = sanitize_untrusted_text(case_id.strip())
+        norm_id = raw_id.lower()
+        safe_title = sanitize_untrusted_text(title.strip())
+        if norm_id in seen_ids:
+            excluded_duplicates.append(raw_id)
+            continue
+        seen_ids.add(norm_id)
+        included.append((raw_id, safe_title))
+
+    unique_count = len(included)
+    if unique_count < 3:
+        verdict: str = "sparse"
+    elif unique_count < 5:
+        verdict = "needs_expansion"
+    else:
+        verdict = "ready"
+
+    combined_titles = " ".join(t.lower() for _, t in included)
+    coverage_gaps: list[str] = []
+    if not any(
+        token in combined_titles
+        for token in ("adversarial", "safety", "negative", "denial", "attack", "jailbreak")
+    ):
+        coverage_gaps.append("Add adversarial or safety-heavy eval scenarios")
+    if unique_count < 5:
+        coverage_gaps.append("Grow suite to at least five distinct case ids for stable coverage")
+    if not coverage_gaps:
+        coverage_gaps.append("Schedule periodic review against live incident taxonomy")
+    if len(coverage_gaps) < 2 and unique_count >= 5:
+        coverage_gaps.append("Add negative-path cases for permission denial if not already covered")
+    coverage_gaps = [" ".join(g.split()[:24]) for g in coverage_gaps[:4]]
+
+    sorted_ids = sorted(seen_ids)
+    digest = hashlib.sha256(f"{safe_name}|{','.join(sorted_ids)}".encode("utf-8")).hexdigest()[:10]
+    slug = "".join(ch if ch.isalnum() else "-" for ch in safe_name.lower()).strip("-")[:24] or "bench"
+    curated_suite_id = f"{slug}-{digest}"
+
+    included_cases = [
+        " ".join((f"{cid}: {tit}").split()[:18]) for cid, tit in included[:12]
+    ]
+
+    return {
+        "curated_suite_id": curated_suite_id,
+        "included_cases": included_cases,
+        "excluded_duplicates": excluded_duplicates[:12],
+        "coverage_gaps": coverage_gaps,
+        "curation_verdict": verdict,
+    }
+
+
+def _metric_lower_is_better(metric: str) -> bool:
+    lowered = metric.lower()
+    return any(
+        token in lowered for token in ("latency", "p95", "p99", "error", "errors", "duration", "ttfb", "_ms")
+    )
+
+
+def run_regression_score_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    baseline_scores = require(payload, "baseline_scores")
+    current_scores = require(payload, "current_scores")
+    threshold = payload.get("regression_threshold_percent", 5.0)
+
+    if not isinstance(baseline_scores, dict) or not baseline_scores:
+        raise ValidationError("baseline_scores must be a non-empty object")
+    if not isinstance(current_scores, dict) or not current_scores:
+        raise ValidationError("current_scores must be a non-empty object")
+    if not isinstance(threshold, (int, float)) or threshold <= 0:
+        raise ValidationError("regression_threshold_percent must be a positive number when provided")
+
+    shared_keys = sorted(set(baseline_scores) & set(current_scores))
+    if not shared_keys:
+        raise ValidationError("baseline_scores and current_scores must share at least one metric key")
+
+    metric_deltas: list[str] = []
+    worst_pct = 0.0
+    regressed_metrics: list[str] = []
+
+    for key in shared_keys:
+        b_raw = baseline_scores[key]
+        c_raw = current_scores[key]
+        if not isinstance(b_raw, (int, float)) or not isinstance(c_raw, (int, float)):
+            continue
+        b_val = float(b_raw)
+        c_val = float(c_raw)
+        lower_better = _metric_lower_is_better(str(key))
+        if lower_better:
+            if b_val == 0:
+                pct = 100.0 if c_val > 0 else 0.0
+            else:
+                pct = (c_val - b_val) / abs(b_val) * 100.0
+            regressed = pct > float(threshold)
+        else:
+            if b_val == 0:
+                pct = -100.0 if c_val < 0 else 0.0
+            else:
+                pct = (c_val - b_val) / abs(b_val) * 100.0
+            regressed = pct < -float(threshold)
+
+        metric_deltas.append(
+            sanitize_untrusted_text(f"{key}: {b_val} -> {c_val} ({pct:+.1f}%)")
+        )
+        if regressed:
+            regressed_metrics.append(str(key))
+            worst_pct = max(worst_pct, abs(pct))
+
+    if not metric_deltas:
+        raise ValidationError("no comparable numeric metrics found across baseline and current")
+
+    regression_flag = bool(regressed_metrics)
+    if regression_flag:
+        verdict = "fail" if worst_pct >= float(threshold) else "warn"
+    else:
+        verdict = "pass"
+
+    findings: list[str] = [
+        "No metric exceeded the configured regression threshold"
+        if not regression_flag
+        else f"Regression beyond threshold on: {', '.join(regressed_metrics[:4])}"
+    ]
+    findings.append(
+        "Tighten change review or roll back if these metrics gate release"
+        if verdict == "fail"
+        else "Monitor the next eval run to confirm whether drift persists"
+    )
+    if len(findings) < 3:
+        findings.append(
+            "Compare prompts, tools, and data slices between baseline and current eval harnesses"
+        )
+    findings = [" ".join(f.split()[:24]) for f in findings[:4]]
+
+    return {
+        "regression_flag": regression_flag,
+        "verdict": verdict,
+        "metric_deltas": metric_deltas[:12],
+        "findings": findings[:4],
+    }
+
+
+def run_quality_drift_reporter_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    metric_name = require(payload, "metric_name")
+    windows = payload.get("windows")
+
+    if not isinstance(metric_name, str) or not metric_name.strip():
+        raise ValidationError("metric_name must be a non-empty string")
+    if not isinstance(windows, list) or len(windows) < 2:
+        raise ValidationError("windows must be an array with at least 2 entries")
+
+    parsed: list[tuple[str, float]] = []
+    for idx, win in enumerate(windows):
+        if not isinstance(win, dict):
+            raise ValidationError(f"windows[{idx}] must be an object")
+        label = win.get("window_label")
+        score = win.get("score")
+        if not isinstance(label, str) or not label.strip():
+            raise ValidationError(f"windows[{idx}].window_label must be a non-empty string")
+        if not isinstance(score, (int, float)):
+            raise ValidationError(f"windows[{idx}].score must be numeric")
+        parsed.append((sanitize_untrusted_text(label.strip()), float(score)))
+
+    lower_better = _metric_lower_is_better(metric_name)
+    scores = [s for _, s in parsed]
+
+    def _mean(vals: list[float]) -> float:
+        return sum(vals) / len(vals) if vals else 0.0
+
+    mean_s = _mean(scores)
+    var = sum((x - mean_s) ** 2 for x in scores) / len(scores) if scores else 0.0
+    std = var**0.5
+
+    deltas = [scores[i] - scores[i - 1] for i in range(1, len(scores))]
+    max_step = max(abs(d) for d in deltas) if deltas else 0.0
+    volatile = len(scores) >= 4 and std > 0.04 and max_step > 0.05
+
+    first, last = scores[0], scores[-1]
+    epsilon = 1e-6
+    if volatile:
+        trend = "volatile"
+    elif lower_better:
+        if last < first - epsilon:
+            trend = "improving"
+        elif last > first + epsilon:
+            trend = "degrading"
+        else:
+            trend = "stable"
+    else:
+        if last > first + epsilon:
+            trend = "improving"
+        elif last < first - epsilon:
+            trend = "degrading"
+        else:
+            trend = "stable"
+
+    span = abs(last - first)
+    if volatile:
+        drift_severity = "high" if max_step > 0.12 else "medium"
+    elif span < 0.02:
+        drift_severity = "none"
+    elif span < 0.05:
+        drift_severity = "low"
+    elif span < 0.12:
+        drift_severity = "medium"
+    else:
+        drift_severity = "high"
+
+    windows_flagged: list[str] = []
+    for i in range(1, len(parsed)):
+        prev_s, cur_s = scores[i - 1], scores[i]
+        if lower_better:
+            step_bad = cur_s - prev_s > 0.04
+        else:
+            step_bad = prev_s - cur_s > 0.04
+        if step_bad:
+            windows_flagged.append(parsed[i][0])
+    windows_flagged = windows_flagged[:4]
+
+    safe_metric = sanitize_untrusted_text(metric_name.strip())
+    report_summary = (
+        f"{safe_metric} across {len(parsed)} windows shows {trend} trend with {drift_severity} drift; "
+        f"first={first:.3f} last={last:.3f}."
+    )
+    report_summary = " ".join(report_summary.split()[:48])
+
+    return {
+        "drift_severity": drift_severity,
+        "trend": trend,
+        "windows_flagged": windows_flagged,
+        "report_summary": report_summary,
+    }
+
+
 def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])
@@ -941,6 +1200,15 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["test", "qa", "acceptance", "scenario"]):
         target_agent = "qa-ops.test-case-generator-agent"
         rationale = "QA/test intent detected; route to test-case generator."
+    elif any(token in lowered for token in ["benchmark suite", "eval suite", "curate benchmark", "benchmark curation"]):
+        target_agent = "eval-ops.benchmark-curator-agent"
+        rationale = "Benchmark curation intent detected; route to benchmark curator."
+    elif any(token in lowered for token in ["regression score", "score regression", "eval regression", "metric regression"]):
+        target_agent = "eval-ops.regression-score-agent"
+        rationale = "Eval regression scoring intent detected; route to regression score agent."
+    elif any(token in lowered for token in ["metric drift", "quality drift", "eval drift", "drift report"]):
+        target_agent = "eval-ops.quality-drift-reporter-agent"
+        rationale = "Quality drift reporting intent detected; route to drift reporter."
     elif any(token in lowered for token in ["regression", "failure", "flaky", "timeout"]):
         target_agent = "qa-ops.regression-triage-agent"
         rationale = "Regression/failure intent detected; route to regression triage."
@@ -1818,6 +2086,7 @@ def run_agent(
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
             run_blast_radius_assessor_agent_llm,
+            run_benchmark_curator_agent_llm,
             run_approval_memory_agent_llm,
             run_checkpoint_agent_llm,
             run_classifier_agent_llm,
@@ -1832,6 +2101,8 @@ def run_agent(
             run_alert_tuner_agent_llm,
             run_planner_agent_llm,
             run_pr_summary_agent_llm,
+            run_quality_drift_reporter_agent_llm,
+            run_regression_score_agent_llm,
             run_regression_triage_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
@@ -1984,6 +2255,27 @@ def run_agent(
             return run_regression_triage_agent(payload)
         if selected_mode == "llm":
             return run_regression_triage_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"benchmark-curator-agent", "eval-ops.benchmark-curator-agent"}:
+        if selected_mode == "deterministic":
+            return run_benchmark_curator_agent(payload)
+        if selected_mode == "llm":
+            return run_benchmark_curator_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"regression-score-agent", "eval-ops.regression-score-agent"}:
+        if selected_mode == "deterministic":
+            return run_regression_score_agent(payload)
+        if selected_mode == "llm":
+            return run_regression_score_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"quality-drift-reporter-agent", "eval-ops.quality-drift-reporter-agent"}:
+        if selected_mode == "deterministic":
+            return run_quality_drift_reporter_agent(payload)
+        if selected_mode == "llm":
+            return run_quality_drift_reporter_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"router-agent", "workflow-ops.router-agent"}:

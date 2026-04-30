@@ -1,0 +1,9 @@
+{
+  "metric_name": "task_success_rate",
+  "windows": [
+    {"window_label": "week-1", "score": 0.88},
+    {"window_label": "week-2", "score": 0.87},
+    {"window_label": "week-3", "score": 0.82},
+    {"window_label": "week-4", "score": 0.79}
+  ]
+}

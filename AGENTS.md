@@ -97,6 +97,8 @@ Repository-level runtime and tests:
 - `tests/test_observability_ops_llm.py` - observability-ops checks in LLM mode (change-correlation/alert-tuner).
 - `tests/test_agent_incident_drill.py` - agent incident drill pipeline and catalog fixture checks.
 - `tests/test_compare_agent_incident_drill_scorecards.py` - scorecard diff helper for drill benchmark outputs.
+- `tests/test_eval_ops.py` - deterministic eval-ops agents (benchmark curator, regression score, drift reporter).
+- `tests/test_eval_ops_llm.py` - eval-ops checks in LLM mode.
 - `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
 - `local_agents/state.py` - Redis state store with graceful NoOp fallback for pipeline state persistence.
 - `docker-compose.yml` - local Ollama and Redis services for LLM testing and state persistence.
@@ -135,6 +137,10 @@ Repository-level runtime and tests:
 - `qa-ops`
   - `test-case-generator-agent`: turns feature requirements into bounded QA test scenarios.
   - `regression-triage-agent`: maps failures to probable cause, severity, and next actions.
+- `eval-ops`
+  - `benchmark-curator-agent`: deduplicates candidate eval cases and lists coverage gaps for a benchmark suite.
+  - `regression-score-agent`: compares baseline and current eval scores to flag regressions with a verdict.
+  - `quality-drift-reporter-agent`: summarizes metric drift and trend across ordered time windows.
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
   - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.

@@ -79,7 +79,11 @@ catalog/
     - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
     - `change-correlation-agent`: correlates incident signal shifts with nearby deploy/config events.
     - `alert-tuner-agent`: suggests alert threshold tuning from historical noise patterns.
-13. `agent-incident-drill`
+13. `eval-ops`
+    - `benchmark-curator-agent`: deduplicates eval cases and surfaces benchmark coverage gaps.
+    - `regression-score-agent`: compares baseline vs current eval metrics for regressions.
+    - `quality-drift-reporter-agent`: summarizes quality trend and drift across time windows.
+14. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -103,6 +107,9 @@ catalog/
 - `python3 scripts/run_agent.py --agent knowledge-ops.temporal-watch-agent --input catalog/projects/knowledge-ops/agents/temporal-watch-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.test-case-generator-agent --input catalog/projects/qa-ops/agents/test-case-generator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent qa-ops.regression-triage-agent --input catalog/projects/qa-ops/agents/regression-triage-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent eval-ops.benchmark-curator-agent --input catalog/projects/eval-ops/agents/benchmark-curator-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent eval-ops.regression-score-agent --input catalog/projects/eval-ops/agents/regression-score-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent eval-ops.quality-drift-reporter-agent --input catalog/projects/eval-ops/agents/quality-drift-reporter-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`

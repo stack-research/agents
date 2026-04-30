@@ -1,0 +1,5 @@
+{
+  "baseline_scores": {"accuracy": 0.91, "latency_p95_ms": 120, "task_success": 0.88},
+  "current_scores": {"accuracy": 0.86, "latency_p95_ms": 118, "task_success": 0.87},
+  "regression_threshold_percent": 5.0
+}

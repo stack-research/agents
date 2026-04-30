@@ -1,0 +1,29 @@
+id: eval-ops.quality-drift-reporter-agent
+name: quality-drift-reporter-agent
+version: 0.1.0
+summary: |
+  Summarizes evaluation quality over ordered time windows, classifying drift severity and trend.
+owners:
+  - platform-agents
+inputs:
+  - name: metric_name
+    type: string
+    required: true
+  - name: windows
+    type: object[]
+    required: true
+outputs:
+  - name: drift_severity
+    type: enum[none,low,medium,high]
+  - name: trend
+    type: enum[improving,stable,degrading,volatile]
+  - name: windows_flagged
+    type: array[string]
+  - name: report_summary
+    type: string
+rules:
+  - windows must be processed in array order.
+  - trend and drift_severity must be consistent with score movement.
+constraints:
+  - windows_flagged length should not exceed 4.
+  - report_summary should stay under 320 characters.

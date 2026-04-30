@@ -1,0 +1,25 @@
+{
+  "agent_id": "eval-ops.benchmark-curator-agent",
+  "cases": [
+    {
+      "id": "dedupe-and-gaps",
+      "tags": ["happy-path"],
+      "input": {
+        "benchmark_name": "tool-use-v1",
+        "target_capability": "structured_json",
+        "candidate_cases": [
+          {"case_id": "a", "title": "Basic call"},
+          {"case_id": "a", "title": "Dup"},
+          {"case_id": "b", "title": "Edge case"},
+          {"case_id": "c", "title": "Another"},
+          {"case_id": "d", "title": "Fourth"},
+          {"case_id": "e", "title": "Fifth with adversarial coverage"}
+        ]
+      },
+      "assertions": [
+        {"field": "excluded_duplicates", "op": "min_length", "value": 1},
+        {"field": "curation_verdict", "op": "in", "value": ["ready", "needs_expansion", "sparse"]}
+      ]
+    }
+  ]
+}

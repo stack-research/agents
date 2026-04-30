@@ -998,6 +998,175 @@ Input:
     }
 
 
+def run_benchmark_curator_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_benchmark_curator_agent
+
+    benchmark_name = require(payload, "benchmark_name")
+    target_capability = payload.get("target_capability", "")
+    candidate_cases = payload.get("candidate_cases")
+
+    if not isinstance(benchmark_name, str) or not benchmark_name.strip():
+        raise ValidationError("benchmark_name must be a non-empty string")
+    if target_capability is not None and not isinstance(target_capability, str):
+        raise ValidationError("target_capability must be a string when provided")
+    if not isinstance(candidate_cases, list) or not candidate_cases:
+        raise ValidationError("candidate_cases must be a non-empty array")
+
+    prompt = f"""
+You are benchmark-curator-agent.
+Return only JSON with keys curated_suite_id, included_cases, excluded_duplicates, coverage_gaps, curation_verdict.
+Rules:
+- curated_suite_id is a short stable-looking identifier string.
+- included_cases must be 1..12 strings summarizing kept cases.
+- excluded_duplicates must list duplicate case_id values removed.
+- coverage_gaps must contain 1..4 concise strings.
+- curation_verdict must be one of ready, needs_expansion, sparse.
+Input:
+{{"benchmark_name":{json.dumps(benchmark_name)},"target_capability":{json.dumps(target_capability)},"candidate_cases":{json.dumps(candidate_cases)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    verdict = out.get("curation_verdict")
+    if verdict not in {"ready", "needs_expansion", "sparse"}:
+        return run_benchmark_curator_agent(payload)
+
+    curated_suite_id = out.get("curated_suite_id")
+    included_cases = out.get("included_cases")
+    excluded_duplicates = out.get("excluded_duplicates")
+    coverage_gaps = out.get("coverage_gaps")
+
+    if not isinstance(curated_suite_id, str) or not curated_suite_id.strip():
+        return run_benchmark_curator_agent(payload)
+    if not isinstance(included_cases, list) or not (1 <= len(included_cases) <= 12):
+        return run_benchmark_curator_agent(payload)
+    if not isinstance(excluded_duplicates, list):
+        return run_benchmark_curator_agent(payload)
+    if not isinstance(coverage_gaps, list) or not (1 <= len(coverage_gaps) <= 4):
+        return run_benchmark_curator_agent(payload)
+
+    safe_included = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in included_cases if x is not None]
+    safe_excluded = [sanitize_untrusted_text(str(x).strip()) for x in excluded_duplicates if str(x).strip()][:12]
+    safe_gaps = [sanitize_untrusted_text(" ".join(str(x).split()[:24])) for x in coverage_gaps if str(x).strip()][:4]
+    if len(safe_included) < 1 or len(safe_gaps) < 1:
+        return run_benchmark_curator_agent(payload)
+
+    return {
+        "curated_suite_id": sanitize_untrusted_text(" ".join(curated_suite_id.strip().split()[:8])),
+        "included_cases": safe_included[:12],
+        "excluded_duplicates": safe_excluded,
+        "coverage_gaps": safe_gaps,
+        "curation_verdict": verdict,
+    }
+
+
+def run_regression_score_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_regression_score_agent
+
+    baseline_scores = require(payload, "baseline_scores")
+    current_scores = require(payload, "current_scores")
+    threshold = payload.get("regression_threshold_percent", 5.0)
+
+    if not isinstance(baseline_scores, dict) or not baseline_scores:
+        raise ValidationError("baseline_scores must be a non-empty object")
+    if not isinstance(current_scores, dict) or not current_scores:
+        raise ValidationError("current_scores must be a non-empty object")
+    if not isinstance(threshold, (int, float)) or threshold <= 0:
+        raise ValidationError("regression_threshold_percent must be a positive number when provided")
+
+    prompt = f"""
+You are regression-score-agent.
+Return only JSON with keys regression_flag, verdict, metric_deltas, findings.
+Rules:
+- regression_flag is a boolean.
+- verdict must be one of pass, warn, fail.
+- metric_deltas must be an array of up to 12 short strings comparing metrics.
+- findings must contain 2 to 4 concise strings.
+Input:
+{{"baseline_scores":{json.dumps(baseline_scores)},"current_scores":{json.dumps(current_scores)},"regression_threshold_percent":{json.dumps(threshold)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    regression_flag = out.get("regression_flag")
+    verdict = out.get("verdict")
+    metric_deltas = out.get("metric_deltas")
+    findings = out.get("findings")
+
+    if not isinstance(regression_flag, bool):
+        return run_regression_score_agent(payload)
+    if verdict not in {"pass", "warn", "fail"}:
+        return run_regression_score_agent(payload)
+    if not isinstance(metric_deltas, list) or not metric_deltas:
+        return run_regression_score_agent(payload)
+    if not isinstance(findings, list) or not (2 <= len(findings) <= 4):
+        return run_regression_score_agent(payload)
+
+    safe_deltas = [sanitize_untrusted_text(" ".join(str(x).split()[:24])) for x in metric_deltas if str(x).strip()][:12]
+    safe_findings = [sanitize_untrusted_text(" ".join(str(x).split()[:24])) for x in findings if str(x).strip()][:4]
+    if len(safe_deltas) < 1 or len(safe_findings) < 2:
+        return run_regression_score_agent(payload)
+
+    return {
+        "regression_flag": regression_flag,
+        "verdict": verdict,
+        "metric_deltas": safe_deltas,
+        "findings": safe_findings,
+    }
+
+
+def run_quality_drift_reporter_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_quality_drift_reporter_agent
+
+    metric_name = require(payload, "metric_name")
+    windows = payload.get("windows")
+
+    if not isinstance(metric_name, str) or not metric_name.strip():
+        raise ValidationError("metric_name must be a non-empty string")
+    if not isinstance(windows, list) or len(windows) < 2:
+        raise ValidationError("windows must be an array with at least 2 entries")
+
+    prompt = f"""
+You are quality-drift-reporter-agent.
+Return only JSON with keys drift_severity, trend, windows_flagged, report_summary.
+Rules:
+- drift_severity must be one of none, low, medium, high.
+- trend must be one of improving, stable, degrading, volatile.
+- windows_flagged must be an array of up to 4 window_label strings.
+- report_summary must be under 320 characters.
+Input:
+{{"metric_name":{json.dumps(metric_name)},"windows":{json.dumps(windows)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    drift_severity = out.get("drift_severity")
+    trend = out.get("trend")
+    windows_flagged = out.get("windows_flagged")
+    report_summary = out.get("report_summary")
+
+    if drift_severity not in {"none", "low", "medium", "high"}:
+        return run_quality_drift_reporter_agent(payload)
+    if trend not in {"improving", "stable", "degrading", "volatile"}:
+        return run_quality_drift_reporter_agent(payload)
+    if not isinstance(windows_flagged, list):
+        return run_quality_drift_reporter_agent(payload)
+    if not isinstance(report_summary, str) or not report_summary.strip():
+        return run_quality_drift_reporter_agent(payload)
+
+    safe_flagged = [sanitize_untrusted_text(str(x).strip()) for x in windows_flagged if str(x).strip()][:4]
+    safe_summary = sanitize_untrusted_text(" ".join(report_summary.strip().split()[:48]))
+    if len(safe_summary) > 320:
+        safe_summary = safe_summary[:320]
+
+    return {
+        "drift_severity": drift_severity,
+        "trend": trend,
+        "windows_flagged": safe_flagged,
+        "report_summary": safe_summary,
+    }
+
+
 def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])

@@ -1,0 +1,12 @@
+{
+  "benchmark_name": "tool-use-v1",
+  "target_capability": "structured_json",
+  "candidate_cases": [
+    {"case_id": "t1", "title": "Happy path tool invocation"},
+    {"case_id": "t2", "title": "Invalid schema rejection"},
+    {"case_id": "t1", "title": "Duplicate id should drop"},
+    {"case_id": "t3", "title": "Timeout handling"},
+    {"case_id": "t4", "title": "Rate limit backoff"},
+    {"case_id": "t5", "title": "Adversarial prompt in tool args"}
+  ]
+}

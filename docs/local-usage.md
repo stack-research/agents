@@ -169,6 +169,23 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Eval-ops (benchmark curation, regression scoring, quality drift):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent eval-ops.benchmark-curator-agent \
+  --input catalog/projects/eval-ops/agents/benchmark-curator-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent eval-ops.regression-score-agent \
+  --input catalog/projects/eval-ops/agents/regression-score-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent eval-ops.quality-drift-reporter-agent \
+  --input catalog/projects/eval-ops/agents/quality-drift-reporter-agent/examples/example-input.json \
+  --pretty
+```
+
 Router example:
 
 ```bash
@@ -439,6 +456,9 @@ Accepted `--agent` values:
 - `knowledge-ops.temporal-watch-agent` or `temporal-watch-agent`
 - `qa-ops.test-case-generator-agent` or `test-case-generator-agent`
 - `qa-ops.regression-triage-agent` or `regression-triage-agent`
+- `eval-ops.benchmark-curator-agent` or `benchmark-curator-agent`
+- `eval-ops.regression-score-agent` or `regression-score-agent`
+- `eval-ops.quality-drift-reporter-agent` or `quality-drift-reporter-agent`
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.dependency-router-agent` or `dependency-router-agent`
 - `workflow-ops.retry-policy-agent` or `retry-policy-agent`
@@ -537,7 +557,8 @@ python3 -m unittest \
   tests/test_resilience_pipeline.py \
   tests/test_incident_pipeline.py \
   tests/test_agent_incident_drill.py \
-  tests/test_compare_agent_incident_drill_scorecards.py
+  tests/test_compare_agent_incident_drill_scorecards.py \
+  tests/test_eval_ops.py
 ```
 
 Or with Make targets:
@@ -564,6 +585,9 @@ make run-retrieval-example
 make run-synthesis-example
 make run-test-case-generator-example
 make run-regression-triage-example
+make run-benchmark-curator-example
+make run-regression-score-example
+make run-quality-drift-reporter-example
 make run-router-example
 make run-checkpoint-example
 make run-schema-drift-detector-example
@@ -588,6 +612,9 @@ make run-retrieval-llm
 make run-synthesis-llm
 make run-test-case-generator-llm
 make run-regression-triage-llm
+make run-benchmark-curator-llm
+make run-regression-score-llm
+make run-quality-drift-reporter-llm
 make run-router-llm
 make run-checkpoint-llm
 make run-lineage-recorder-example

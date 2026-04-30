@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-An **Agent Catalog** — a Python 3.10+ framework of composable AI agents organized by domain. 12 domain projects, 24 agents, 6 pipelines. Zero external Python dependencies for core runtime. Uses Ollama (local LLM) and Redis (optional state persistence) via Docker.
+An **Agent Catalog** — a Python 3.10+ framework of composable AI agents organized by domain. 14 catalog projects, 27 agents, 6 pipelines. Zero external Python dependencies for core runtime. Uses Ollama (local LLM) and Redis (optional state persistence) via Docker.
 
 ## Common Commands
 
@@ -42,7 +42,7 @@ make state-up                  # Start Redis for state persistence
 
 ### Runtime Core (`local_agents/`)
 
-- **`engine.py`**: Deterministic implementations for all 24 agents + `run_agent()` dispatcher. The central dispatch function maps agent IDs to handler functions.
+- **`engine.py`**: Deterministic implementations for all catalog agents + `run_agent()` dispatcher. The central dispatch function maps agent IDs to handler functions.
 - **`llm.py`**: LLM-backed implementations calling Ollama HTTP API (`/api/generate`). Each agent has a parallel LLM function.
 - **`core.py`**: Shared validation, `sanitize_untrusted_text()` input sanitization, LLM source approval list.
 - **`state.py`**: Minimal Redis client using raw RESP protocol (no dependencies). Graceful no-op fallback when Redis is unavailable.

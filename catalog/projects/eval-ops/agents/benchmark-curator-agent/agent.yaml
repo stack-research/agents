@@ -1,0 +1,34 @@
+id: eval-ops.benchmark-curator-agent
+name: benchmark-curator-agent
+version: 0.1.0
+summary: |
+  Curates a candidate benchmark set by deduplicating case ids, surfacing coverage gaps, and emitting a suite summary.
+owners:
+  - platform-agents
+inputs:
+  - name: benchmark_name
+    type: string
+    required: true
+  - name: target_capability
+    type: string
+    required: false
+  - name: candidate_cases
+    type: object[]
+    required: true
+outputs:
+  - name: curated_suite_id
+    type: string
+  - name: included_cases
+    type: array[string]
+  - name: excluded_duplicates
+    type: array[string]
+  - name: coverage_gaps
+    type: array[string]
+  - name: curation_verdict
+    type: enum[ready,needs_expansion,sparse]
+rules:
+  - Dedupe strictly on normalized case_id.
+  - coverage_gaps must stay concrete and bounded.
+constraints:
+  - included_cases length should not exceed 12 entries.
+  - coverage_gaps length should stay between 1 and 4.

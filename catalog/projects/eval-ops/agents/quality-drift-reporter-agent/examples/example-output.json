@@ -1,0 +1,6 @@
+{
+  "drift_severity": "medium",
+  "trend": "degrading",
+  "windows_flagged": ["week-3"],
+  "report_summary": "task_success_rate across 4 windows shows degrading trend with medium drift; first=0.880 last=0.790."
+}
