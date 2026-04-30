@@ -1,0 +1,34 @@
+id: experiment-ops.result-adjudication-agent
+name: result-adjudication-agent
+version: 0.1.0
+summary: |
+  Adjudicates experiment outcomes against the hypothesis and optional explicit success criteria, emitting a verdict and follow-ups.
+owners:
+  - platform-agents
+inputs:
+  - name: hypothesis_statement
+    type: string
+    required: true
+  - name: observed_metrics
+    type: object
+    required: true
+  - name: primary_metric
+    type: string
+    required: false
+  - name: success_criteria
+    type: string
+    required: false
+outputs:
+  - name: adjudication_verdict
+    type: enum[supports, inconclusive, refutes]
+  - name: confidence
+    type: enum[low, medium, high]
+  - name: caveats
+    type: array[string]
+  - name: recommended_followups
+    type: array[string]
+rules:
+  - When success_criteria includes explicit numeric bounds, evaluate observed primary metric against them.
+  - Without parseable criteria, prefer inconclusive with actionable caveats.
+constraints:
+  - caveats and recommended_followups each capped at 4 items.

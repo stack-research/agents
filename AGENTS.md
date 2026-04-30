@@ -22,86 +22,18 @@ Each agent should include:
 
 For any new agent behavior or security control:
 
-1. Add deterministic unit tests (default mode) under `/Users/macos-user/.projects/stack-research/agents/tests/`.
+1. Add deterministic unit tests (default mode) under `tests/`.
 2. Add LLM-mode tests for the same behavior/security path, with graceful skip when `AGENT_MODE!=llm` or Ollama is unavailable.
-3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01, ASI02, ASI03, ASI04, ASI05, ASI06, ASI07, ASI08, ASI09, and ASI10).
+3. Add security regression tests for relevant OWASP ASI categories (current baseline: ASI01 through ASI10).
 4. Ensure `make test` passes and update `make` targets when adding new security suites.
-5. Update `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` with any new test commands.
+5. Update `docs/local-usage.md` with any new test commands.
+
+**Full map of scripts, policy files, pipelines, and every `tests/test_*.py` file:** load the Agent Skill **`stack-research-agents-testing`** (directory **`.agents/skills/stack-research-agents-testing/`**, layout per [Where to scan](https://agentskills.io/client-implementation/adding-skills-support#where-to-scan) and format per [agentskills.io/specification](https://agentskills.io/specification.md)), or read its reference **[`.agents/skills/stack-research-agents-testing/references/repository-runtime-tests.md`](.agents/skills/stack-research-agents-testing/references/repository-runtime-tests.md)** directly. See also [`.agents/README.md`](.agents/README.md).
 
 Contributor SOP:
 
-- Canonical implementation workflow lives in `/Users/macos-user/.projects/stack-research/agents/docs/contributor-sop.md`.
+- Canonical implementation workflow lives in `docs/contributor-sop.md`.
 - Follow that SOP for scaffolding, runtime updates, deterministic+LLM tests, security regressions, and definition-of-done checks.
-
-Repository-level runtime and tests:
-
-- `scripts/run_agent.py` - local runner for implemented agents.
-- `scripts/run_support_pipeline.py` - support triage->reply pipeline runner.
-- `scripts/run_planner_executor_pipeline.py` - planner->executor pipeline runner.
-- `scripts/run_workflow_pipeline.py` - workflow router->target->checkpoint pipeline runner.
-- `scripts/run_governance_pipeline.py` - governance scope-validator->target->lineage-recorder->checkpoint pipeline runner.
-- `scripts/run_resilience_pipeline.py` - resilience blast-radius-assessor->kill-path-auditor pipeline runner.
-- `scripts/run_security_scan.py` - security scanner runner.
-- `scripts/check_policy_pack.py` - runtime policy-pack enforcement check.
-- `policy/asi-control-baselines.json` - environment ASI control baseline policy pack.
-- `tests/test_engine.py` - unit tests for deterministic runtime behavior.
-- `tests/test_support_pipeline.py` - pipeline composition unit test.
-- `tests/test_planner_executor_pipeline.py` - planner->executor pipeline composition test.
-- `tests/test_workflow_pipeline.py` - workflow-ops pipeline composition test.
-- `tests/test_asi01_goal_hijack.py` - ASI01 adversarial regression tests (deterministic).
-- `tests/test_asi01_goal_hijack_llm.py` - ASI01 adversarial checks in LLM mode.
-- `tests/test_asi02_tool_misuse.py` - ASI02 tool-misuse checks (deterministic).
-- `tests/test_asi02_tool_misuse_llm.py` - ASI02 tool-misuse checks in LLM mode.
-- `tests/test_asi03_identity_privilege_abuse.py` - ASI03 identity/privilege-abuse checks (deterministic).
-- `tests/test_asi03_identity_privilege_abuse_llm.py` - ASI03 identity/privilege-abuse checks in LLM mode.
-- `tests/test_asi04_supply_chain.py` - ASI04 supply-chain/runtime-source checks (deterministic).
-- `tests/test_asi04_supply_chain_llm.py` - ASI04 supply-chain/runtime-source checks in LLM mode.
-- `tests/test_asi05_unexpected_code_execution.py` - ASI05 unexpected-code-execution checks (deterministic).
-- `tests/test_asi05_unexpected_code_execution_llm.py` - ASI05 unexpected-code-execution checks in LLM mode.
-- `tests/test_asi06_memory_context_poisoning.py` - ASI06 memory/context-poisoning checks (deterministic).
-- `tests/test_asi06_memory_context_poisoning_llm.py` - ASI06 memory/context-poisoning checks in LLM mode.
-- `tests/test_asi07_inter_agent_comm.py` - ASI07 inter-agent-communication checks (deterministic).
-- `tests/test_asi07_inter_agent_comm_llm.py` - ASI07 inter-agent-communication checks in LLM mode.
-- `tests/test_asi08_cascading_failures.py` - ASI08 cascading-failure checks (deterministic).
-- `tests/test_asi08_cascading_failures_llm.py` - ASI08 cascading-failure checks in LLM mode.
-- `tests/test_asi09_human_agent_trust_exploitation.py` - ASI09 human-agent-trust-exploitation checks (deterministic).
-- `tests/test_asi09_human_agent_trust_exploitation_llm.py` - ASI09 human-agent-trust-exploitation checks in LLM mode.
-- `tests/test_asi10_rogue_agents.py` - ASI10 rogue-agent checks (deterministic).
-- `tests/test_asi10_rogue_agents_llm.py` - ASI10 rogue-agent checks in LLM mode.
-- `tests/test_security_scanner.py` - security scanner unit tests.
-- `tests/test_planner_executor.py` - deterministic planner/executor behavior tests.
-- `tests/test_planner_executor_llm.py` - planner/executor checks in LLM mode.
-- `tests/test_research_ops.py` - deterministic source-planning/retrieval/gap-detection/synthesis behavior tests.
-- `tests/test_research_ops_llm.py` - research-ops chain checks in LLM mode.
-- `tests/test_knowledge_ops.py` - deterministic evidence/traceability/memory/temporal behavior tests.
-- `tests/test_knowledge_ops_llm.py` - knowledge-ops checks in LLM mode.
-- `tests/test_qa_ops.py` - deterministic test-case generation and regression-triage checks.
-- `tests/test_qa_ops_llm.py` - QA-ops checks in LLM mode.
-- `tests/test_workflow_ops.py` - deterministic routing/checkpoint behavior tests.
-- `tests/test_workflow_ops_llm.py` - workflow-ops checks in LLM mode.
-- `tests/test_workflow_pipeline_llm.py` - workflow-ops pipeline checks in LLM mode.
-- `tests/test_policy_pack.py` - policy pack structure and baseline presence checks.
-- `tests/test_policy_enforcement.py` - runtime mode policy enforcement checks.
-- `tests/test_support_ops.py` - deterministic support-ops behavior checks (including summary-agent and handoff-agent).
-- `tests/test_support_ops_llm.py` - support-ops checks in LLM mode.
-- `tests/test_agent_schema.py` - `agent.yaml` schema consistency checks (id/name/version and IO sections).
-- `tests/test_catalog_structure.py` - required file checks across catalog.
-- `tests/test_control_ops.py` - deterministic control-ops behavior tests (lineage-recorder/scope-validator/exception-policy/approval-memory/blast-radius-assessor/kill-path-auditor).
-- `tests/test_control_ops_llm.py` - control-ops checks in LLM mode (including exception-policy/approval-memory).
-- `tests/test_governance_pipeline.py` - governance pipeline composition test.
-- `tests/test_resilience_pipeline.py` - resilience pipeline composition test.
-- `tests/test_state.py` - state store unit tests (NoOp fallback, pipeline helpers, live Redis integration).
-- `tests/test_data_ops.py` - deterministic data-ops behavior checks (schema-drift-detector/data-validator).
-- `tests/test_code_ops.py` - deterministic code-ops behavior checks (code-reviewer/pr-summary).
-- `tests/test_observability_ops.py` - deterministic observability-ops behavior checks (log-analyzer/slo-reporter/change-correlation/alert-tuner).
-- `tests/test_observability_ops_llm.py` - observability-ops checks in LLM mode (change-correlation/alert-tuner).
-- `tests/test_agent_incident_drill.py` - agent incident drill pipeline and catalog fixture checks.
-- `tests/test_compare_agent_incident_drill_scorecards.py` - scorecard diff helper for drill benchmark outputs.
-- `tests/test_eval_ops.py` - deterministic eval-ops agents (benchmark curator, regression score, drift reporter).
-- `tests/test_eval_ops_llm.py` - eval-ops checks in LLM mode.
-- `tests/test_integration_llm.py` - optional integration tests for local Ollama execution.
-- `local_agents/state.py` - Redis state store with graceful NoOp fallback for pipeline state persistence.
-- `docker-compose.yml` - local Ollama and Redis services for LLM testing and state persistence.
 
 ## Naming Conventions
 
@@ -109,70 +41,16 @@ Repository-level runtime and tests:
 - Agent folder: `kebab-case` ending with `-agent`.
 - Agent id in metadata: `<project>.<agent>`.
 
-## Catalog Index
+## Catalog index
 
-- `starter-kit`
-  - `heartbeat-agent`: summarizes service heartbeat and emits a compact status report.
-  - `classifier-agent`: maps short text to one intent label and confidence.
-- `support-ops`
-  - `triage-agent`: maps support requests to priority, category, and next action.
-  - `reply-drafter-agent`: drafts customer-facing email subject/reply from triage fields.
-  - `summary-agent`: summarizes weekly support ticket trends and recommended follow-up actions.
-  - `handoff-agent`: generates shift-transition briefs from active incidents.
-- `security-ops`
-  - `agentic-security-scanner-agent`: scans repo controls and maps findings to OWASP ASI categories.
-- `planner-executor`
-  - `planner-agent`: generates bounded execution steps and a risk level from a goal.
-  - `executor-agent`: reports execution status and summary from planned steps.
-- `research-ops`
-  - `source-planner-agent`: plans what evidence to fetch next from query and current evidence.
-  - `retrieval-agent`: extracts bounded notes from a query and optional sources.
-  - `gap-detector-agent`: finds unsupported assertions and recommends targeted evidence collection.
-  - `synthesis-agent`: turns research notes into audience-specific summary/actions.
-- `knowledge-ops`
-  - `evidence-ranker-agent`: scores evidence quality for downstream decisions.
-  - `claim-trace-agent`: maps assertions to support states and evidence references.
-  - `memory-curator-agent`: curates reusable memory facts with confidence and expiry horizon.
-  - `temporal-watch-agent`: compares snapshots over time and emits drift signals.
-- `qa-ops`
-  - `test-case-generator-agent`: turns feature requirements into bounded QA test scenarios.
-  - `regression-triage-agent`: maps failures to probable cause, severity, and next actions.
-- `eval-ops`
-  - `benchmark-curator-agent`: deduplicates candidate eval cases and lists coverage gaps for a benchmark suite.
-  - `regression-score-agent`: compares baseline and current eval scores to flag regressions with a verdict.
-  - `quality-drift-reporter-agent`: summarizes metric drift and trend across ordered time windows.
-- `workflow-ops`
-  - `router-agent`: routes incoming tasks to a best-fit agent with priority.
-  - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.
-  - `retry-policy-agent`: decides retry, backoff, escalation, or stop on failed stages.
-  - `checkpoint-agent`: records workflow progress with structured checkpoint summaries.
-- `control-ops`
-  - `lineage-recorder-agent`: structures decision events into append-only lineage records.
-  - `scope-validator-agent`: validates proposed actions against governance requirements with pass/review/fail gating.
-  - `exception-policy-agent`: evaluates controlled policy exceptions with owner/expiry constraints.
-  - `approval-memory-agent`: records approval state with approver, timestamps, and expiration status.
-  - `blast-radius-assessor-agent`: estimates blast radius from weighted permission, dependency, and resource-limit factors.
-  - `kill-path-auditor-agent`: audits shutdown capabilities against the four-level kill path spectrum and optional ISO `last_tested` recency.
-- `data-ops`
-  - `schema-drift-detector-agent`: detects schema changes between versions and classifies drift severity.
-  - `data-validator-agent`: validates data records against rules and reports violations.
-- `code-ops`
-  - `code-reviewer-agent`: reviews code diffs for security, correctness, and style issues.
-  - `pr-summary-agent`: summarizes PR changes for reviewers with risk assessment.
-- `observability-ops`
-  - `log-analyzer-agent`: analyzes log entries for patterns and anomalies.
-  - `slo-reporter-agent`: generates SLO compliance reports from service metrics and targets.
- - `change-correlation-agent`: correlates metric/log shifts with deploy and config events.
- - `alert-tuner-agent`: suggests threshold tuning from alert noise patterns.
-- `agent-incident-drill`
-  - Scenario project that composes existing agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts. Example inputs include support-export, data-corruption, auth-lockout, and supply-chain scenarios; `scripts/compare_agent_incident_drill_scorecards.py` diffs scorecards across saved runs.
+The **canonical** list of projects and agents is **[`catalog/README.md`](catalog/README.md)** (human- and tool-readable; update it when the catalog changes). Do not duplicate the full index here.
 
 ## Update Rule
 
 When adding or changing agents:
 
-1. Update this `AGENTS.md` catalog index.
-2. Update root `README.md` current projects section.
-3. Update the project-level `README.md` affected by the change.
-4. If runtime behavior changes, update tests in `/Users/macos-user/.projects/stack-research/agents/tests/`.
-5. Keep `/Users/macos-user/.projects/stack-research/agents/docs/local-usage.md` in sync with run/test commands.
+1. Update **`catalog/README.md`** (canonical catalog index).
+2. Update root **`README.md`** current projects section.
+3. Update the project-level **`catalog/projects/<project>/README.md`** affected by the change.
+4. If runtime behavior changes, update tests under **`tests/`** and, when needed, the inventory in **`.agents/skills/stack-research-agents-testing/references/repository-runtime-tests.md`**.
+5. Keep **`docs/local-usage.md`** in sync with run/test commands.

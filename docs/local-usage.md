@@ -186,6 +186,23 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Experiment-ops (hypothesis registration, experiment plans, result adjudication):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent experiment-ops.hypothesis-registration-agent \
+  --input catalog/projects/experiment-ops/agents/hypothesis-registration-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent experiment-ops.experiment-plan-agent \
+  --input catalog/projects/experiment-ops/agents/experiment-plan-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent experiment-ops.result-adjudication-agent \
+  --input catalog/projects/experiment-ops/agents/result-adjudication-agent/examples/example-input.json \
+  --pretty
+```
+
 Router example:
 
 ```bash
@@ -459,6 +476,9 @@ Accepted `--agent` values:
 - `eval-ops.benchmark-curator-agent` or `benchmark-curator-agent`
 - `eval-ops.regression-score-agent` or `regression-score-agent`
 - `eval-ops.quality-drift-reporter-agent` or `quality-drift-reporter-agent`
+- `experiment-ops.hypothesis-registration-agent` or `hypothesis-registration-agent`
+- `experiment-ops.experiment-plan-agent` or `experiment-plan-agent`
+- `experiment-ops.result-adjudication-agent` or `result-adjudication-agent`
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.dependency-router-agent` or `dependency-router-agent`
 - `workflow-ops.retry-policy-agent` or `retry-policy-agent`
@@ -558,7 +578,14 @@ python3 -m unittest \
   tests/test_incident_pipeline.py \
   tests/test_agent_incident_drill.py \
   tests/test_compare_agent_incident_drill_scorecards.py \
-  tests/test_eval_ops.py
+  tests/test_eval_ops.py \
+  tests/test_experiment_ops.py
+```
+
+Experiment-ops LLM smoke (requires Ollama and `AGENT_MODE=llm`):
+
+```bash
+AGENT_MODE=llm python3 -m unittest tests.test_experiment_ops_llm -v
 ```
 
 Or with Make targets:
@@ -588,6 +615,10 @@ make run-regression-triage-example
 make run-benchmark-curator-example
 make run-regression-score-example
 make run-quality-drift-reporter-example
+make run-hypothesis-registration-example
+make run-experiment-plan-example
+make run-result-adjudication-example
+make demo-experiment-ops
 make run-router-example
 make run-checkpoint-example
 make run-schema-drift-detector-example
@@ -615,6 +646,10 @@ make run-regression-triage-llm
 make run-benchmark-curator-llm
 make run-regression-score-llm
 make run-quality-drift-reporter-llm
+make run-hypothesis-registration-llm
+make run-experiment-plan-llm
+make run-result-adjudication-llm
+make demo-experiment-ops-llm
 make run-router-llm
 make run-checkpoint-llm
 make run-lineage-recorder-example

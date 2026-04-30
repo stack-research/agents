@@ -1,0 +1,30 @@
+id: experiment-ops.hypothesis-registration-agent
+name: hypothesis-registration-agent
+version: 0.1.0
+summary: |
+  Registers a hypothesis with normalization, stable id, ambiguity surfacing, and a registration status when clarification is needed.
+owners:
+  - platform-agents
+inputs:
+  - name: hypothesis_statement
+    type: string
+    required: true
+  - name: experiment_domain
+    type: string
+    required: false
+outputs:
+  - name: hypothesis_id
+    type: string
+  - name: normalized_statement
+    type: string
+  - name: registration_status
+    type: enum[registered, needs_clarification]
+  - name: ambiguities
+    type: array[string]
+  - name: registration_notes
+    type: string
+rules:
+  - Sanitize free text; never echo executable or credential-like patterns.
+  - ambiguities must stay bounded (1 to 4 items when status is needs_clarification).
+constraints:
+  - normalized_statement should remain a single bounded paragraph for downstream agents.

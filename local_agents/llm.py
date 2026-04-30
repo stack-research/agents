@@ -1167,6 +1167,176 @@ Input:
     }
 
 
+def run_hypothesis_registration_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_hypothesis_registration_agent
+
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    experiment_domain = payload.get("experiment_domain", "")
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if experiment_domain is not None and not isinstance(experiment_domain, str):
+        raise ValidationError("experiment_domain must be a string when provided")
+
+    prompt = f"""
+You are hypothesis-registration-agent.
+Return only JSON with keys hypothesis_id, normalized_statement, registration_status, ambiguities, registration_notes.
+Rules:
+- registration_status must be one of registered, needs_clarification.
+- ambiguities must be an array of 0 to 4 strings.
+- hypothesis_id is a short stable-looking identifier.
+Input:
+{{"hypothesis_statement":{json.dumps(hypothesis_statement)},"experiment_domain":{json.dumps(experiment_domain)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    status = out.get("registration_status")
+    if status not in {"registered", "needs_clarification"}:
+        return run_hypothesis_registration_agent(payload)
+
+    hid = out.get("hypothesis_id")
+    norm = out.get("normalized_statement")
+    amb = out.get("ambiguities")
+    notes = out.get("registration_notes")
+
+    if not isinstance(hid, str) or not hid.strip():
+        return run_hypothesis_registration_agent(payload)
+    if not isinstance(norm, str) or not norm.strip():
+        return run_hypothesis_registration_agent(payload)
+    if not isinstance(amb, list):
+        return run_hypothesis_registration_agent(payload)
+    if not isinstance(notes, str) or not notes.strip():
+        return run_hypothesis_registration_agent(payload)
+
+    safe_amb = [sanitize_untrusted_text(" ".join(str(x).split()[:14])) for x in amb if str(x).strip()][:4]
+    return {
+        "hypothesis_id": sanitize_untrusted_text(" ".join(hid.strip().split()[:8])),
+        "normalized_statement": sanitize_untrusted_text(" ".join(norm.strip().split()[:64]))[:400],
+        "registration_status": status,
+        "ambiguities": safe_amb,
+        "registration_notes": sanitize_untrusted_text(" ".join(notes.strip().split()[:32])),
+    }
+
+
+def run_experiment_plan_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_experiment_plan_agent
+
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    constraints = payload.get("constraints") or {}
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if not isinstance(constraints, dict):
+        raise ValidationError("constraints must be an object when provided")
+
+    prompt = f"""
+You are experiment-plan-agent.
+Return only JSON with keys experiment_design_id, variants, success_metrics, guardrails, execution_risks, next_steps.
+Rules:
+- variants must contain 2 to 6 strings (control first, then treatments).
+- success_metrics, guardrails, execution_risks, next_steps are bounded string arrays (max 5 metrics, max 4 others each).
+Input:
+{{"hypothesis_statement":{json.dumps(hypothesis_statement)},"constraints":{json.dumps(constraints)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    eid = out.get("experiment_design_id")
+    variants = out.get("variants")
+    sm = out.get("success_metrics")
+    gr = out.get("guardrails")
+    er = out.get("execution_risks")
+    ns = out.get("next_steps")
+
+    if not isinstance(eid, str) or not eid.strip():
+        return run_experiment_plan_agent(payload)
+    if not isinstance(variants, list) or not (2 <= len(variants) <= 6):
+        return run_experiment_plan_agent(payload)
+    if not isinstance(sm, list) or not sm:
+        return run_experiment_plan_agent(payload)
+    if not isinstance(gr, list) or not gr:
+        return run_experiment_plan_agent(payload)
+    if not isinstance(er, list) or not er:
+        return run_experiment_plan_agent(payload)
+    if not isinstance(ns, list) or not ns:
+        return run_experiment_plan_agent(payload)
+
+    safe_variants = [sanitize_untrusted_text(" ".join(str(x).split()[:22])) for x in variants if str(x).strip()][:6]
+    safe_sm = [sanitize_untrusted_text(" ".join(str(x).split()[:12])) for x in sm if str(x).strip()][:5]
+    safe_gr = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in gr if str(x).strip()][:4]
+    safe_er = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in er if str(x).strip()][:4]
+    safe_ns = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in ns if str(x).strip()][:4]
+    if len(safe_variants) < 2:
+        return run_experiment_plan_agent(payload)
+
+    return {
+        "experiment_design_id": sanitize_untrusted_text(" ".join(eid.strip().split()[:8])),
+        "variants": safe_variants,
+        "success_metrics": safe_sm,
+        "guardrails": safe_gr,
+        "execution_risks": safe_er,
+        "next_steps": safe_ns,
+    }
+
+
+def run_result_adjudication_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_result_adjudication_agent
+
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    observed_metrics = require(payload, "observed_metrics")
+    primary_metric = payload.get("primary_metric")
+    success_criteria = payload.get("success_criteria", "")
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if not isinstance(observed_metrics, dict) or not observed_metrics:
+        raise ValidationError("observed_metrics must be a non-empty object")
+    if primary_metric is not None and not isinstance(primary_metric, str):
+        raise ValidationError("primary_metric must be a string when provided")
+    if success_criteria is not None and not isinstance(success_criteria, str):
+        raise ValidationError("success_criteria must be a string when provided")
+
+    prompt = f"""
+You are result-adjudication-agent.
+Return only JSON with keys adjudication_verdict, confidence, caveats, recommended_followups.
+Rules:
+- adjudication_verdict must be one of supports, inconclusive, refutes.
+- confidence must be one of low, medium, high.
+- caveats and recommended_followups are arrays of 2 to 4 strings each.
+Input:
+{{"hypothesis_statement":{json.dumps(hypothesis_statement)},"observed_metrics":{json.dumps(observed_metrics)},"primary_metric":{json.dumps(primary_metric)},"success_criteria":{json.dumps(success_criteria)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    verdict = out.get("adjudication_verdict")
+    conf = out.get("confidence")
+    caveats = out.get("caveats")
+    follow = out.get("recommended_followups")
+
+    if verdict not in {"supports", "inconclusive", "refutes"}:
+        return run_result_adjudication_agent(payload)
+    if conf not in {"low", "medium", "high"}:
+        return run_result_adjudication_agent(payload)
+    if not isinstance(caveats, list) or not (2 <= len(caveats) <= 4):
+        return run_result_adjudication_agent(payload)
+    if not isinstance(follow, list) or not (2 <= len(follow) <= 4):
+        return run_result_adjudication_agent(payload)
+
+    safe_c = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in caveats if str(x).strip()][:4]
+    safe_f = [sanitize_untrusted_text(" ".join(str(x).split()[:18])) for x in follow if str(x).strip()][:4]
+    if len(safe_c) < 2 or len(safe_f) < 2:
+        return run_result_adjudication_agent(payload)
+
+    return {
+        "adjudication_verdict": verdict,
+        "confidence": conf,
+        "caveats": safe_c,
+        "recommended_followups": safe_f,
+    }
+
+
 def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])

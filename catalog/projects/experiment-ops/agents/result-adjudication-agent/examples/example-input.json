@@ -1,0 +1,9 @@
+{
+  "hypothesis_statement": "One-click checkout increases conversion rate for returning users.",
+  "observed_metrics": {
+    "conversion_rate": 0.118,
+    "cart_abandon_rate": 0.41
+  },
+  "primary_metric": "conversion_rate",
+  "success_criteria": "conversion_rate above 0.10"
+}

@@ -24,7 +24,8 @@ Use this SOP for:
    - `tests/smoke.md`
 3. Update catalog docs:
    - root `README.md`
-   - `AGENTS.md`
+   - **`catalog/README.md`** (canonical project/agent index)
+   - **`AGENTS.md`** (conventions and Update Rule only; do not duplicate the full catalog index here)
    - project `README.md`
 
 ## 2) Runtime Implementation
@@ -90,5 +91,5 @@ A change is done when:
 1. deterministic suites pass
 2. security suites pass
 3. LLM suites pass (or are intentionally skipped only when unavailable)
-4. docs are updated (`README.md`, `AGENTS.md`, `docs/local-usage.md` as applicable)
+4. docs are updated (`README.md`, `catalog/README.md`, `AGENTS.md`, `docs/local-usage.md` as applicable)
 5. new commands are reflected in `Makefile` and docs

@@ -1,0 +1,7 @@
+{
+  "hypothesis_statement": "Showing trust badges on checkout increases conversion for first-time buyers.",
+  "constraints": {
+    "max_variants": 3,
+    "risk_tolerance": "low"
+  }
+}

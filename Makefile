@@ -1,4 +1,4 @@
-.PHONY: test test-verbose test-security test-security-llm test-integration-llm state-up state-down llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-benchmark-curator-example run-regression-score-example run-quality-drift-reporter-example run-router-example run-checkpoint-example run-lineage-recorder-example run-scope-validator-example run-blast-radius-assessor-example run-kill-path-auditor-example run-schema-drift-detector-example run-data-validator-example run-code-reviewer-example run-pr-summary-example run-log-analyzer-example run-slo-reporter-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-governance-pipeline-example run-resilience-pipeline-example run-agent-incident-drill-example compare-agent-incident-drill-scorecards-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-benchmark-curator-llm run-regression-score-llm run-quality-drift-reporter-llm run-router-llm run-checkpoint-llm run-lineage-recorder-llm run-scope-validator-llm run-blast-radius-assessor-llm run-kill-path-auditor-llm run-schema-drift-detector-llm run-data-validator-llm run-code-reviewer-llm run-pr-summary-llm run-log-analyzer-llm run-slo-reporter-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm run-governance-pipeline-llm run-resilience-pipeline-llm
+.PHONY: test test-verbose test-security test-security-llm test-integration-llm state-up state-down llm-up llm-pull llm-down check-policy-pack check-policy-pack-llm verify-env run-heartbeat-example run-classifier-example run-triage-example run-reply-drafter-example run-summary-example run-handoff-example run-planner-example run-executor-example run-retrieval-example run-synthesis-example run-test-case-generator-example run-regression-triage-example run-benchmark-curator-example run-regression-score-example run-quality-drift-reporter-example run-hypothesis-registration-example run-experiment-plan-example run-result-adjudication-example demo-experiment-ops run-router-example run-checkpoint-example run-lineage-recorder-example run-scope-validator-example run-blast-radius-assessor-example run-kill-path-auditor-example run-schema-drift-detector-example run-data-validator-example run-code-reviewer-example run-pr-summary-example run-log-analyzer-example run-slo-reporter-example run-security-scan-example run-support-pipeline-example run-planner-executor-pipeline-example run-workflow-pipeline-example run-governance-pipeline-example run-resilience-pipeline-example run-agent-incident-drill-example compare-agent-incident-drill-scorecards-example run-heartbeat-llm run-classifier-llm run-triage-llm run-reply-drafter-llm run-summary-llm run-handoff-llm run-planner-llm run-executor-llm run-retrieval-llm run-synthesis-llm run-test-case-generator-llm run-regression-triage-llm run-benchmark-curator-llm run-regression-score-llm run-quality-drift-reporter-llm run-hypothesis-registration-llm run-experiment-plan-llm run-result-adjudication-llm demo-experiment-ops-llm run-router-llm run-checkpoint-llm run-lineage-recorder-llm run-scope-validator-llm run-blast-radius-assessor-llm run-kill-path-auditor-llm run-schema-drift-detector-llm run-data-validator-llm run-code-reviewer-llm run-pr-summary-llm run-log-analyzer-llm run-slo-reporter-llm run-support-pipeline-llm run-planner-executor-pipeline-llm run-workflow-pipeline-llm run-governance-pipeline-llm run-resilience-pipeline-llm
 
 test:
 	python3 -m unittest discover -s tests
@@ -91,6 +91,17 @@ run-regression-score-example:
 
 run-quality-drift-reporter-example:
 	python3 scripts/run_agent.py --agent eval-ops.quality-drift-reporter-agent --input catalog/projects/eval-ops/agents/quality-drift-reporter-agent/examples/example-input.json --pretty
+
+run-hypothesis-registration-example:
+	python3 scripts/run_agent.py --agent experiment-ops.hypothesis-registration-agent --input catalog/projects/experiment-ops/agents/hypothesis-registration-agent/examples/example-input.json --pretty
+
+run-experiment-plan-example:
+	python3 scripts/run_agent.py --agent experiment-ops.experiment-plan-agent --input catalog/projects/experiment-ops/agents/experiment-plan-agent/examples/example-input.json --pretty
+
+run-result-adjudication-example:
+	python3 scripts/run_agent.py --agent experiment-ops.result-adjudication-agent --input catalog/projects/experiment-ops/agents/result-adjudication-agent/examples/example-input.json --pretty
+
+demo-experiment-ops: run-hypothesis-registration-example run-experiment-plan-example run-result-adjudication-example
 
 run-router-example:
 	python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty
@@ -200,6 +211,17 @@ run-regression-score-llm: check-policy-pack-llm
 
 run-quality-drift-reporter-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent eval-ops.quality-drift-reporter-agent --input catalog/projects/eval-ops/agents/quality-drift-reporter-agent/examples/example-input.json --pretty
+
+run-hypothesis-registration-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent experiment-ops.hypothesis-registration-agent --input catalog/projects/experiment-ops/agents/hypothesis-registration-agent/examples/example-input.json --pretty
+
+run-experiment-plan-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent experiment-ops.experiment-plan-agent --input catalog/projects/experiment-ops/agents/experiment-plan-agent/examples/example-input.json --pretty
+
+run-result-adjudication-llm: check-policy-pack-llm
+	AGENT_MODE=llm python3 scripts/run_agent.py --agent experiment-ops.result-adjudication-agent --input catalog/projects/experiment-ops/agents/result-adjudication-agent/examples/example-input.json --pretty
+
+demo-experiment-ops-llm: check-policy-pack-llm run-hypothesis-registration-llm run-experiment-plan-llm run-result-adjudication-llm
 
 run-router-llm: check-policy-pack-llm
 	AGENT_MODE=llm python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty

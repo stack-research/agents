@@ -1,0 +1,19 @@
+{
+  "agent_id": "experiment-ops.experiment-plan-agent",
+  "cases": [
+    {
+      "id": "ep-minimal",
+      "input": {
+        "hypothesis_statement": "New ranking model improves click-through on search results."
+      },
+      "expect_keys": [
+        "experiment_design_id",
+        "variants",
+        "success_metrics",
+        "guardrails",
+        "execution_risks",
+        "next_steps"
+      ]
+    }
+  ]
+}

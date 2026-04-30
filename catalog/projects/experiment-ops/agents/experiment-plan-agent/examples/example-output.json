@@ -1,0 +1,25 @@
+{
+  "experiment_design_id": "plan-trust-badges-9e8d7c6b",
+  "variants": [
+    "control: checkout without trust badges (current production)",
+    "treatment_a: trust badges above payment form",
+    "treatment_b: trust badges plus money-back copy"
+  ],
+  "success_metrics": [
+    "checkout_conversion_rate",
+    "cart_to_order_completion_time"
+  ],
+  "guardrails": [
+    "Cap exposure to 10% of first-time buyer traffic until day 3",
+    "Stop rule if error rate on payments exceeds baseline by 0.5pp"
+  ],
+  "execution_risks": [
+    "Badge assets may increase page weight affecting LCP",
+    "Seasonal traffic may confound short windows"
+  ],
+  "next_steps": [
+    "Define primary metric and minimum detectable effect with analytics",
+    "Run power analysis and set allocation and duration",
+    "Ship feature flags and monitoring dashboards before launch"
+  ]
+}

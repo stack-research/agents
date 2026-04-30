@@ -1,0 +1,32 @@
+id: experiment-ops.experiment-plan-agent
+name: experiment-plan-agent
+version: 0.1.0
+summary: |
+  Produces a bounded experiment design from a hypothesis statement and optional constraints (variant cap, risk posture).
+owners:
+  - platform-agents
+inputs:
+  - name: hypothesis_statement
+    type: string
+    required: true
+  - name: constraints
+    type: object
+    required: false
+outputs:
+  - name: experiment_design_id
+    type: string
+  - name: variants
+    type: array[string]
+  - name: success_metrics
+    type: array[string]
+  - name: guardrails
+    type: array[string]
+  - name: execution_risks
+    type: array[string]
+  - name: next_steps
+    type: array[string]
+rules:
+  - variants must include an explicit control and at least one treatment when max_variants allows.
+  - Lists must stay within documented length caps for automation safety.
+constraints:
+  - variants length 2 to 6; other string arrays capped for downstream UI.

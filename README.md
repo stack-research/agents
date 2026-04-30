@@ -10,8 +10,9 @@ This repository is a growing catalog of reusable AI agents organized by project.
 
 ## Repository Structure
 
-- `AGENTS.md` - contribution and catalog conventions.
-- `catalog/` - all projects and their agents.
+- `AGENTS.md` - contribution and catalog conventions (slim); full agent/project index lives in **`catalog/README.md`**.
+- `.agents/` - Agent Skills (project scope); see **[`.agents/README.md`](.agents/README.md)** (skills under **`.agents/skills/`**, per [Where to scan](https://agentskills.io/client-implementation/adding-skills-support#where-to-scan)).
+- `catalog/` - all projects and their agents; open **[`catalog/README.md`](catalog/README.md)** for the canonical catalog index.
 - `docs/` - cross-cutting architecture and standards.
 
 ```text
@@ -83,7 +84,11 @@ catalog/
     - `benchmark-curator-agent`: deduplicates eval cases and surfaces benchmark coverage gaps.
     - `regression-score-agent`: compares baseline vs current eval metrics for regressions.
     - `quality-drift-reporter-agent`: summarizes quality trend and drift across time windows.
-14. `agent-incident-drill`
+14. `experiment-ops`
+    - `hypothesis-registration-agent`: registers and normalizes hypotheses with clarity checks.
+    - `experiment-plan-agent`: generates bounded experiment plans from a hypothesis.
+    - `result-adjudication-agent`: maps observed metrics to supports, inconclusive, or refutes verdicts.
+15. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -110,6 +115,9 @@ catalog/
 - `python3 scripts/run_agent.py --agent eval-ops.benchmark-curator-agent --input catalog/projects/eval-ops/agents/benchmark-curator-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent eval-ops.regression-score-agent --input catalog/projects/eval-ops/agents/regression-score-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent eval-ops.quality-drift-reporter-agent --input catalog/projects/eval-ops/agents/quality-drift-reporter-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent experiment-ops.hypothesis-registration-agent --input catalog/projects/experiment-ops/agents/hypothesis-registration-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent experiment-ops.experiment-plan-agent --input catalog/projects/experiment-ops/agents/experiment-plan-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent experiment-ops.result-adjudication-agent --input catalog/projects/experiment-ops/agents/result-adjudication-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`
@@ -455,7 +463,7 @@ LLM-oriented `make` targets are policy-gated by environment (`POLICY_ENV`) and f
 3. Add prompt/workflow/example/test docs.
 4. Add `evals/cases.json` with benchmark fixtures (validated by `schemas/eval-case.json`).
 5. Update `catalog/projects/<project>/README.md`.
-6. Update root `README.md` and `AGENTS.md` catalog sections.
+6. Update root `README.md`, **`catalog/README.md`** (canonical catalog index), and **`AGENTS.md`** if conventions or Update Rule change.
 
 ## Next Ideas
 

@@ -1,0 +1,13 @@
+{
+  "agent_id": "experiment-ops.hypothesis-registration-agent",
+  "cases": [
+    {
+      "id": "hr-registered",
+      "input": {
+        "hypothesis_statement": "Caching embeddings reduces p95 retrieval latency below 200ms.",
+        "experiment_domain": "search"
+      },
+      "expect_keys": ["hypothesis_id", "normalized_statement", "registration_status", "ambiguities", "registration_notes"]
+    }
+  ]
+}

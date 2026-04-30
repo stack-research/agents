@@ -1,0 +1,7 @@
+{
+  "hypothesis_id": "growth-checkout-a1b2c3d4e5f6",
+  "normalized_statement": "Adding a one-click checkout will increase conversion rate on the cart page for returning users.",
+  "registration_status": "registered",
+  "ambiguities": [],
+  "registration_notes": "Hypothesis includes population (returning users) and measurable outcome (conversion rate)."
+}

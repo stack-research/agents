@@ -1,0 +1,12 @@
+{
+  "adjudication_verdict": "supports",
+  "confidence": "medium",
+  "caveats": [
+    "Single-window measurement; confirm stability across a second week",
+    "Cart abandon rate moved slightly; monitor for trade-offs"
+  ],
+  "recommended_followups": [
+    "Ship to broader cohort with holdout for long-term retention",
+    "Document segment definitions for returning users"
+  ]
+}

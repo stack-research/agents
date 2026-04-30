@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from datetime import datetime
 from typing import Any
 
@@ -1175,6 +1176,316 @@ def run_quality_drift_reporter_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_hypothesis_registration_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    experiment_domain = payload.get("experiment_domain", "")
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if experiment_domain is not None and not isinstance(experiment_domain, str):
+        raise ValidationError("experiment_domain must be a string when provided")
+
+    raw_stmt = hypothesis_statement.strip()
+    safe_stmt = sanitize_untrusted_text(raw_stmt)
+    normalized_statement = " ".join(safe_stmt.split()[:64])[:400]
+    lowered = normalized_statement.lower()
+    domain_raw = (experiment_domain or "").strip()
+    safe_domain = sanitize_untrusted_text(domain_raw)[:48] if domain_raw else ""
+
+    hedges = (
+        "maybe ",
+        "might ",
+        "perhaps ",
+        " could ",
+        " i think",
+        "probably ",
+        "unclear",
+        "uncertain",
+        " not sure",
+    )
+    hedged = any(h in lowered for h in hedges) or "?" in normalized_statement
+    measurable_tokens = (
+        "rate",
+        "latency",
+        "accuracy",
+        "conversion",
+        "success",
+        "metric",
+        "p95",
+        "p99",
+        " p99",
+        "throughput",
+        "revenue",
+        "error",
+        "ctr",
+        "f1",
+        "precision",
+        "recall",
+    )
+    has_digit = any(ch.isdigit() for ch in normalized_statement)
+    measurable = has_digit or any(tok in lowered for tok in measurable_tokens)
+
+    ambiguities: list[str] = []
+    if hedged:
+        ambiguities.append("Hedged language reduces falsifiability tighten wording")
+    if len(normalized_statement) < 28:
+        ambiguities.append("Statement is short add population metric and direction")
+    if not measurable:
+        ambiguities.append("Add explicit measurable outcome and unit or threshold")
+    ambiguities = [" ".join(a.split()[:14]) for a in ambiguities[:4]]
+
+    registration_status = "needs_clarification" if (hedged or len(normalized_statement) < 28 or not measurable) else "registered"
+
+    digest = hashlib.sha256(f"{safe_domain}|{normalized_statement}".encode("utf-8")).hexdigest()[:12]
+    slug = "".join(ch if ch.isalnum() else "-" for ch in (safe_domain or "hyp").lower()).strip("-")[:20] or "hyp"
+    hypothesis_id = f"{slug}-{digest}"
+
+    if registration_status == "registered":
+        registration_notes = " ".join(
+            (
+                "Hypothesis registered with measurable cues suitable for experiment-plan-agent.",
+                f"Domain hint: {safe_domain}" if safe_domain else "No experiment_domain provided.",
+            )
+        ).split()[:32]
+    else:
+        registration_notes = " ".join(
+            (
+                "Clarify ambiguities before locking allocation or success criteria.",
+                "Re-run after edits to hypothesis_statement.",
+            )
+        ).split()[:32]
+    registration_notes = " ".join(registration_notes)
+
+    return {
+        "hypothesis_id": hypothesis_id,
+        "normalized_statement": normalized_statement,
+        "registration_status": registration_status,
+        "ambiguities": ambiguities,
+        "registration_notes": registration_notes,
+    }
+
+
+def run_experiment_plan_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    constraints = payload.get("constraints") or {}
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if not isinstance(constraints, dict):
+        raise ValidationError("constraints must be an object when provided")
+
+    raw_max = constraints.get("max_variants", 2)
+    if isinstance(raw_max, bool) or not isinstance(raw_max, (int, float)):
+        max_variants = 2
+    else:
+        max_variants = int(raw_max)
+    max_variants = max(2, min(6, max_variants))
+
+    risk_tol = constraints.get("risk_tolerance", "medium")
+    risk_s = str(risk_tol).strip().lower() if risk_tol is not None else "medium"
+    if risk_s not in {"low", "medium", "high"}:
+        risk_s = "medium"
+
+    safe_hyp = sanitize_untrusted_text(" ".join(hypothesis_statement.strip().split()[:48]))
+    digest = hashlib.sha256(safe_hyp.encode("utf-8")).hexdigest()[:10]
+    slug = "".join(ch if ch.isalnum() else "-" for ch in safe_hyp.lower())[:18].strip("-") or "plan"
+    experiment_design_id = f"{slug}-{digest}"
+
+    variants: list[str] = [
+        "control: hold current experience without the proposed intervention",
+        "treatment: apply the intervention described in the hypothesis to eligible subjects only",
+    ]
+    if max_variants >= 3:
+        variants.append(
+            "treatment_b: stronger intervention or alternate UX copy if hypothesis allows multiple levers"
+        )
+    if max_variants >= 4:
+        variants.append("treatment_c: staged rollout variant for high-risk segments if applicable")
+    if max_variants >= 5:
+        variants.append("treatment_d: optional pricing or incentive arm if hypothesis mentions offers")
+    if max_variants >= 6:
+        variants.append("treatment_e: exploratory arm capped at small traffic fraction")
+    variants = [" ".join(v.split()[:22]) for v in variants[:max_variants]]
+
+    success_metrics = [
+        "primary outcome aligned to hypothesis wording",
+        "guardrail metrics such as errors latency and revenue per session",
+    ]
+    lowered = safe_hyp.lower()
+    if "conversion" in lowered or "checkout" in lowered:
+        success_metrics.insert(0, "checkout_conversion_rate")
+    if "latency" in lowered or "p95" in lowered or "p99" in lowered:
+        success_metrics.insert(0, "p95_latency_ms")
+    if "click" in lowered or "ctr" in lowered:
+        success_metrics.insert(0, "click_through_rate")
+    success_metrics = [" ".join(m.split()[:12]) for m in success_metrics[:5]]
+
+    guardrails = [
+        "Start with low traffic allocation when risk_tolerance is low",
+        "Predefine stop rules for regressions on safety or revenue metrics",
+        "Log assignment and exposures for reproducibility",
+    ]
+    if risk_s == "low":
+        guardrails.insert(0, "Cap initial exposure to a small fraction until stability checks pass")
+    guardrails = [" ".join(g.split()[:18]) for g in guardrails[:4]]
+
+    execution_risks = [
+        "Selection bias if cohorts differ outside the intended manipulation",
+        "Instrumentation drift if logging or metrics definitions change mid-flight",
+    ]
+    if "model" in lowered or "ranking" in lowered:
+        execution_risks.append("Model freshness or data skew can confound short measurement windows")
+    execution_risks = [" ".join(r.split()[:18]) for r in execution_risks[:4]]
+
+    next_steps = [
+        "Confirm primary metric minimum detectable effect and duration with analytics",
+        "Wire feature flags and monitoring before enabling treatment traffic",
+        "Schedule interim readouts with precommitted decision rules",
+    ]
+    next_steps = [" ".join(n.split()[:18]) for n in next_steps[:4]]
+
+    return {
+        "experiment_design_id": experiment_design_id,
+        "variants": variants,
+        "success_metrics": success_metrics,
+        "guardrails": guardrails,
+        "execution_risks": execution_risks,
+        "next_steps": next_steps,
+    }
+
+
+def _parse_success_criteria(criteria: str) -> tuple[str | None, str | None, float | None]:
+    """Return (metric, direction, threshold) where direction is 'above' or 'below'."""
+    s = criteria.strip()
+    if not s:
+        return None, None, None
+    m = re.search(
+        r"^\s*([A-Za-z_][\w]*)\s+(above|below|at least|at most)\s+([-+]?\d*\.?\d+(?:e[-+]?\d+)?)\s*$",
+        s,
+        re.IGNORECASE,
+    )
+    if m:
+        metric = m.group(1)
+        dir_raw = m.group(2).lower()
+        thr = float(m.group(3))
+        direction = "above" if dir_raw in ("above", "at least") else "below"
+        return metric, direction, thr
+    m2 = re.search(r"^\s*([A-Za-z_][\w]*)\s*>\s*([-+]?\d*\.?\d+(?:e[-+]?\d+)?)\s*$", s)
+    if m2:
+        return m2.group(1), "above", float(m2.group(2))
+    m3 = re.search(r"^\s*([A-Za-z_][\w]*)\s*<\s*([-+]?\d*\.?\d+(?:e[-+]?\d+)?)\s*$", s)
+    if m3:
+        return m3.group(1), "below", float(m3.group(2))
+    return None, None, None
+
+
+def run_result_adjudication_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    hypothesis_statement = require(payload, "hypothesis_statement")
+    observed_metrics = require(payload, "observed_metrics")
+    primary_metric = payload.get("primary_metric")
+    success_criteria = payload.get("success_criteria", "")
+
+    if not isinstance(hypothesis_statement, str) or not hypothesis_statement.strip():
+        raise ValidationError("hypothesis_statement must be a non-empty string")
+    if not isinstance(observed_metrics, dict) or not observed_metrics:
+        raise ValidationError("observed_metrics must be a non-empty object")
+    if primary_metric is not None and not isinstance(primary_metric, str):
+        raise ValidationError("primary_metric must be a string when provided")
+    if success_criteria is not None and not isinstance(success_criteria, str):
+        raise ValidationError("success_criteria must be a string when provided")
+
+    safe_hyp = sanitize_untrusted_text(" ".join(hypothesis_statement.strip().split()[:32]))
+
+    keys_sorted = sorted(str(k) for k in observed_metrics.keys())
+    metric_key: str | None = None
+    if isinstance(primary_metric, str) and primary_metric.strip():
+        pm = primary_metric.strip()
+        if pm in observed_metrics:
+            metric_key = pm
+        else:
+            for k in keys_sorted:
+                if k.lower() == pm.lower():
+                    metric_key = k
+                    break
+    if metric_key is None and keys_sorted:
+        metric_key = keys_sorted[0]
+    if metric_key is None:
+        raise ValidationError("observed_metrics must contain at least one key")
+
+    raw_val = observed_metrics[metric_key]
+    if not isinstance(raw_val, (int, float)):
+        raise ValidationError(f"observed_metrics[{metric_key!r}] must be numeric")
+    value = float(raw_val)
+
+    crit = success_criteria.strip() if isinstance(success_criteria, str) else ""
+    parsed_metric, direction, threshold = _parse_success_criteria(crit)
+
+    caveats: list[str] = []
+    followups: list[str] = []
+
+    if not crit or parsed_metric is None or direction is None or threshold is None:
+        adjudication_verdict = "inconclusive"
+        confidence = "low"
+        caveats.append("No parseable numeric success_criteria provide explicit bound such as metric above 0.1")
+        followups.append("Add success_criteria with metric threshold before final launch decision")
+    else:
+        pm = parsed_metric
+        if pm not in observed_metrics:
+            for k in keys_sorted:
+                if k.lower() == pm.lower():
+                    pm = k
+                    break
+        if pm not in observed_metrics:
+            raise ValidationError("success_criteria metric must exist in observed_metrics")
+        raw_val = observed_metrics[pm]
+        if not isinstance(raw_val, (int, float)):
+            raise ValidationError(f"observed_metrics[{pm!r}] must be numeric")
+        value = float(raw_val)
+        metric_key = pm
+
+        margin = 1e-9
+        if direction == "above":
+            if value > threshold + margin:
+                adjudication_verdict = "supports"
+            elif value < threshold - margin:
+                adjudication_verdict = "refutes"
+            else:
+                adjudication_verdict = "inconclusive"
+        else:
+            if value < threshold - margin:
+                adjudication_verdict = "supports"
+            elif value > threshold + margin:
+                adjudication_verdict = "refutes"
+            else:
+                adjudication_verdict = "inconclusive"
+
+        gap = abs(value - threshold)
+        if adjudication_verdict == "inconclusive":
+            confidence = "low"
+        elif gap >= 0.05 * max(abs(threshold), 1e-6) or gap >= 0.02:
+            confidence = "high"
+        else:
+            confidence = "medium"
+
+        caveats.append("Single measurement window confirm stability across an additional cohort")
+        followups.append("Document segment filters and rerun with precommitted decision thresholds")
+
+    if adjudication_verdict != "inconclusive" or len(caveats) < 2:
+        caveats.append("Compare against pre-registered baseline and variance estimates where available")
+    if len(followups) < 2:
+        followups.append("Archive inputs outputs and lineage for audit replay")
+
+    caveats = [" ".join(c.split()[:18]) for c in caveats[:4]]
+    followups = [" ".join(f.split()[:18]) for f in followups[:4]]
+
+    return {
+        "adjudication_verdict": adjudication_verdict,
+        "confidence": confidence,
+        "caveats": caveats,
+        "recommended_followups": followups,
+    }
+
+
 def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])
@@ -1197,6 +1508,41 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["handoff", "shift transition", "on-call handover", "incident handover"]):
         target_agent = "support-ops.handoff-agent"
         rationale = "Handoff intent detected; route to handoff agent."
+    elif any(
+        token in lowered
+        for token in [
+            "register hypothesis",
+            "hypothesis registration",
+            "log a hypothesis",
+            "record a hypothesis",
+        ]
+    ):
+        target_agent = "experiment-ops.hypothesis-registration-agent"
+        rationale = "Hypothesis registration intent detected; route to hypothesis registration agent."
+    elif any(
+        token in lowered
+        for token in [
+            "experiment design",
+            "experiment plan",
+            "ab test plan",
+            "a/b plan",
+            "design an experiment",
+        ]
+    ):
+        target_agent = "experiment-ops.experiment-plan-agent"
+        rationale = "Experiment planning intent detected; route to experiment plan agent."
+    elif any(
+        token in lowered
+        for token in [
+            "adjudicate results",
+            "adjudicate experiment",
+            "supports or refutes",
+            "experiment adjudication",
+            "hypothesis supported",
+        ]
+    ):
+        target_agent = "experiment-ops.result-adjudication-agent"
+        rationale = "Result adjudication intent detected; route to result adjudication agent."
     elif any(token in lowered for token in ["test", "qa", "acceptance", "scenario"]):
         target_agent = "qa-ops.test-case-generator-agent"
         rationale = "QA/test intent detected; route to test-case generator."
@@ -2093,7 +2439,9 @@ def run_agent(
             run_code_reviewer_agent_llm,
             run_data_validator_agent_llm,
             run_executor_agent_llm,
+            run_experiment_plan_agent_llm,
             run_heartbeat_agent_llm,
+            run_hypothesis_registration_agent_llm,
             run_kill_path_auditor_agent_llm,
             run_lineage_recorder_agent_llm,
             run_log_analyzer_agent_llm,
@@ -2104,6 +2452,7 @@ def run_agent(
             run_quality_drift_reporter_agent_llm,
             run_regression_score_agent_llm,
             run_regression_triage_agent_llm,
+            run_result_adjudication_agent_llm,
             run_retrieval_agent_llm,
             run_reply_drafter_agent_llm,
             run_router_agent_llm,
@@ -2276,6 +2625,27 @@ def run_agent(
             return run_quality_drift_reporter_agent(payload)
         if selected_mode == "llm":
             return run_quality_drift_reporter_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"hypothesis-registration-agent", "experiment-ops.hypothesis-registration-agent"}:
+        if selected_mode == "deterministic":
+            return run_hypothesis_registration_agent(payload)
+        if selected_mode == "llm":
+            return run_hypothesis_registration_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"experiment-plan-agent", "experiment-ops.experiment-plan-agent"}:
+        if selected_mode == "deterministic":
+            return run_experiment_plan_agent(payload)
+        if selected_mode == "llm":
+            return run_experiment_plan_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"result-adjudication-agent", "experiment-ops.result-adjudication-agent"}:
+        if selected_mode == "deterministic":
+            return run_result_adjudication_agent(payload)
+        if selected_mode == "llm":
+            return run_result_adjudication_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"router-agent", "workflow-ops.router-agent"}:

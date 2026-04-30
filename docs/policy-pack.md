@@ -46,4 +46,4 @@ When updating policy baseline controls:
 1. Increment `version` in `policy/asi-control-baselines.json`.
 2. Keep all environments and all ASI keys (`ASI01`..`ASI10`) present.
 3. Add or adjust related tests before changing runtime behavior.
-4. Reflect meaningful policy changes in `README.md` and `AGENTS.md`.
+4. Reflect meaningful policy changes in `README.md`, `AGENTS.md`, or `catalog/README.md` when the catalog narrative should mention governance.

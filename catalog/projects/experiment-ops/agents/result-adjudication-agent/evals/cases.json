@@ -1,0 +1,15 @@
+{
+  "agent_id": "experiment-ops.result-adjudication-agent",
+  "cases": [
+    {
+      "id": "ra-below-threshold",
+      "input": {
+        "hypothesis_statement": "Feature improves task success rate.",
+        "observed_metrics": { "task_success_rate": 0.71 },
+        "primary_metric": "task_success_rate",
+        "success_criteria": "task_success_rate above 0.80"
+      },
+      "expect_keys": ["adjudication_verdict", "confidence", "caveats", "recommended_followups"]
+    }
+  ]
+}
