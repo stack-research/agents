@@ -1,6 +1,6 @@
 # Agent Catalog
 
-This repository is a growing catalog of reusable AI agents organized by project.
+This repository is a growing catalog of reusable AI agent components, in workflow orchestration, organized by project.
 
 ## Goals
 
