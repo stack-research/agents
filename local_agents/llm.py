@@ -1337,6 +1337,245 @@ Input:
     }
 
 
+def run_artifact_inventory_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_artifact_inventory_agent
+
+    run_id = require(payload, "run_id")
+    artifacts = require(payload, "artifacts")
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    if not isinstance(artifacts, list) or not artifacts:
+        raise ValidationError("artifacts must be a non-empty array")
+
+    prompt = f"""
+You are artifact-inventory-agent.
+Return only JSON with keys run_id, inventory_status, artifacts, inventory_notes.
+Rules:
+- inventory_status must be one of complete, partial.
+- artifacts is an array of objects with artifact_id, logical_path, role, content_sha256.
+- role must be input, output, or intermediate.
+Input:
+{{"run_id":{json.dumps(run_id)},"artifacts":{json.dumps(artifacts)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    rid = out.get("run_id")
+    status = out.get("inventory_status")
+    arts = out.get("artifacts")
+    notes = out.get("inventory_notes")
+
+    if not isinstance(rid, str) or not rid.strip():
+        return run_artifact_inventory_agent(payload)
+    if status not in {"complete", "partial"}:
+        return run_artifact_inventory_agent(payload)
+    if not isinstance(arts, list) or not arts:
+        return run_artifact_inventory_agent(payload)
+    if not isinstance(notes, str) or not notes.strip():
+        return run_artifact_inventory_agent(payload)
+
+    for item in arts:
+        if not isinstance(item, dict):
+            return run_artifact_inventory_agent(payload)
+        if not isinstance(item.get("artifact_id"), str) or not item["artifact_id"].strip():
+            return run_artifact_inventory_agent(payload)
+        if item.get("role") not in {"input", "output", "intermediate"}:
+            return run_artifact_inventory_agent(payload)
+        if not isinstance(item.get("logical_path"), str) or not item["logical_path"].strip():
+            return run_artifact_inventory_agent(payload)
+        if not isinstance(item.get("content_sha256"), str):
+            return run_artifact_inventory_agent(payload)
+
+    safe_arts: list[dict[str, Any]] = []
+    for item in arts:
+        safe_arts.append(
+            {
+                "artifact_id": sanitize_untrusted_text(str(item["artifact_id"]).strip())[:200],
+                "content_sha256": str(item["content_sha256"]).strip().lower()[:64],
+                "logical_path": sanitize_untrusted_text(str(item["logical_path"]).strip())[:260],
+                "role": item["role"],
+            }
+        )
+
+    return {
+        "artifacts": safe_arts[:64],
+        "inventory_notes": sanitize_untrusted_text(" ".join(notes.strip().split()[:28])),
+        "inventory_status": status,
+        "run_id": sanitize_untrusted_text(" ".join(rid.strip().split()[:12]))[:120],
+    }
+
+
+def run_bundle_manifest_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_bundle_manifest_agent
+
+    run_id = require(payload, "run_id")
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    inv = payload.get("inventory")
+    arts = payload.get("artifacts")
+    if inv is None and arts is None:
+        raise ValidationError("inventory or artifacts is required")
+
+    prompt = f"""
+You are bundle-manifest-agent.
+Return only JSON with keys run_id, manifest_version, entries, bundle_root_sha256, reproducibility_notes.
+Rules:
+- entries must be a non-empty array of objects with artifact_id, logical_path, role, content_sha256, manifest_entry_sha256.
+- manifest_version must be a short string like 1.0.
+- bundle_root_sha256 must be 64 lowercase hex chars.
+Input:
+{{"run_id":{json.dumps(run_id)},"inventory":{json.dumps(inv)},"artifacts":{json.dumps(arts)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    rid = out.get("run_id")
+    mv = out.get("manifest_version")
+    entries = out.get("entries")
+    root = out.get("bundle_root_sha256")
+    repro = out.get("reproducibility_notes")
+
+    if not isinstance(rid, str) or not rid.strip():
+        return run_bundle_manifest_agent(payload)
+    if not isinstance(mv, str) or not mv.strip():
+        return run_bundle_manifest_agent(payload)
+    if not isinstance(entries, list) or not entries:
+        return run_bundle_manifest_agent(payload)
+    if not isinstance(root, str) or len(root.strip()) != 64:
+        return run_bundle_manifest_agent(payload)
+    if not isinstance(repro, str) or not repro.strip():
+        return run_bundle_manifest_agent(payload)
+
+    hex64 = set("0123456789abcdef")
+    if any(ch not in hex64 for ch in root.strip().lower()):
+        return run_bundle_manifest_agent(payload)
+
+    for e in entries:
+        if not isinstance(e, dict):
+            return run_bundle_manifest_agent(payload)
+        for k in ("artifact_id", "logical_path", "role", "content_sha256", "manifest_entry_sha256"):
+            if k not in e or not isinstance(e[k], str) or not str(e[k]).strip():
+                return run_bundle_manifest_agent(payload)
+        if len(str(e["manifest_entry_sha256"]).strip()) != 64:
+            return run_bundle_manifest_agent(payload)
+
+    safe_entries = []
+    for e in entries[:64]:
+        safe_entries.append(
+            {
+                "artifact_id": sanitize_untrusted_text(str(e["artifact_id"]).strip())[:200],
+                "content_sha256": str(e["content_sha256"]).strip().lower()[:64],
+                "logical_path": sanitize_untrusted_text(str(e["logical_path"]).strip())[:260],
+                "manifest_entry_sha256": str(e["manifest_entry_sha256"]).strip().lower()[:64],
+                "role": e["role"],
+            }
+        )
+
+    return {
+        "bundle_root_sha256": root.strip().lower(),
+        "entries": safe_entries,
+        "manifest_version": sanitize_untrusted_text(mv.strip())[:16],
+        "reproducibility_notes": sanitize_untrusted_text(" ".join(repro.strip().split()[:40])),
+        "run_id": sanitize_untrusted_text(" ".join(rid.strip().split()[:12]))[:120],
+    }
+
+
+def run_bundle_seal_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
+    from .engine import run_bundle_seal_agent
+
+    run_id = require(payload, "run_id")
+    bundle_root_sha256 = require(payload, "bundle_root_sha256")
+    manifest_summary = payload.get("manifest_summary", "")
+    lineage_records = payload.get("lineage_records") or []
+    toolchain_fingerprint = payload.get("toolchain_fingerprint", "")
+
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValidationError("run_id must be a non-empty string")
+    if not isinstance(bundle_root_sha256, str) or not bundle_root_sha256.strip():
+        raise ValidationError("bundle_root_sha256 must be a non-empty string")
+    if manifest_summary is not None and not isinstance(manifest_summary, str):
+        raise ValidationError("manifest_summary must be a string when provided")
+    if not isinstance(lineage_records, list):
+        raise ValidationError("lineage_records must be an array when provided")
+    if toolchain_fingerprint is not None and not isinstance(toolchain_fingerprint, str):
+        raise ValidationError("toolchain_fingerprint must be a string when provided")
+
+    prompt = f"""
+You are bundle-seal-agent.
+Return only JSON with keys bundle_id, run_id, bundle_root_sha256, seal_status, lineage_attachment, verification_checklist, manifest_summary, toolchain_fingerprint, seal_notes.
+Rules:
+- seal_status must be one of sealed, sealed_with_gaps.
+- lineage_attachment is an array of objects with lineage_id and attachment_digest strings.
+- verification_checklist is a non-empty array of short strings.
+Input:
+{{"run_id":{json.dumps(run_id)},"bundle_root_sha256":{json.dumps(bundle_root_sha256)},"manifest_summary":{json.dumps(manifest_summary)},"lineage_records":{json.dumps(lineage_records)},"toolchain_fingerprint":{json.dumps(toolchain_fingerprint)}}}
+""".strip()
+
+    raw = _post_ollama(model, base_url, prompt)
+    out = _extract_json(raw)
+    bid = out.get("bundle_id")
+    rid = out.get("run_id")
+    root = out.get("bundle_root_sha256")
+    status = out.get("seal_status")
+    attach = out.get("lineage_attachment")
+    checklist = out.get("verification_checklist")
+    summary = out.get("manifest_summary")
+    tool_fp = out.get("toolchain_fingerprint")
+    seal_notes = out.get("seal_notes")
+
+    if not isinstance(bid, str) or not bid.strip():
+        return run_bundle_seal_agent(payload)
+    if not isinstance(rid, str) or not rid.strip():
+        return run_bundle_seal_agent(payload)
+    if not isinstance(root, str) or len(root.strip()) != 64:
+        return run_bundle_seal_agent(payload)
+    if status not in {"sealed", "sealed_with_gaps"}:
+        return run_bundle_seal_agent(payload)
+    if not isinstance(attach, list):
+        return run_bundle_seal_agent(payload)
+    if not isinstance(checklist, list) or not checklist:
+        return run_bundle_seal_agent(payload)
+    if summary is not None and not isinstance(summary, str):
+        return run_bundle_seal_agent(payload)
+    if tool_fp is not None and not isinstance(tool_fp, str):
+        return run_bundle_seal_agent(payload)
+    if not isinstance(seal_notes, str) or not seal_notes.strip():
+        return run_bundle_seal_agent(payload)
+
+    hex64 = set("0123456789abcdef")
+    if any(ch not in hex64 for ch in root.strip().lower()):
+        return run_bundle_seal_agent(payload)
+
+    safe_attach = []
+    for row in attach[:16]:
+        if not isinstance(row, dict):
+            return run_bundle_seal_agent(payload)
+        lid = row.get("lineage_id")
+        dig = row.get("attachment_digest")
+        if not isinstance(lid, str) or not isinstance(dig, str):
+            return run_bundle_seal_agent(payload)
+        safe_attach.append(
+            {
+                "attachment_digest": sanitize_untrusted_text(dig.strip())[:32],
+                "lineage_id": sanitize_untrusted_text(" ".join(lid.strip().split()[:10]))[:120],
+            }
+        )
+
+    safe_check = [sanitize_untrusted_text(" ".join(str(x).split()[:24])) for x in checklist if str(x).strip()][:8]
+
+    return {
+        "bundle_id": sanitize_untrusted_text(" ".join(bid.strip().split()[:10]))[:160],
+        "bundle_root_sha256": root.strip().lower(),
+        "lineage_attachment": safe_attach,
+        "manifest_summary": sanitize_untrusted_text((summary or "").strip())[:400],
+        "run_id": sanitize_untrusted_text(" ".join(rid.strip().split()[:12]))[:120],
+        "seal_notes": sanitize_untrusted_text(" ".join(seal_notes.strip().split()[:32])),
+        "seal_status": status,
+        "toolchain_fingerprint": sanitize_untrusted_text((tool_fp or "").strip())[:200],
+        "verification_checklist": safe_check,
+    }
+
+
 def run_router_agent_llm(payload: dict[str, Any], model: str, base_url: str) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])

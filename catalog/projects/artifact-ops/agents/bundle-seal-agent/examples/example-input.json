@@ -1,0 +1,12 @@
+{
+  "run_id": "train-run-2025-04-01",
+  "bundle_root_sha256": "e8c02838120e8dd0302c6cf68a57bcc34978355f6f839522eaf29fa8ec36604a",
+  "manifest_summary": "Two-artifact training run bundle",
+  "lineage_records": [
+    {
+      "lineage_id": "deploy-approve-abc123",
+      "action_taken": "approved"
+    }
+  ],
+  "toolchain_fingerprint": "python3.11 torch2.1"
+}

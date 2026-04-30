@@ -55,6 +55,7 @@ Canonical inventory for the stack-research `agents` repo. Paths are relative to 
 - `tests/test_observability_ops.py` / `tests/test_observability_ops_llm.py` — observability-ops.
 - `tests/test_eval_ops.py` / `tests/test_eval_ops_llm.py` — eval-ops.
 - `tests/test_experiment_ops.py` / `tests/test_experiment_ops_llm.py` — experiment-ops.
+- `tests/test_artifact_ops.py` / `tests/test_artifact_ops_llm.py` — artifact-ops.
 - `tests/test_agent_incident_drill.py` / `tests/test_compare_agent_incident_drill_scorecards.py` — agent incident drill.
 
 ## Policy, schema, catalog, integration

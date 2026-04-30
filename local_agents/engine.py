@@ -8,6 +8,11 @@ import re
 from datetime import datetime
 from typing import Any
 
+from .artifact_ops import (
+    build_artifact_inventory,
+    build_bundle_manifest,
+    seal_repro_bundle,
+)
 from .control_ops import (
     assess_approval_memory,
     assess_blast_radius,
@@ -1486,6 +1491,18 @@ def run_result_adjudication_agent(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_artifact_inventory_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return build_artifact_inventory(payload)
+
+
+def run_bundle_manifest_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return build_bundle_manifest(payload)
+
+
+def run_bundle_seal_agent(payload: dict[str, Any]) -> dict[str, Any]:
+    return seal_repro_bundle(payload)
+
+
 def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     task = require(payload, "task")
     available_agents = payload.get("available_agents", [])
@@ -1582,6 +1599,24 @@ def run_router_agent(payload: dict[str, Any]) -> dict[str, Any]:
     elif any(token in lowered for token in ["security scan", "owasp", "scan repo", "controls"]):
         target_agent = "security-ops.agentic-security-scanner-agent"
         rationale = "Security scanning intent detected; route to scanner."
+    elif any(token in lowered for token in ["seal run artifacts", "seal bundle", "bundle seal"]):
+        target_agent = "artifact-ops.bundle-seal-agent"
+        rationale = "Bundle seal intent detected; route to bundle seal agent."
+    elif any(token in lowered for token in ["manifest checksum", "bundle manifest", "repro bundle manifest"]):
+        target_agent = "artifact-ops.bundle-manifest-agent"
+        rationale = "Manifest checksum intent detected; route to bundle manifest agent."
+    elif any(
+        token in lowered
+        for token in [
+            "artifact bundle",
+            "repro bundle",
+            "package run artifacts",
+            "reproducible bundle",
+            "artifact inventory",
+        ]
+    ):
+        target_agent = "artifact-ops.artifact-inventory-agent"
+        rationale = "Reproducible artifact packaging intent detected; route to artifact inventory agent."
     elif any(token in lowered for token in ["lineage", "decision record", "audit trail", "decision log"]):
         target_agent = "control-ops.lineage-recorder-agent"
         rationale = "Lineage/audit intent detected; route to lineage recorder."
@@ -2431,9 +2466,12 @@ def run_agent(
     if selected_mode == "llm":
         validate_llm_runtime_source(selected_model, selected_base_url)
         from .llm import (
+            run_artifact_inventory_agent_llm,
             run_blast_radius_assessor_agent_llm,
             run_benchmark_curator_agent_llm,
             run_approval_memory_agent_llm,
+            run_bundle_manifest_agent_llm,
+            run_bundle_seal_agent_llm,
             run_checkpoint_agent_llm,
             run_classifier_agent_llm,
             run_code_reviewer_agent_llm,
@@ -2646,6 +2684,27 @@ def run_agent(
             return run_result_adjudication_agent(payload)
         if selected_mode == "llm":
             return run_result_adjudication_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"artifact-inventory-agent", "artifact-ops.artifact-inventory-agent"}:
+        if selected_mode == "deterministic":
+            return run_artifact_inventory_agent(payload)
+        if selected_mode == "llm":
+            return run_artifact_inventory_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"bundle-manifest-agent", "artifact-ops.bundle-manifest-agent"}:
+        if selected_mode == "deterministic":
+            return run_bundle_manifest_agent(payload)
+        if selected_mode == "llm":
+            return run_bundle_manifest_agent_llm(payload, selected_model, selected_base_url)
+        raise ValidationError(f"unsupported mode: {selected_mode}")
+
+    if canonical in {"bundle-seal-agent", "artifact-ops.bundle-seal-agent"}:
+        if selected_mode == "deterministic":
+            return run_bundle_seal_agent(payload)
+        if selected_mode == "llm":
+            return run_bundle_seal_agent_llm(payload, selected_model, selected_base_url)
         raise ValidationError(f"unsupported mode: {selected_mode}")
 
     if canonical in {"router-agent", "workflow-ops.router-agent"}:

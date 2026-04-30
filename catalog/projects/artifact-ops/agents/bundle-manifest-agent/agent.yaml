@@ -1,0 +1,33 @@
+id: artifact-ops.bundle-manifest-agent
+name: bundle-manifest-agent
+version: 0.1.0
+summary: |
+  Builds a canonical ordered manifest with per-entry manifest_entry_sha256 and aggregate bundle_root_sha256 for reproducible run bundles (no filesystem reads).
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: inventory
+    type: object
+    required: false
+  - name: artifacts
+    type: array[object]
+    required: false
+outputs:
+  - name: run_id
+    type: string
+  - name: manifest_version
+    type: string
+  - name: entries
+    type: object[]
+  - name: bundle_root_sha256
+    type: string
+  - name: reproducibility_notes
+    type: string
+rules:
+  - Entries must be deterministically ordered; root hash excludes wall-clock timestamps.
+  - Reject malformed hex digests in inventory artifacts.
+constraints:
+  - Manifest version is fixed for this agent revision; document ordering policy in reproducibility_notes.

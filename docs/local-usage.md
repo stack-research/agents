@@ -203,6 +203,23 @@ python3 scripts/run_agent.py \
   --pretty
 ```
 
+Artifact-ops (inventory, manifest, bundle seal):
+
+```bash
+python3 scripts/run_agent.py \
+  --agent artifact-ops.artifact-inventory-agent \
+  --input catalog/projects/artifact-ops/agents/artifact-inventory-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent artifact-ops.bundle-manifest-agent \
+  --input catalog/projects/artifact-ops/agents/bundle-manifest-agent/examples/example-input.json \
+  --pretty
+python3 scripts/run_agent.py \
+  --agent artifact-ops.bundle-seal-agent \
+  --input catalog/projects/artifact-ops/agents/bundle-seal-agent/examples/example-input.json \
+  --pretty
+```
+
 Router example:
 
 ```bash
@@ -479,6 +496,9 @@ Accepted `--agent` values:
 - `experiment-ops.hypothesis-registration-agent` or `hypothesis-registration-agent`
 - `experiment-ops.experiment-plan-agent` or `experiment-plan-agent`
 - `experiment-ops.result-adjudication-agent` or `result-adjudication-agent`
+- `artifact-ops.artifact-inventory-agent` or `artifact-inventory-agent`
+- `artifact-ops.bundle-manifest-agent` or `bundle-manifest-agent`
+- `artifact-ops.bundle-seal-agent` or `bundle-seal-agent`
 - `workflow-ops.router-agent` or `router-agent`
 - `workflow-ops.dependency-router-agent` or `dependency-router-agent`
 - `workflow-ops.retry-policy-agent` or `retry-policy-agent`
@@ -579,13 +599,20 @@ python3 -m unittest \
   tests/test_agent_incident_drill.py \
   tests/test_compare_agent_incident_drill_scorecards.py \
   tests/test_eval_ops.py \
-  tests/test_experiment_ops.py
+  tests/test_experiment_ops.py \
+  tests/test_artifact_ops.py
 ```
 
 Experiment-ops LLM smoke (requires Ollama and `AGENT_MODE=llm`):
 
 ```bash
 AGENT_MODE=llm python3 -m unittest tests.test_experiment_ops_llm -v
+```
+
+Artifact-ops LLM smoke (requires Ollama and `AGENT_MODE=llm`):
+
+```bash
+AGENT_MODE=llm python3 -m unittest tests.test_artifact_ops_llm -v
 ```
 
 Or with Make targets:

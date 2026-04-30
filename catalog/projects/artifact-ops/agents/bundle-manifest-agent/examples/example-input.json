@@ -1,0 +1,22 @@
+{
+  "run_id": "train-run-2025-04-01",
+  "inventory": {
+    "run_id": "train-run-2025-04-01",
+    "inventory_status": "complete",
+    "artifacts": [
+      {
+        "artifact_id": "inputs-config-yaml-2a90a559f4e2",
+        "logical_path": "inputs/config.yaml",
+        "role": "input",
+        "content_sha256": "cfb06f1aa7eb2878fcc837cd7fc895c36c6dc62012f7f8164aea8f61820b8e66"
+      },
+      {
+        "artifact_id": "outputs-metrics-json-07ac9bbe2a1a",
+        "logical_path": "outputs/metrics.json",
+        "role": "output",
+        "content_sha256": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+      }
+    ],
+    "inventory_notes": "Inventory normalized every artifact has a content digest suitable for bundle-manifest-agent."
+  }
+}

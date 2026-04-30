@@ -1,0 +1,23 @@
+{
+  "bundle_id": "train-run-2025-04-01-bundle-6e45ad058d18",
+  "run_id": "train-run-2025-04-01",
+  "bundle_root_sha256": "e8c02838120e8dd0302c6cf68a57bcc34978355f6f839522eaf29fa8ec36604a",
+  "seal_status": "sealed",
+  "lineage_attachment": [
+    {
+      "attachment_digest": "c87e41e78b6098d7",
+      "lineage_id": "deploy-approve-abc123"
+    }
+  ],
+  "verification_checklist": [
+    "Rebuild artifact inventory and confirm artifact_id stability",
+    "Recompute each manifest_entry_sha256 from canonical entry fields",
+    "Recompute bundle_root_sha256 from manifest_version run_id and ordered entry hashes",
+    "Verify each file matches content_sha256 out of band",
+    "Compare lineage_attachment digests to source lineage records",
+    "Record toolchain_fingerprint alongside bundle for environment parity"
+  ],
+  "manifest_summary": "Two-artifact training run bundle",
+  "toolchain_fingerprint": "python3.11 torch2.1",
+  "seal_notes": "Seal status sealed for run train-run-2025-04-01. Two-artifact training run bundle"
+}

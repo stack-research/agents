@@ -1,0 +1,29 @@
+id: artifact-ops.artifact-inventory-agent
+name: artifact-inventory-agent
+version: 0.1.0
+summary: |
+  Normalizes run artifacts into roles (input, output, intermediate), stable artifact_id values, and content_sha256 from inline text or caller-supplied digests for downstream manifests.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: artifacts
+    type: array[object]
+    required: true
+outputs:
+  - name: run_id
+    type: string
+  - name: inventory_status
+    type: enum[complete,partial]
+  - name: artifacts
+    type: object[]
+  - name: inventory_notes
+    type: string
+rules:
+  - Sanitize logical_path and inline_text; reject malformed content_sha256 (must be 64 hex chars when provided).
+  - Never execute or echo credential-like patterns from user text.
+  - inventory_notes must stay bounded and factual about digest coverage.
+constraints:
+  - At most 64 artifacts per request; inline_text truncated deterministically.

@@ -40,6 +40,10 @@ Each project lives in `catalog/projects/<project>/` with agents in `agents/<agen
   - `hypothesis-registration-agent`: normalizes and registers a hypothesis with stable id and ambiguity flags.
   - `experiment-plan-agent`: emits bounded variants, metrics, guardrails, and next steps from a hypothesis.
   - `result-adjudication-agent`: adjudicates observed metrics against optional explicit success criteria.
+- `artifact-ops`
+  - `artifact-inventory-agent`: normalizes run artifacts with roles and digests for reproducible bundles.
+  - `bundle-manifest-agent`: emits canonical manifest entries and aggregate `bundle_root_sha256`.
+  - `bundle-seal-agent`: seals bundle metadata with lineage attachment and verification checklist.
 - `workflow-ops`
   - `router-agent`: routes incoming tasks to a best-fit agent with priority.
   - `dependency-router-agent`: routes tasks based on dependency readiness and missing prerequisites.

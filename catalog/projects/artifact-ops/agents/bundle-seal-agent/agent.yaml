@@ -1,0 +1,47 @@
+id: artifact-ops.bundle-seal-agent
+name: bundle-seal-agent
+version: 0.1.0
+summary: |
+  Seals a reproducible bundle record with bundle_id, optional lineage attachment digests, verification checklist, and seal_status when lineage coverage is incomplete.
+owners:
+  - platform-agents
+inputs:
+  - name: run_id
+    type: string
+    required: true
+  - name: bundle_root_sha256
+    type: string
+    required: true
+  - name: manifest_summary
+    type: string
+    required: false
+  - name: lineage_records
+    type: array[object]
+    required: false
+  - name: toolchain_fingerprint
+    type: string
+    required: false
+outputs:
+  - name: bundle_id
+    type: string
+  - name: run_id
+    type: string
+  - name: bundle_root_sha256
+    type: string
+  - name: seal_status
+    type: enum[sealed,sealed_with_gaps]
+  - name: lineage_attachment
+    type: object[]
+  - name: verification_checklist
+    type: array[string]
+  - name: manifest_summary
+    type: string
+  - name: toolchain_fingerprint
+    type: string
+  - name: seal_notes
+    type: string
+rules:
+  - Sanitize manifest_summary and toolchain_fingerprint; bound lineage_records processing.
+  - seal_status must reflect whether every lineage record includes a non-empty lineage_id.
+constraints:
+  - At most 16 lineage records per seal request.

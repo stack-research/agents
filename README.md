@@ -88,7 +88,11 @@ catalog/
     - `hypothesis-registration-agent`: registers and normalizes hypotheses with clarity checks.
     - `experiment-plan-agent`: generates bounded experiment plans from a hypothesis.
     - `result-adjudication-agent`: maps observed metrics to supports, inconclusive, or refutes verdicts.
-15. `agent-incident-drill`
+15. `artifact-ops`
+    - `artifact-inventory-agent`: normalizes run artifacts with roles and content digests for bundles.
+    - `bundle-manifest-agent`: builds ordered manifest entries and an aggregate bundle root hash.
+    - `bundle-seal-agent`: emits bundle id, seal status, lineage attachment, and verification steps.
+16. `agent-incident-drill`
     - Scenario project that composes existing catalog agents into a measurable incident-response drill with governance, lineage, blast-radius, kill-path, rollback, and scorecard artifacts.
 
 ## Run Agents Locally
@@ -118,6 +122,9 @@ catalog/
 - `python3 scripts/run_agent.py --agent experiment-ops.hypothesis-registration-agent --input catalog/projects/experiment-ops/agents/hypothesis-registration-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent experiment-ops.experiment-plan-agent --input catalog/projects/experiment-ops/agents/experiment-plan-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent experiment-ops.result-adjudication-agent --input catalog/projects/experiment-ops/agents/result-adjudication-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent artifact-ops.artifact-inventory-agent --input catalog/projects/artifact-ops/agents/artifact-inventory-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent artifact-ops.bundle-manifest-agent --input catalog/projects/artifact-ops/agents/bundle-manifest-agent/examples/example-input.json --pretty`
+- `python3 scripts/run_agent.py --agent artifact-ops.bundle-seal-agent --input catalog/projects/artifact-ops/agents/bundle-seal-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.router-agent --input catalog/projects/workflow-ops/agents/router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.dependency-router-agent --input catalog/projects/workflow-ops/agents/dependency-router-agent/examples/example-input.json --pretty`
 - `python3 scripts/run_agent.py --agent workflow-ops.retry-policy-agent --input catalog/projects/workflow-ops/agents/retry-policy-agent/examples/example-input.json --pretty`
