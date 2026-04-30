@@ -1,6 +1,7 @@
 # Agent Catalog
 
-This repository is a growing catalog of reusable AI agent components, in workflow orchestration, organized by project.
+This repository is a growing catalog of reusable AI agent components organized by project.
+It is workflow-first: small, focused agents are composed into explicit pipelines.
 
 ## Goals
 
@@ -427,6 +428,9 @@ The test suite currently includes:
 - observability-ops deterministic and LLM behavior tests (log-analyzer/slo-reporter/change-correlation/alert-tuner).
 - knowledge-ops deterministic and LLM behavior tests (evidence-ranker/claim-trace/memory-curator/temporal-watch).
 - control-ops deterministic and LLM behavior tests (lineage-recorder/scope-validator/exception-policy/approval-memory/blast-radius-assessor/kill-path-auditor).
+- failure-ops deterministic and LLM behavior tests (failure-library/blast-pattern-cluster/rollback-playbook).
+- inter-ops deterministic and LLM behavior tests (schema-compat-validator).
+- cost-ops deterministic and LLM behavior tests (cost-attribution/budget-guardrail/pipeline-optimizer).
 - governance pipeline composition tests.
 - resilience pipeline composition tests.
 - behavior tests for local agent runtime logic.

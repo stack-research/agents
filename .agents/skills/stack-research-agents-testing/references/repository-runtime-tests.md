@@ -10,7 +10,11 @@ Canonical inventory for the stack-research `agents` repo. Paths are relative to 
 - `scripts/run_workflow_pipeline.py` — workflow router→target→checkpoint pipeline runner.
 - `scripts/run_governance_pipeline.py` — governance scope-validator→target→lineage-recorder→checkpoint pipeline runner.
 - `scripts/run_resilience_pipeline.py` — resilience blast-radius-assessor→kill-path-auditor pipeline runner.
+- `scripts/run_incident_pipeline.py` — cross-domain incident pipeline runner.
+- `scripts/run_agent_incident_drill.py` — scenario drill runner that composes multiple domains.
+- `scripts/compare_agent_incident_drill_scorecards.py` — compares saved drill scorecards.
 - `scripts/run_security_scan.py` — security scanner runner.
+- `scripts/generate_eval_fixtures.py` — eval fixture generation helper.
 - `scripts/check_policy_pack.py` — runtime policy-pack enforcement check.
 
 ## Policy and infrastructure
@@ -50,13 +54,19 @@ Canonical inventory for the stack-research `agents` repo. Paths are relative to 
 - `tests/test_support_ops.py` / `tests/test_support_ops_llm.py` — support-ops.
 - `tests/test_control_ops.py` / `tests/test_control_ops_llm.py` — control-ops.
 - `tests/test_governance_pipeline.py` / `tests/test_resilience_pipeline.py` — governance and resilience pipelines.
+- `tests/test_incident_pipeline.py` — incident pipeline composition.
 - `tests/test_data_ops.py` — data-ops.
 - `tests/test_code_ops.py` — code-ops.
 - `tests/test_observability_ops.py` / `tests/test_observability_ops_llm.py` — observability-ops.
 - `tests/test_eval_ops.py` / `tests/test_eval_ops_llm.py` — eval-ops.
 - `tests/test_experiment_ops.py` / `tests/test_experiment_ops_llm.py` — experiment-ops.
 - `tests/test_artifact_ops.py` / `tests/test_artifact_ops_llm.py` — artifact-ops.
+- `tests/test_failure_ops.py` / `tests/test_failure_ops_llm.py` — failure-ops.
+- `tests/test_inter_ops.py` / `tests/test_inter_ops_llm.py` — inter-ops.
+- `tests/test_cost_ops.py` / `tests/test_cost_ops_llm.py` — cost-ops.
 - `tests/test_agent_incident_drill.py` / `tests/test_compare_agent_incident_drill_scorecards.py` — agent incident drill.
+- `tests/test_evals.py` — eval fixture/schema checks.
+- `tests/test_agents_skills_layout.py` — Agent Skills layout checks.
 
 ## Policy, schema, catalog, integration
 
